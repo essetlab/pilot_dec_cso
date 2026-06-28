@@ -1,0 +1,67 @@
+[
+  {
+    "Story ID": "SS-M1-01",
+    "Placement": "M1-S1-06B",
+    "Story type": "Demo story card",
+    "Working title": "Meet Ayele: How the Portfolio Helps",
+    "Instructional purpose": "Show how a CSO learner can use the private portfolio safely without disclosing sensitive organizational/community data.",
+    "Learner role/action": "Read story; understand what safe broad reflection looks like.",
+    "Key content / dilemma": "Ayele is a local CSO project officer who writes broad learning notes such as 'I want to improve participation planning' instead of real names, complaints, or political details.",
+    "Feedback logic": "No decision feedback; use as modeling example.",
+    "Safety rule": "Include course-level fictional/composite disclaimer. Do not label title as fictional. Avoid real organization names.",
+    "Visual style": "Warm semi-realistic illustration or avatar; office/learning context.",
+    "Build status": "Ready for build"
+  },
+  {
+    "Story ID": "SS-M1-02",
+    "Placement": "M1-S2-01",
+    "Story type": "Actor map / matching activity",
+    "Working title": "Who Has Responsibility?",
+    "Instructional purpose": "Help learners clarify rights-holders, duty-bearers, and supporting or facilitating actors in a practical water project context.",
+    "Learner role/action": "Explore three actor categories and match local examples to the correct HRBA category.",
+    "Key content / dilemma": "A water project involves community members, public authorities, CSO staff, committees, service providers, and partners. HRBA asks which actors have rights, which actors have obligations, and which actors support participation and accountability.",
+    "Feedback logic": "Matching feedback reinforces role clarity and the distinction between formal duty-bearing responsibility and supporting/facilitating roles.",
+    "Safety rule": "Use generic actor categories only. Do not use real names, real complaints, beneficiary lists, or identifiable data.",
+    "Visual style": "Clean labeled actor map using rights-holder, duty-bearer, and supporting/facilitating actor zones.",
+    "Build status": "Ready for build"
+  },
+  {
+    "Story ID": "SS-M1-03",
+    "Placement": "M1-S3-03",
+    "Story type": "Scenario decision",
+    "Working title": "Ask Better Questions Before Acting",
+    "Instructional purpose": "Practice choosing the strongest rights-based question before acting.",
+    "Learner role/action": "Choose one option; view feedback; retry if needed.",
+    "Key content / dilemma": "Learner sees a project issue and selects the question that best shifts from activity-first to rights-aware practice.",
+    "Feedback logic": "Best option starts from rights-holders, duty-bearers, barriers, participation, and accountability. Weaker options are common but incomplete.",
+    "Safety rule": "Do not request learner’s real case. Use fictional local CSO case only.",
+    "Visual style": "Scenario card with decision options; optional illustration of team discussion.",
+    "Build status": "Ready for build"
+  },
+  {
+    "Story ID": "SS-M1-04",
+    "Placement": "M1-S5-02 / M1-S5-03",
+    "Story type": "Simple case + matching activity",
+    "Working title": "A Fictional Local CSO Scenario",
+    "Instructional purpose": "Practice identifying actor roles: rights-holder, duty-bearer, CSO support/accountability actor, stakeholder/influencer.",
+    "Learner role/action": "Read case; match actors to roles; view corrective feedback.",
+    "Key content / dilemma": "A local CSO is supporting a community issue. Actors include affected community members, public office, CSO, and local influencers. Learner maps roles.",
+    "Feedback logic": "Correct feedback explains role logic. Not-quite feedback clarifies why actor is not the best match. Retry allowed.",
+    "Safety rule": "Use broad categories. Do not use real names, real complaints, beneficiary lists, or identifiable data.",
+    "Visual style": "Rights-holder/duty-bearer map visual and role icons.",
+    "Build status": "Ready for build"
+  },
+  {
+    "Story ID": "SS-M1-05",
+    "Placement": "M1-S7-01 / M1-S7-04",
+    "Story type": "Reflection / next-action mini-story",
+    "Working title": "What You Have Started",
+    "Instructional purpose": "Consolidate Module 1 by linking learner’s first HRBA shift to continued learning and Module 2.",
+    "Learner role/action": "Select one practice shift or read summary tabs; save optional note or skip.",
+    "Key content / dilemma": "Learner recognizes one small change they want to pay attention to in future modules: participation, inclusion, accountability, actor roles, or safe evidence.",
+    "Feedback logic": "Feedback is supportive and non-judgmental. It reinforces that HRBA is a practice developed step-by-step.",
+    "Safety rule": "Optional notes must be private and non-sensitive; show note warning.",
+    "Visual style": "Wrap-up illustration or action card; avoid celebratory childish visuals.",
+    "Build status": "Ready for build"
+  }
+]

@@ -1,0 +1,8 @@
+id,name,description,active
+STD-EU-DGNEAR,EU / DG NEAR Civil Society Guidelines,"Civil society capacity, enabling environment, CSO participation, transparency, advocacy, governance, and resilience",TRUE
+STD-GLOBAL-CSO,Global Standard for CSO Accountability,"Dynamic accountability, stakeholder dialogue, transparency, responsive decision-making, responsible practice",TRUE
+STD-HRBA,Human Rights-Based Approach Principles,"Participation, accountability, non-discrimination, empowerment, legality, and inclusion",TRUE
+STD-SAFE-DNH,Safeguarding and Do No Harm,"Safety, protection, referral, anonymization, risk reduction, and responsible evidence use",TRUE
+STD-GEI,Gender Equality and Inclusion Standards,"Inclusive participation, gender responsiveness, disability inclusion, and equitable access",TRUE
+STD-DEC-CAP,DEC CSO Capacity Framework,"DEC-adapted capacity areas, CSO practices, learning objectives, and capacity evidence",TRUE
+STD-DONOR-PROG,Program / Donor-Specific Indicators,"Project-specific output, outcome, learning, and capacity-strengthening indicators",TRUE

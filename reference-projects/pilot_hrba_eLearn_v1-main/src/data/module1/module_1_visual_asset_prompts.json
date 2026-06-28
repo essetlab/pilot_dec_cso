@@ -1,0 +1,145 @@
+[
+  {
+    "Asset ID": "A-M1-COVER",
+    "Placement": "M1-PLAYER-00",
+    "Asset type": "Hero image / split-screen cover visual",
+    "Purpose": "Create Agora-style module cover adapted to DEC/CSO Learning Hub.",
+    "Prompt / Production Direction": "Create a premium e-learning module cover for 'Applying HRBA in CSO Practice — Module 1: Starting Your HRBA Learning Journey'. Left area should support deep navy text panel and Start button; right area should show a respectful Ethiopian/East African local CSO learning context such as staff reviewing a project plan or participating in a training. No readable text inside image.",
+    "Style + Brand": "Professional, calm, realistic or semi-realistic; DEC colors #3B99D4, #91C852, #0F172A; clean and premium.",
+    "Safety restrictions": "No real vulnerable people; no crisis/trauma imagery; no political symbols; no identifying documents.",
+    "Alt text": "Illustration/photo-style visual of local CSO learners preparing to start an HRBA course module.",
+    "Status": "New"
+  },
+  {
+    "Asset ID": "A-M1-01",
+    "Placement": "M1-S1-01",
+    "Asset type": "Welcome video placeholder / instructor image",
+    "Purpose": "Support the welcome video or transcript-first alternative.",
+    "Prompt / Production Direction": "Create a clean welcome-video placeholder frame for the HRBA course, with a CSO facilitator/instructor style image and simple play area. Use neutral learning/training setting and DEC brand accents. Do not include readable text except short labels if necessary.",
+    "Style + Brand": "Video-ready frame; white card on light background; high contrast.",
+    "Safety restrictions": "No real organization logos except approved DEC/CSO Learning Hub; no sensitive community imagery.",
+    "Alt text": "Welcome video frame showing a facilitator-style learning environment for HRBA course orientation.",
+    "Status": "Refine existing placeholder"
+  },
+  {
+    "Asset ID": "A-M1-02",
+    "Placement": "M1-S1-04",
+    "Asset type": "Course roadmap graphic",
+    "Purpose": "Show the course journey visually.",
+    "Prompt / Production Direction": "Create a clean horizontal/vertical roadmap graphic showing a learner journey from safe start and HRBA foundations through everyday rights, actor roles, principles, project design, implementation, MEAL, action planning, and completion. Use icons and simple cards, no long text.",
+    "Style + Brand": "Flat vector infographic, DEC colors, accessible contrast.",
+    "Safety restrictions": "No overcrowded text; provide text alternative in course.",
+    "Alt text": "Roadmap showing the HRBA course journey from safe start to practical application and action planning.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-03",
+    "Placement": "M1-S1-06A",
+    "Asset type": "Portfolio illustration",
+    "Purpose": "Introduce private HRBA learning portfolio.",
+    "Prompt / Production Direction": "Create a simple illustration of a private learning portfolio or notebook with shield/check icon, suggesting safe personal learning notes and practical outputs. Use DEC blue/green, white cards, subtle shadows.",
+    "Style + Brand": "Flat vector or semi-flat illustration.",
+    "Safety restrictions": "Do not show real names, documents, case records, or confidential files.",
+    "Alt text": "Illustration of a private HRBA learning portfolio with safe learning symbols.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-04",
+    "Placement": "M1-S1-06B",
+    "Asset type": "Recurring persona illustration",
+    "Purpose": "Introduce Ayele as safe demo learner.",
+    "Prompt / Production Direction": "Create a respectful semi-realistic avatar illustration of Ayele, a local CSO project officer using a private learning portfolio. Show professional, calm context: laptop/notebook, project planning notes without readable sensitive text. Avoid stereotypes.",
+    "Style + Brand": "Semi-realistic avatar; warm, professional; DEC accents.",
+    "Safety restrictions": "Fictional persona only; no real NGO logo; no sensitive data visible.",
+    "Alt text": "Ayele, a local CSO project officer, using a private learning portfolio safely.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-05",
+    "Placement": "M1-S1-07",
+    "Asset type": "Safe Learning Agreement graphic",
+    "Purpose": "Communicate privacy and safety rules.",
+    "Prompt / Production Direction": "Create an iconic graphic combining shield, notebook, anonymized data dots, and consent/check symbols to show safe learning, privacy, and no sensitive data sharing. Use clean white card and DEC blue/green.",
+    "Style + Brand": "Iconic flat illustration; high contrast.",
+    "Safety restrictions": "No readable personal data, no real case imagery.",
+    "Alt text": "Shield and notebook symbol showing safe, private HRBA learning.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-06",
+    "Placement": "M1-S2-03",
+    "Asset type": "HRBA relevance icon set",
+    "Purpose": "Summarize why HRBA matters.",
+    "Prompt / Production Direction": "Create five consistent line/filled icons for dignity, participation, inclusion/non-discrimination, accountability, and sustainability/adaptation. Use DEC brand colors and simple labels if needed.",
+    "Style + Brand": "Consistent icon set; white cards; accessible contrast.",
+    "Safety restrictions": "No stereotypes; avoid complex symbols that imply political affiliation.",
+    "Alt text": "Icons representing dignity, participation, inclusion, accountability, and sustainability.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-07",
+    "Placement": "M1-S3-01",
+    "Asset type": "Rights-holder shift illustration",
+    "Purpose": "Show shift from beneficiary to rights-holder.",
+    "Prompt / Production Direction": "Create a clear side-by-side illustration showing a shift from people as passive recipients to people as rights-holders with voice, agency, and accountability channels. Use respectful local CSO/community setting.",
+    "Style + Brand": "Simple infographic/illustration; DEC colors.",
+    "Safety restrictions": "Do not depict communities as helpless; avoid savior narrative.",
+    "Alt text": "Visual comparison showing a shift from passive beneficiary framing to rights-holder agency and voice.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-08",
+    "Placement": "M1-S3-03",
+    "Asset type": "Scenario decision graphic",
+    "Purpose": "Support 'Ask Better Questions Before Acting'.",
+    "Prompt / Production Direction": "Create a scenario card illustration of a CSO team reviewing a project plan and asking better HRBA questions before acting. Include visual cues of participation, barriers, roles, and accountability, but no readable sensitive documents.",
+    "Style + Brand": "Semi-realistic contextual illustration.",
+    "Safety restrictions": "No real names, logos, complaints, political or safeguarding details.",
+    "Alt text": "Fictional CSO team discussing rights-based planning questions before taking action.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-09",
+    "Placement": "M1-S4-02",
+    "Asset type": "Sorting icons",
+    "Purpose": "Represent four practice framings.",
+    "Prompt / Production Direction": "Create four simple icons for charity-based, needs-based, service-delivery, and rights-based practice framing. Icons should be distinct and neutral, avoiding judgmental or stigmatizing imagery.",
+    "Style + Brand": "Flat line icons; DEC palette with neutral grey support.",
+    "Safety restrictions": "No negative stereotypes; rights-based icon should suggest voice/accountability, not legal threat.",
+    "Alt text": "Icons for charity-based, needs-based, service-delivery, and rights-based practice framing.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-10",
+    "Placement": "M1-S5-04",
+    "Asset type": "Rights-holder/duty-bearer map",
+    "Purpose": "Show actor relationship and CSO support role.",
+    "Prompt / Production Direction": "Create a clean node-link diagram showing rights-holders, duty-bearers, CSO support/accountability role, and stakeholders/influencers. Use arrows for claims, responsibilities, participation, evidence, dialogue, and accountability. Keep labels short.",
+    "Style + Brand": "Diagram/infographic; white card; DEC blue/green; accessible contrast.",
+    "Safety restrictions": "No real actor names; use generic categories only.",
+    "Alt text": "Diagram showing rights-holders, duty-bearers, CSO support role, and accountability relationships.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-11",
+    "Placement": "M1-S6-04",
+    "Asset type": "Self-assessment scale graphic",
+    "Purpose": "Explain survey scale.",
+    "Prompt / Production Direction": "Create an accessible horizontal response scale from 0 to 3 plus N/A: Not yet in place, Early steps, Partly in place, Consistently in place, Not applicable/need to check. Use clear labels and icons.",
+    "Style + Brand": "Flat accessible scale, high contrast.",
+    "Safety restrictions": "Do not imply score is public or certificate-related.",
+    "Alt text": "Response scale for a private HRBA starting-point self-assessment.",
+    "Status": "Refine"
+  },
+  {
+    "Asset ID": "A-M1-12",
+    "Placement": "M1-S7-04",
+    "Asset type": "Module wrap-up image",
+    "Purpose": "Support positive transition to Module 2.",
+    "Prompt / Production Direction": "Create a professional wrap-up illustration showing a learner completing Module 1 and preparing to continue to Module 2, with a checklist/roadmap and calm progress indicator. Avoid childish celebration.",
+    "Style + Brand": "Semi-flat, professional, warm; DEC colors.",
+    "Safety restrictions": "No trophy/exam pressure; no real data visible.",
+    "Alt text": "Learner completing Module 1 and preparing to continue to Module 2.",
+    "Status": "Refine"
+  }
+]

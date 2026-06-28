@@ -1,0 +1,86 @@
+[
+  {
+    "Objective ID": "M1-OBJ-01",
+    "Action-oriented objective": "Navigate the HRBA course safely, including the player controls, certificate rule, private reflections, and practical tool pathway.",
+    "Capacity area": "Digital learning readiness and safe participation",
+    "CSO practice area": "Course participation; reflective learning; safe use of digital tools",
+    "HRBA principle / concept": "Safe learning, privacy, accessibility, adult learning",
+    "K/S/M/E route": "K + S",
+    "Learning block(s)": "M1-LMS-00; M1-PLAYER-00; M1-PLAYER-HELP; M1-S1-05; M1-S1-06; M1-S1-07",
+    "Assessment / check": "Orientation readiness check M1-S1-08",
+    "Portfolio / practical output": "Safe learning agreement acknowledgement; optional portfolio setup",
+    "Measurement evidence": "Agreement accepted; orientation check completed; no sensitive data entered"
+  },
+  {
+    "Objective ID": "M1-OBJ-02",
+    "Action-oriented objective": "Explain why HRBA matters for local CSO practice and why good intentions are not enough without rights-based questions.",
+    "Capacity area": "HRBA foundational understanding",
+    "CSO practice area": "Project design; community engagement; accountability; donor-aligned quality",
+    "HRBA principle / concept": "Dignity, participation, accountability, non-discrimination",
+    "K/S/M/E route": "K",
+    "Learning block(s)": "M1-S2-01; M1-S2-02; M1-S2-03; M1-S2-04",
+    "Assessment / check": "Formative check in Module 1 quiz; scenario feedback",
+    "Portfolio / practical output": "Optional private reflection on why HRBA matters for learner’s work",
+    "Measurement evidence": "Learner completes scenario/relevance cards and views feedback"
+  },
+  {
+    "Objective ID": "M1-OBJ-03",
+    "Action-oriented objective": "Describe the shift from treating people as beneficiaries to recognizing people and groups as rights-holders with voice, agency, and claims.",
+    "Capacity area": "Rights-holder centred programming",
+    "CSO practice area": "Problem analysis; programme framing; community participation",
+    "HRBA principle / concept": "Rights-holders; agency; empowerment",
+    "K/S/M/E route": "K + S",
+    "Learning block(s)": "M1-S3-01; M1-S3-02; M1-S3-03; M1-S3-04; M1-S3-05",
+    "Assessment / check": "Scenario decision: Ask Better Questions Before Acting",
+    "Portfolio / practical output": "Selected personal/team shift theme in M1-S4-04 or portfolio checkpoint",
+    "Measurement evidence": "Scenario completed; feedback viewed; shift selected"
+  },
+  {
+    "Objective ID": "M1-OBJ-04",
+    "Action-oriented objective": "Distinguish charity-based, needs-based, service-delivery, and rights-based practice framings using simple CSO examples.",
+    "Capacity area": "Programme strategy and HRBA framing",
+    "CSO practice area": "Project design; service delivery; advocacy positioning",
+    "HRBA principle / concept": "Rights-based practice; accountability; participation",
+    "K/S/M/E route": "K + S",
+    "Learning block(s)": "M1-S4-01; M1-S4-02; M1-S4-03",
+    "Assessment / check": "Sorting activity + quiz item",
+    "Portfolio / practical output": "Private selection of one shift for CSO practice",
+    "Measurement evidence": "Sorting completed with feedback; retry allowed"
+  },
+  {
+    "Objective ID": "M1-OBJ-05",
+    "Action-oriented objective": "Identify rights-holders, duty-bearers, CSO support roles, and other stakeholders in a realistic local CSO scenario.",
+    "Capacity area": "Actor analysis and accountability mapping",
+    "CSO practice area": "Stakeholder analysis; advocacy; accountability; MEAL",
+    "HRBA principle / concept": "Rights-holder / duty-bearer relationship; CSO bridge role",
+    "K/S/M/E route": "K + S",
+    "Learning block(s)": "M1-S5-01; M1-S5-02; M1-S5-03; M1-S5-04; M1-S5-05",
+    "Assessment / check": "Matching activity + quiz item",
+    "Portfolio / practical output": "Draft rights-holder/duty-bearer understanding; optional map resource",
+    "Measurement evidence": "Matching completed; diagram explored; misconception cards viewed"
+  },
+  {
+    "Objective ID": "M1-OBJ-06",
+    "Action-oriented objective": "Complete a private HRBA starting-point self-assessment and select two priority areas for continued learning.",
+    "Capacity area": "Self-assessment and adaptive capacity strengthening",
+    "CSO practice area": "Organizational learning; project quality improvement; capacity development",
+    "HRBA principle / concept": "Self-assessment; adaptive learning; privacy",
+    "K/S/M/E route": "S + M",
+    "Learning block(s)": "M1-S6-01 to M1-S6-10",
+    "Assessment / check": "16-item self-assessment; result summary; priority selection",
+    "Portfolio / practical output": "Private HRBA starting-point summary saved",
+    "Measurement evidence": "Survey submitted; result viewed; two priority domains selected"
+  },
+  {
+    "Objective ID": "M1-OBJ-07",
+    "Action-oriented objective": "Save a safe Module 1 portfolio checkpoint and prepare for Module 2: Foundations of HRBA.",
+    "Capacity area": "Learning transfer and practical application",
+    "CSO practice area": "Portfolio building; action planning; continuous learning",
+    "HRBA principle / concept": "Safe reflection; practical application",
+    "K/S/M/E route": "S + M",
+    "Learning block(s)": "M1-S7-01 to M1-S7-05; M1-PLAYER-COMPLETE; M1-LMS-RETURN",
+    "Assessment / check": "Module 1 formative quiz and feedback summary",
+    "Portfolio / practical output": "Portfolio checkpoint; next action to Module 2",
+    "Measurement evidence": "Quiz completed; feedback viewed; module completion and progress state saved"
+  }
+]

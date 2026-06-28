@@ -1,0 +1,10 @@
+id,name,description,active,sortOrder
+CAP-GOV,Internal Governance and Leadership,"How the CSO is led, governed, and makes accountable decisions",TRUE,1
+CAP-ACC,Transparency and Accountability,"How the CSO shares information, listens, responds, and builds trust",TRUE,2
+CAP-STRAT,Strategic Planning and Organizational Sustainability,"How the CSO plans, adapts, manages risk, and sustains its mission",TRUE,3
+CAP-FIN,Financial Management and Resource Mobilization,"How the CSO manages funds, budgets, donor compliance, and funding opportunities",TRUE,4
+CAP-HRSAFE,"Human Resources, Inclusion, and Safeguarding","How the CSO manages people, inclusion, safety, and duty of care",TRUE,5
+CAP-ADV,Evidence-Based Advocacy and Civic Engagement,"How the CSO uses evidence, voice, participation, and safe advocacy",TRUE,6
+CAP-MEAL,"Monitoring, Evaluation, Accountability, and Learning","How the CSO tracks progress, uses feedback, learns, and reports outcomes",TRUE,7
+CAP-DIG,Digital Skills and Data Use,"How the CSO uses digital tools, data, and information responsibly",TRUE,8
+CAP-PART,"Networking, Partnerships, and Collective Action","How the CSO works with partners, networks, coalitions, and communities",TRUE,9

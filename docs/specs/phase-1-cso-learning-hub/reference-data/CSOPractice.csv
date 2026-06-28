@@ -1,0 +1,10 @@
+id,capacityAreaId,name,description,exampleGap,active
+PRAC-MEAL-OUTCOME-EVID,CAP-MEAL,Write outcome evidence,"Use monitoring evidence to explain what changed, for whom, and why it matters",Reports describe activities but do not explain outcomes or evidence of change,TRUE
+PRAC-MEAL-LEARNING-USE,CAP-MEAL,Use monitoring data in learning meetings,Review monitoring information to improve decisions and adapt activities,Data is collected for reports but not used in team learning or decisions,TRUE
+PRAC-ACC-FEEDBACK-CAT,CAP-ACC,Categorize community feedback,"Sort feedback into suggestions, complaints, safeguarding concerns, and service-quality issues",Staff mix ordinary feedback with sensitive complaints and do not escalate correctly,TRUE
+PRAC-ACC-FEEDBACK-RESPONSE,CAP-ACC,Respond to community feedback safely,Close the feedback loop while protecting privacy and avoiding harm,Communities give feedback but do not hear what changed or how concerns were handled,TRUE
+PRAC-ADV-SAFE-MSG,CAP-ADV,Draft safe evidence-based advocacy messages,"Use credible, non-sensitive evidence to prepare advocacy messages that reduce risk","Advocacy messages are too general, unsupported, or expose CSOs to unnecessary risk",TRUE
+PRAC-HRSAFE-REFERRAL,CAP-HRSAFE,Follow safeguarding referral steps,Identify sensitive concerns and choose safe referral or escalation steps,Staff are unsure what to do when a sensitive protection concern is raised,TRUE
+PRAC-GOV-BOARD-DECISION,CAP-GOV,Document board decisions,"Record board decisions, responsibilities, and follow-up actions clearly",Board decisions are discussed but not properly documented or followed up,TRUE
+PRAC-FIN-BUDGET-JUST,CAP-FIN,Prepare budget justification,"Link budget lines to activities, allowable costs, and donor expectations",Budget explanations are unclear or disconnected from planned activities,TRUE
+PRAC-PART-ROLE-MATRIX,CAP-PART,Clarify partner roles,"Agree who does what, who decides, and how partners coordinate",Partner responsibilities are unclear during implementation,TRUE

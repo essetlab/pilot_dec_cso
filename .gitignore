@@ -1,0 +1,56 @@
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+*.tsbuildinfo
+
+# production
+dist/
+build/
+.vite/
+
+# large local media/uploads
+*.mp4
+public/uploads/
+
+# local backup project copies
+reference-projects/*-prev-*/
+
+# HRBA source/reference materials kept locally but not needed for Vercel builds
+reference-projects/pilot_hrba_eLearn_v1-main/docs/
+reference-projects/pilot_hrba_eLearn_v1-main/reference/
+reference-projects/pilot_hrba_eLearn_v1-main/HRBA Course MODULES/
+reference-projects/pilot_hrba_eLearn_v1-main/tests/
+reference-projects/pilot_hrba_eLearn_v1-main/course_packages/
+reference-projects/pilot_hrba_eLearn_v1-main/HRBA_Module_1_Targeted_Repair_Package/
+reference-projects/pilot_hrba_eLearn_v1-main/hrba_design_lock_package_v1/
+
+# environment
+.env
+.env*.local
+
+# Prisma local database
+dev.db
+dev.db-journal
+prisma/dev.db
+prisma/dev.db-journal
+src/generated/prisma/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+qa-artifacts/
+
+# temporary verification artifacts
+tmp-*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
