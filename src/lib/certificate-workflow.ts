@@ -79,6 +79,15 @@ export type AdminCertificateDetailData = AdminCertificateRow & {
   quizScore: string;
 };
 
+export type PublicCertificateVerificationData = {
+  certificateCode: string;
+  courseTitle: string;
+  issuedAt: string;
+  issuerName: string;
+  participantName: string;
+  status: "Issued" | "Revoked" | "Expired" | "Inactive";
+};
+
 function formatDate(value: Date | null | undefined) {
   if (!value) {
     return "Not available";
@@ -89,6 +98,26 @@ function formatDate(value: Date | null | undefined) {
 
 function certificateKey(certificate: { certificateCode: string }) {
   return encodeURIComponent(certificate.certificateCode);
+}
+
+function normalizeCertificateLookupCode(value: string) {
+  return value.trim();
+}
+
+function mapCertificateStatus(status: CertificateStatus): PublicCertificateVerificationData["status"] {
+  if (status === CertificateStatus.ISSUED) {
+    return "Issued";
+  }
+
+  if (status === CertificateStatus.REVOKED) {
+    return "Revoked";
+  }
+
+  if (status === CertificateStatus.EXPIRED) {
+    return "Expired";
+  }
+
+  return "Inactive";
 }
 
 async function getSessionUser(session: AuthSession | null) {
@@ -134,6 +163,56 @@ function mapIssuedCertificate(certificate: {
     passThresholdLabel: CERTIFICATE_PASS_THRESHOLD_LABEL,
     passThresholdRule: formatCertificateThresholdRule(),
     status: "Issued",
+  };
+}
+
+export async function getPublicCertificateVerificationData(
+  certificateCode: string,
+): Promise<PublicCertificateVerificationData | null> {
+  const code = normalizeCertificateLookupCode(certificateCode);
+
+  if (!code) {
+    return null;
+  }
+
+  const certificate = await prisma.certificate.findFirst({
+    select: {
+      certificateCode: true,
+      course: {
+        select: { title: true },
+      },
+      courseTitleSnapshot: true,
+      issuedAt: true,
+      issuerNameSnapshot: true,
+      participantNameSnapshot: true,
+      status: true,
+      user: {
+        select: {
+          fullName: true,
+        },
+      },
+    },
+    where: {
+      OR: [
+        { certificateCode: code },
+        { certificateCode: { equals: code, mode: "insensitive" } },
+      ],
+    },
+  });
+
+  if (!certificate) {
+    return null;
+  }
+
+  return {
+    certificateCode: cleanPresentationText(certificate.certificateCode),
+    courseTitle: certificate.courseTitleSnapshot ?? certificate.course.title,
+    issuedAt: formatDate(certificate.issuedAt),
+    issuerName:
+      certificate.issuerNameSnapshot ?? "DEC / WHH CSF+ CSO Learning Hub",
+    participantName:
+      cleanPresentationText(certificate.participantNameSnapshot ?? certificate.user.fullName),
+    status: mapCertificateStatus(certificate.status),
   };
 }
 

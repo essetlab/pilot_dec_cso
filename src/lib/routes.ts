@@ -18,6 +18,7 @@ export type CreatorWorkflowStep = {
 export const publicNav: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/courses", label: "Courses" },
+  { href: "/verify-certificate", label: "Verify Certificate" },
   { href: "/sign-in", label: "Sign in" },
   { href: "/register", label: "Register" },
 ];
@@ -83,6 +84,11 @@ export const publicRoutes: Record<string, RouteDefinition> = {
     title: "Public Course Detail",
     purpose:
       "Show the participant-facing overview for a published course before enrollment or launch.",
+  },
+  "/verify-certificate": {
+    title: "Verify Certificate",
+    purpose:
+      "Allow public verification of an issued certificate without exposing private learner data.",
   },
 };
 

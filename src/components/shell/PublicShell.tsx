@@ -17,16 +17,13 @@ type PublicShellProps = {
 type NavItem = {
   href: string;
   label: string;
-  disabled?: boolean;
   exact?: boolean;
 };
 
 const publicItems: NavItem[] = [
   { href: "/", label: "HOME", exact: true },
-  { href: "/about", label: "ABOUT", disabled: true },
-  { href: "/catalog", label: "CATALOG", disabled: true },
   { href: "/courses", label: "COURSES" },
-  { href: "/verify-certificate", label: "VERIFY CERTIFICATE", disabled: true },
+  { href: "/verify-certificate", label: "VERIFY CERTIFICATE" },
 ];
 
 /* ── Globe Icon ─────────────────────────────────────────── */
@@ -67,11 +64,7 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
       <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 xl:gap-x-8">
         {publicItems.map((item) => {
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href) && item.href !== "/";
-          const itemColor = item.disabled
-            ? isOverlay
-              ? "rgba(255, 255, 255, 0.58)"
-              : "#9ca3af"
-            : isOverlay
+          const itemColor = isOverlay
               ? "#ffffff"
               : active
                 ? "#0f172a"
@@ -79,11 +72,7 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
           
           const itemClasses = cx(
             "rounded-full px-2 py-2 text-[13px] font-extrabold tracking-[0.12em] transition-colors",
-            item.disabled 
-              ? isOverlay
-                ? "cursor-default text-white/60"
-                : "cursor-default text-slate-400"
-              : active
+            active
                 ? isOverlay
                   ? "text-white"
                   : "text-deep-navy"
@@ -94,15 +83,9 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
 
           return (
             <li key={item.href}>
-              {item.disabled ? (
-                <span className={itemClasses} aria-disabled="true" style={{ color: itemColor }}>
-                  {item.label}
-                </span>
-              ) : (
-                <Link className={itemClasses} href={item.href} style={{ color: itemColor }}>
-                  {item.label}
-                </Link>
-              )}
+              <Link className={itemClasses} href={item.href} style={{ color: itemColor }}>
+                {item.label}
+              </Link>
             </li>
           );
         })}
@@ -122,22 +105,16 @@ function MobileNav({ session, onClose }: { session?: AuthSession | null; onClose
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href) && item.href !== "/";
           return (
             <div key={item.href}>
-              {item.disabled ? (
-                <span className="block cursor-default px-3 py-2.5 text-sm font-semibold tracking-wide text-white/55">
-                  {item.label}
-                </span>
-              ) : (
-                <Link
-                  className={cx(
-                    "block rounded-control px-3 py-2.5 text-sm font-semibold tracking-wide transition-colors",
-                    active ? "bg-white text-deep-navy" : "text-white/90 hover:bg-white/10 hover:text-white"
-                  )}
-                  href={item.href}
-                  onClick={onClose}
-                >
-                  {item.label}
-                </Link>
-              )}
+              <Link
+                className={cx(
+                  "block rounded-control px-3 py-2.5 text-sm font-semibold tracking-wide transition-colors",
+                  active ? "bg-white text-deep-navy" : "text-white/90 hover:bg-white/10 hover:text-white"
+                )}
+                href={item.href}
+                onClick={onClose}
+              >
+                {item.label}
+              </Link>
             </div>
           );
         })}
@@ -382,15 +359,14 @@ export function PublicFooter() {
                   </Link>
                 </li>
                 <li>
-                  <span className="text-slate-500 cursor-default">About</span>
+                  <Link className="hover:text-white focus-visible:outline-dec-blue transition" href="/verify-certificate">
+                    Verify Certificate
+                  </Link>
                 </li>
                 <li>
                   <Link className="hover:text-white focus-visible:outline-dec-blue transition" href="/courses">
                     Courses
                   </Link>
-                </li>
-                <li>
-                  <span className="text-slate-500 cursor-default">Verify Certificate</span>
                 </li>
               </ul>
             </div>
@@ -416,10 +392,6 @@ export function PublicFooter() {
           {/* Bottom row */}
           <div className="mt-12 border-t border-white/10 pt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-400">
             <p>© 2025 Development Expertise Center (DEC). All rights reserved.</p>
-            <div className="flex gap-4">
-              <span className="hover:text-white cursor-default">Privacy Policy</span>
-              <span className="hover:text-white cursor-default">Terms of Service</span>
-            </div>
           </div>
         </div>
       </div>
