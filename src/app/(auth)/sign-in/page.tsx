@@ -15,37 +15,16 @@ type PageProps = {
 };
 
 const roleDetails: Record<string, { focus: string; access: string; tone: "blue" | "green" | "gray" | "purple" | "gold" }> = {
-  "super-admin": {
-    access: "Full platform operations",
-    focus: "Review platform management, publishing, certificates, and monitoring.",
-    tone: "gold",
-  },
-  "platform-admin": {
-    access: "Platform operations",
-    focus: "Manage users, organizations, cohorts, courses, and monitoring.",
-    tone: "blue",
-  },
-  "course-creator": {
-    access: "Course authoring",
-    focus: "Create courses, prepare learning content, and submit for review.",
-    tone: "green",
-  },
-  "course-reviewer": {
-    access: "Review and publishing",
-    focus: "Check submitted courses and support publication decisions.",
-    tone: "purple",
-  },
-  "me-viewer": {
-    access: "Monitoring view",
-    focus: "View learning participation and progress information.",
-    tone: "gray",
-  },
   participant: {
     access: "Learning area",
     focus: "Access courses, progress, certificates, and your learning profile.",
     tone: "green",
   },
 };
+
+const publicQuickAccessUsers = DEMO_USERS.filter((user) =>
+  user.roles.includes("PARTICIPANT"),
+);
 
 export default async function SignInPage({ searchParams }: PageProps) {
   const { next, error, notice } = await searchParams;
@@ -96,10 +75,10 @@ export default async function SignInPage({ searchParams }: PageProps) {
                     Sign in
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-deep-navy">
-                    Use your staff credentials
+                    Use your learner credentials
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-muted-text">
-                    Sign in with email and password after completing your invitation registration.
+                    Sign in with the email and password created during learner registration.
                   </p>
                 </div>
                 <StatusBadge label="Secure session" tone="blue" />
@@ -109,6 +88,15 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 <div className="mt-5">
                   <AlertMessage tone="success" title="Registration complete">
                     Your password is ready. Sign in with your email and new password.
+                  </AlertMessage>
+                </div>
+              ) : null}
+
+              {notice === "pilot-registration-complete" ? (
+                <div className="mt-5">
+                  <AlertMessage tone="success" title="Learner account created">
+                    Your account is ready. Sign in with your email and password to
+                    open your learner dashboard.
                   </AlertMessage>
                 </div>
               ) : null}
@@ -136,11 +124,11 @@ export default async function SignInPage({ searchParams }: PageProps) {
 
               <div className="mt-6">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-text">
-                  Quick role access
+                  Quick learner access
                 </p>
               </div>
               <div className="grid gap-3">
-                {DEMO_USERS.map((user) => {
+                {publicQuickAccessUsers.map((user) => {
                   const roleLabel = user.roles.map((role) => ROLE_LABELS[role]).join(", ");
                   const details = roleDetails[user.id];
 

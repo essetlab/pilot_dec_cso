@@ -1,134 +1,190 @@
+import Link from "next/link";
 import { BrandMark } from "@/components/shell/BrandMark";
-import { ActionButton, StatusBadge } from "@/components/ui";
-import { DEMO_PROPOSAL_COURSE } from "@/lib/demo-data";
+import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
+import {
+  getPilotRegistrationModeLabel,
+} from "@/lib/pilot-registration-workflow";
+import { registerPilotLearnerAction } from "./actions";
 
-const accessSteps = [
-  "Share your organization and role context.",
-  "Include your cohort or access code if your team received one.",
-  "Use the sign-in page after your access is confirmed by the programme team.",
-] as const;
+type PageProps = {
+  searchParams: Promise<{
+    error?: string;
+    next?: string;
+  }>;
+};
 
-const requestDetails = [
-  ["Who can request access", "Participants and CSO focal persons"],
-  ["Learning area", "CSO Learning Hub"],
-  ["Primary course pathway", DEMO_PROPOSAL_COURSE.shortTitle],
+const errorMessage: Record<string, string> = {
+  "duplicate-email": "This email is already registered. Please sign in.",
+  "email-not-invited": "We could not confirm this email for the current pilot.",
+  "invalid-access-code": "The pilot access code is not valid.",
+  "missing-fields": "Please complete all required fields.",
+  "password-mismatch": "Passwords do not match.",
+  "rate-limited": "Too many registration attempts. Please wait and try again.",
+  "terms-required": "Please accept the Terms and Privacy statement.",
+  "weak-password":
+    "Password must be at least 10 characters and include upper/lowercase letters and a number.",
+};
+
+const preparationSteps = [
+  "Use the email address invited for the pilot.",
+  "Enter the pilot access code shared by the programme team.",
+  "Create your password, then sign in to access your learner dashboard.",
 ] as const;
 
 function TextInput({
+  autoComplete,
   label,
   name,
   placeholder,
+  required = true,
   type = "text",
 }: {
+  autoComplete?: string;
   label: string;
   name: string;
   placeholder: string;
-  type?: "email" | "text";
+  required?: boolean;
+  type?: "email" | "password" | "text";
 }) {
   return (
     <label className="block text-sm font-semibold text-dark-ink" htmlFor={name}>
       {label}
       <input
+        autoComplete={autoComplete}
         className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition placeholder:text-muted-text/70 focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
         id={name}
+        maxLength={160}
         name={name}
         placeholder={placeholder}
+        required={required}
         type={type}
       />
     </label>
   );
 }
 
-function SelectInput({
-  label,
-  name,
-  options,
+function RegisterForm({
+  error,
+  next,
 }: {
-  label: string;
-  name: string;
-  options: string[];
+  error?: string;
+  next?: string;
 }) {
-  return (
-    <label className="block text-sm font-semibold text-dark-ink" htmlFor={name}>
-      {label}
-      <select
-        className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
-        defaultValue={options[0]}
-        id={name}
-        name={name}
-      >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function AccessRequestCard() {
   return (
     <section className="rounded-card border border-design-border bg-white-surface p-5 shadow-card sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-dec-blue">Access request</p>
+          <p className="text-sm font-semibold text-dec-blue">Pilot registration</p>
           <h2 className="mt-2 text-2xl font-semibold text-deep-navy">
-            Tell us who needs learning access
+            Create your learner account
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted-text">
-            Add the details your programme team can use to connect you with the
-            right learning space.
+            Register with the email address invited for the pilot. Your account
+            lets you access courses, save progress, and receive certificates for
+            eligible courses.
           </p>
         </div>
-        <StatusBadge label="Participant access" tone="green" />
+        <StatusBadge label="Learner only" tone="green" />
       </div>
 
-      <form className="mt-6 grid gap-4" aria-label="Access request details">
+      {error ? (
+        <div className="mt-5">
+          <AlertMessage tone="error" title="Registration could not be completed">
+            {errorMessage[error] ?? "Please check your details and try again."}
+          </AlertMessage>
+        </div>
+      ) : null}
+
+      <form
+        action={registerPilotLearnerAction}
+        aria-label="Pilot learner registration"
+        className="mt-6 grid gap-4"
+      >
+        <input name="next" type="hidden" value={next ?? ""} />
         <TextInput
+          autoComplete="name"
           label="Full name"
-          name="full-name"
+          name="fullName"
           placeholder="Enter your full name"
         />
         <TextInput
+          autoComplete="email"
           label="Email"
           name="email"
-          placeholder="Enter your email address"
+          placeholder="Enter your invited email address"
           type="email"
         />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextInput
+            autoComplete="new-password"
+            label="Password"
+            name="password"
+            placeholder="Create a password"
+            type="password"
+          />
+          <TextInput
+            autoComplete="new-password"
+            label="Confirm password"
+            name="confirmPassword"
+            placeholder="Repeat your password"
+            type="password"
+          />
+        </div>
         <TextInput
+          autoComplete="organization"
           label="Organization"
           name="organization"
-          placeholder="Enter your CSO or group name"
+          placeholder="Enter your CSO or organization name"
         />
-        <SelectInput
-          label="Role"
-          name="role"
-          options={[
-            "Select role",
-            "Participant",
-            "CSO focal person",
-            "Course creator",
-            "Programme support",
-          ]}
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextInput
+            autoComplete="organization-title"
+            label="Role/position"
+            name="jobTitle"
+            placeholder="Example: Programme officer"
+          />
+          <TextInput
+            autoComplete="address-level1"
+            label="Region"
+            name="region"
+            placeholder="Example: Amhara"
+          />
+        </div>
+        <label className="block text-sm font-semibold text-dark-ink" htmlFor="learnerType">
+          Learner type
+          <select
+            className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            defaultValue="participant"
+            id="learnerType"
+            name="learnerType"
+          >
+            <option value="participant">Participant</option>
+            <option value="cso-focal-person">CSO focal person</option>
+          </select>
+        </label>
         <TextInput
-          label="Cohort/access code"
-          name="access-code"
-          placeholder="Enter code if provided"
+          autoComplete="off"
+          label="Pilot access code"
+          name="accessCode"
+          placeholder="Enter the pilot access code"
         />
 
-        <div className="mt-2 rounded-[18px] border border-dec-blue/20 bg-dec-blue/10 p-4">
-          <p className="text-sm font-semibold text-deep-navy">
-            Access requests are coordinated through the programme team.
-          </p>
-          <p className="mt-2 text-sm leading-6 text-[#26536c]">
-            If you already have an active account, use sign in to continue to
-            your learning area.
-          </p>
-        </div>
+        <label className="flex gap-3 rounded-[18px] border border-dec-blue/20 bg-dec-blue/10 p-4 text-sm leading-6 text-[#26536c]">
+          <input
+            className="mt-1 size-4 shrink-0 rounded border-design-border text-dec-blue focus:ring-dec-blue"
+            name="consentAccepted"
+            required
+            type="checkbox"
+          />
+          <span>
+            I agree to use the CSO Learning Hub for pilot learning activities and
+            accept the Terms and Privacy statement for learner account data.
+          </span>
+        </label>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <ActionButton type="button" size="lg">
-            Request Access
+          <ActionButton type="submit" size="lg">
+            Create Account
           </ActionButton>
           <ActionButton href="/sign-in" size="lg" variant="secondary">
             Back to Sign In
@@ -139,52 +195,60 @@ function AccessRequestCard() {
   );
 }
 
-function SupportNote() {
-  return (
-    <aside className="rounded-card border border-dec-green/30 bg-dec-green/15 p-5 shadow-soft">
-      <StatusBadge label="Support" tone="green" />
-      <h2 className="mt-4 text-xl font-semibold text-deep-navy">
-        Need help with access?
-      </h2>
-      <p className="mt-3 text-sm leading-7 text-[#426f1c]">
-        Contact your CSO focal person or programme support team if you are not
-        sure which cohort, course, or access option applies to you.
-      </p>
-      <ActionButton className="mt-5" href="/courses" variant="secondary">
-        Browse Courses
-      </ActionButton>
-    </aside>
-  );
-}
-
-function RequestContextPanel() {
+function PilotContextPanel() {
   return (
     <section className="rounded-card border border-design-border bg-white p-5 shadow-soft">
       <p className="text-sm font-semibold text-dark-ink">
-        Access is designed for participants and CSO focal persons connected to
-        active learning cohorts.
+        Pilot accounts are for invited learners.
       </p>
       <p className="mt-2 text-sm leading-6 text-muted-text">
-        Your programme team can use your organization, role, and access code to
-        guide you to the correct learning area.
+        Public registration creates learner access only. Staff, creator, review,
+        monitoring, and admin accounts continue through protected staff
+        invitation workflows.
       </p>
       <dl className="mt-5 grid gap-3">
-        {requestDetails.map(([label, value]) => (
-          <div className="rounded-[16px] bg-soft-bg p-4" key={label}>
-            <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-text">
-              {label}
-            </dt>
-            <dd className="mt-2 text-sm font-semibold leading-6 text-dark-ink">
-              {value}
-            </dd>
-          </div>
-        ))}
+        <div className="rounded-[16px] bg-soft-bg p-4">
+          <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-text">
+            Access check
+          </dt>
+          <dd className="mt-2 text-sm font-semibold leading-6 text-dark-ink">
+            {getPilotRegistrationModeLabel()}
+          </dd>
+        </div>
       </dl>
     </section>
   );
 }
 
-export default function RegisterPage() {
+function SupportNote() {
+  return (
+    <aside className="rounded-card border border-dec-green/30 bg-dec-green/15 p-5 shadow-soft">
+      <StatusBadge label="Support" tone="green" />
+      <h2 className="mt-4 text-xl font-semibold text-deep-navy">
+        Need help registering?
+      </h2>
+      <p className="mt-3 text-sm leading-7 text-[#426f1c]">
+        Use the email and access code shared with you for this pilot. If either
+        detail is unclear, contact your CSO focal person or programme team.
+      </p>
+      <div className="mt-5 flex flex-col gap-3">
+        <ActionButton href="/courses" variant="secondary">
+          Browse Courses
+        </ActionButton>
+        <Link
+          className="text-sm font-semibold text-[#426f1c] underline-offset-4 hover:underline"
+          href="/sign-in"
+        >
+          Already registered? Sign in
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+export default async function RegisterPage({ searchParams }: PageProps) {
+  const { error, next } = await searchParams;
+
   return (
     <section className="relative overflow-hidden rounded-[32px] border border-design-border bg-white-surface shadow-card">
       <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-dec-blue/10 blur-3xl" aria-hidden="true" />
@@ -199,24 +263,24 @@ export default function RegisterPage() {
                 CSO Learning Hub
               </p>
               <h1 className="mt-4 font-display text-4xl font-semibold leading-tight text-deep-navy sm:text-5xl">
-                Create access request
+                Create your learner account
               </h1>
               <p className="mt-5 text-base leading-8 text-muted-text sm:text-lg">
-                Participants and CSO focal persons can share their details so
-                the programme team can connect them with the right learning
-                access.
+                Register with the email address invited for the pilot. Your
+                account lets you access courses, save progress, and receive
+                certificates for eligible courses.
               </p>
             </div>
           </div>
 
           <div className="grid gap-4">
-            <RequestContextPanel />
+            <PilotContextPanel />
             <div className="rounded-card border border-design-border bg-white p-5 shadow-soft">
               <p className="text-sm font-semibold text-dark-ink">
-                Before requesting access
+                Before creating your account
               </p>
               <ul className="mt-3 grid gap-3">
-                {accessSteps.map((step) => (
+                {preparationSteps.map((step) => (
                   <li className="flex gap-3 text-sm leading-6 text-muted-text" key={step}>
                     <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-dec-green" />
                     <span>{step}</span>
@@ -229,7 +293,7 @@ export default function RegisterPage() {
 
         <div className="bg-white px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
           <div className="mx-auto max-w-xl space-y-6">
-            <AccessRequestCard />
+            <RegisterForm error={error} next={next} />
             <SupportNote />
           </div>
         </div>
