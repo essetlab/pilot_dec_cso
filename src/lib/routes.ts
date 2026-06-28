@@ -28,6 +28,7 @@ export const learnerNav: NavItem[] = [
   { href: "/learn/my-courses", label: "My Courses" },
   { href: "/learn/certificates", label: "Certificates" },
   { href: "/learn/profile", label: "Profile" },
+  { href: "/learn/settings", label: "Settings" },
 ];
 
 export const creatorNav: NavItem[] = [
@@ -152,6 +153,11 @@ export const learnerRoutes: Record<string, RouteDefinition> = {
     title: "Profile",
     purpose:
       "Show and update basic participant profile information.",
+  },
+  "/learn/settings": {
+    title: "Account Settings",
+    purpose:
+      "Show safe participant account, visibility, and privacy guidance.",
   },
 };
 

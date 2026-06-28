@@ -8,7 +8,7 @@ import { LearnerFinalTest } from "@/components/learner/LearnerFinalTest";
 import { LearnerCourseFeedback } from "@/components/learner/LearnerCourseFeedback";
 import { ExternalCourseFrame } from "@/components/learner/ExternalCourseFrame";
 import { LearnerMyCourses } from "@/components/learner/LearnerMyCourses";
-import { LearnerProfile } from "@/components/learner/LearnerProfile";
+import { LearnerProfile, LearnerSettings } from "@/components/learner/LearnerProfile";
 import { EmptyState, PlaceholderPage } from "@/components/shell/PlaceholderPage";
 import { canAccessPath } from "@/lib/auth/permissions";
 import { getCurrentSession } from "@/lib/auth/server";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/course-data";
 import { getExternalCourseLaunchData } from "@/lib/external-course-workflow";
 import { getCourseFeedbackState } from "@/lib/feedback-workflow";
+import { getLearnerProfileData } from "@/lib/learner-profile-workflow";
 import { learnerRoutes, matchRoute, routeFromSegments } from "@/lib/routes";
 import { notFound, redirect } from "next/navigation";
 
@@ -32,12 +33,13 @@ type PageProps = {
   }>;
   searchParams: Promise<{
     lessonId?: string;
+    profile?: string;
   }>;
 };
 
 export default async function LearnerPage({ params, searchParams }: PageProps) {
   const { segments = [] } = await params;
-  const { lessonId } = await searchParams;
+  const { lessonId, profile } = await searchParams;
   const activeLessonId = typeof lessonId === "string" ? lessonId : undefined;
   const actualRoute = routeFromSegments("learn", segments);
   const definition = matchRoute(actualRoute, learnerRoutes);
@@ -74,7 +76,23 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
   }
 
   if (actualRoute === "/learn/profile") {
-    return <LearnerProfile />;
+    const profileData = await getLearnerProfileData(session);
+
+    if (!profileData) {
+      notFound();
+    }
+
+    return <LearnerProfile data={profileData} updateState={profile} />;
+  }
+
+  if (actualRoute === "/learn/settings") {
+    const profileData = await getLearnerProfileData(session);
+
+    if (!profileData) {
+      notFound();
+    }
+
+    return <LearnerSettings data={profileData} />;
   }
 
   if (

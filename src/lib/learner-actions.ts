@@ -11,12 +11,58 @@ import {
   CertificateStatus,
 } from "../generated/prisma/enums";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { submitCourseFeedback } from "./feedback-workflow";
 
 export type ActionState = {
   success: boolean;
   error?: string;
 };
+
+function optionalProfileString(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, 160) : null;
+}
+
+export async function updateLearnerProfileAction(formData: FormData) {
+  const session = await getCurrentSession();
+
+  if (!session?.email) {
+    redirect("/sign-in?next=%2Flearn%2Fprofile");
+  }
+
+  const fullName = optionalProfileString(formData.get("fullName"));
+
+  if (!fullName) {
+    redirect("/learn/profile?profile=missing-name");
+  }
+
+  await prisma.user.update({
+    data: {
+      department: optionalProfileString(formData.get("department")),
+      fullName,
+      jobTitle: optionalProfileString(formData.get("jobTitle")),
+      phone: optionalProfileString(formData.get("phone")),
+      preferredLanguage: optionalProfileString(formData.get("preferredLanguage")),
+      region: optionalProfileString(formData.get("region")),
+    },
+    where: { email: session.email },
+  });
+
+  try {
+    revalidatePath("/learn");
+    revalidatePath("/learn/profile");
+    revalidatePath("/learn/settings");
+  } catch {
+    // Gracefully handle Next.js cache store missing in offline/script tests.
+  }
+
+  redirect("/learn/profile?profile=updated");
+}
 
 export async function markLessonCompleteAction(
   formData: FormData,
