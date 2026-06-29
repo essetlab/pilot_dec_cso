@@ -44,27 +44,24 @@ async function participantSession(): Promise<AuthSession> {
   };
 }
 
-async function main() {
-  await registerHrbaExternalCourse();
-  const session = await participantSession();
-
+async function resetExternalCourseState(userId: string) {
   await prisma.certificate.deleteMany({
     where: {
       courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
-      userId: session.userId,
+      userId,
     },
   });
   await prisma.quizAttempt.deleteMany({
     where: {
       courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
-      userId: session.userId,
+      userId,
     },
   });
   await prisma.lessonProgress.deleteMany({
     where: {
       enrollment: {
         courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
-        userId: session.userId,
+        userId,
       },
     },
   });
@@ -78,9 +75,25 @@ async function main() {
     },
     where: {
       courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
-      userId: session.userId,
+      userId,
     },
   });
+}
+
+async function countCertificates(userId: string) {
+  return prisma.certificate.count({
+    where: {
+      courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
+      userId,
+    },
+  });
+}
+
+async function main() {
+  await registerHrbaExternalCourse();
+  const session = await participantSession();
+
+  await resetExternalCourseState(session.userId);
 
   const launchData = await getExternalCourseLaunchData(
     HRBA_EXTERNAL_COURSE_SLUG,
@@ -97,25 +110,7 @@ async function main() {
     "Expected iframe source to include the participant user id.",
   );
 
-  const progressResult = await recordExternalCourseProgress({
-    completed: false,
-    completedModuleIds: ["module_01_hrba_foundations"],
-    courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
-    courseVersionId: launchData.courseVersionId,
-    currentModuleId: "module_02_everyday_cso_work",
-    currentScreenId: "M2-S05",
-    enrollmentId: launchData.enrollmentId,
-    iframeOrigin: launchData.allowedOrigin,
-    progressPercent: 25,
-    session,
-    userId: session.userId,
-  });
-
-  assert(progressResult.success, `Expected progress save: ${progressResult.error}`);
-  assert(progressResult.progressPercent === 25, "Expected partial progress to save as 25%.");
-
-  const completionResult = await recordExternalCourseProgress({
-    completed: true,
+  const baseMessage = {
     completedModuleIds: [
       "module_01_hrba_foundations",
       "module_02_everyday_cso_work",
@@ -129,14 +124,108 @@ async function main() {
     currentScreenId: "M5-PLAYER-COMPLETE",
     enrollmentId: launchData.enrollmentId,
     iframeOrigin: launchData.allowedOrigin,
-    progressPercent: 100,
     session,
     userId: session.userId,
+  };
+
+  const progressResult = await recordExternalCourseProgress({
+    ...baseMessage,
+    completed: false,
+    completedModuleIds: ["module_01_hrba_foundations"],
+    currentModuleId: "module_02_everyday_cso_work",
+    currentScreenId: "M2-S05",
+    progressPercent: 25,
   });
 
-  assert(completionResult.success, `Expected completion save: ${completionResult.error}`);
-  assert(completionResult.completed, "Expected completion result to be completed.");
-  assert(completionResult.certificateCode, "Expected certificate code after completion.");
+  assert(progressResult.success, `Expected progress save: ${progressResult.error}`);
+  assert(progressResult.progressPercent === 25, "Expected partial progress to save as 25%.");
+  assert(
+    (await countCertificates(session.userId)) === 0,
+    "Partial progress must not issue a certificate.",
+  );
+
+  const missingAssessmentResult = await recordExternalCourseProgress({
+    ...baseMessage,
+    completed: true,
+    progressPercent: 100,
+  });
+
+  assert(
+    missingAssessmentResult.success,
+    `Expected completion save without assessment: ${missingAssessmentResult.error}`,
+  );
+  assert(missingAssessmentResult.completed, "Expected completion to be recorded.");
+  assert(
+    missingAssessmentResult.certificateStatus === "assessment-missing",
+    "Expected certificate to remain blocked when assessment is missing.",
+  );
+  assert(
+    (await countCertificates(session.userId)) === 0,
+    "Completion without assessment must not issue a certificate.",
+  );
+
+  const failingAssessmentResult = await recordExternalCourseProgress({
+    ...baseMessage,
+    assessment: {
+      attemptNumber: 1,
+      maxScore: 10,
+      passed: false,
+      percentage: 70,
+      score: 7,
+      submittedAt: new Date().toISOString(),
+    },
+    completed: true,
+    progressPercent: 100,
+  });
+
+  assert(
+    failingAssessmentResult.success,
+    `Expected failing assessment save: ${failingAssessmentResult.error}`,
+  );
+  assert(
+    failingAssessmentResult.certificateStatus === "assessment-failed",
+    "Expected failing assessment to block certificate.",
+  );
+  assert(
+    (await countCertificates(session.userId)) === 0,
+    "Failing assessment must not issue a certificate.",
+  );
+
+  const passingAssessmentResult = await recordExternalCourseProgress({
+    ...baseMessage,
+    assessment: {
+      attemptNumber: 2,
+      maxScore: 10,
+      passed: true,
+      percentage: 90,
+      score: 9,
+      submittedAt: new Date().toISOString(),
+    },
+    completed: true,
+    progressPercent: 100,
+  });
+
+  assert(
+    passingAssessmentResult.success,
+    `Expected passing assessment save: ${passingAssessmentResult.error}`,
+  );
+  assert(
+    passingAssessmentResult.certificateStatus === "issued",
+    "Expected passing assessment to issue certificate.",
+  );
+  assert(
+    passingAssessmentResult.certificateCode,
+    "Expected certificate code after passing assessment.",
+  );
+
+  const invalidContextResult = await recordExternalCourseProgress({
+    ...baseMessage,
+    completed: false,
+    enrollmentId: "not-this-enrollment",
+    progressPercent: 40,
+  });
+
+  assert(!invalidContextResult.success, "Expected invalid enrollment context to fail.");
 
   const enrollment = await prisma.enrollment.findUnique({
     include: {
@@ -167,15 +256,37 @@ async function main() {
   });
 
   assert(certificate, "Expected issued certificate.");
-  assert(certificate.certificateCode === completionResult.certificateCode, "Expected matching certificate code.");
+  assert(
+    certificate.certificateCode === passingAssessmentResult.certificateCode,
+    "Expected matching certificate code.",
+  );
+
+  const attempts = await prisma.quizAttempt.findMany({
+    orderBy: { submittedAt: "asc" },
+    where: {
+      courseVersionId: launchData.courseVersionId,
+      userId: session.userId,
+    },
+  });
+
+  assert(
+    attempts.some((attempt) => attempt.status === "FAILED" && attempt.percentage === 70),
+    "Expected failed external assessment attempt to be recorded.",
+  );
+  assert(
+    attempts.some((attempt) => attempt.status === "PASSED" && attempt.percentage === 90),
+    "Expected passed external assessment attempt to be recorded.",
+  );
 
   console.log(
     JSON.stringify(
       {
         certificateCode: certificate.certificateCode,
         courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
+        failedAttemptRecorded: attempts.some((attempt) => attempt.status === "FAILED"),
         iframeOrigin: launchData.allowedOrigin,
         iframeSrcIncludesPortalEmbed: launchData.iframeSrc.includes("embed=portal"),
+        passedAttemptRecorded: attempts.some((attempt) => attempt.status === "PASSED"),
         progressPercent: enrollment.progressPercent,
         status: enrollment.status,
       },

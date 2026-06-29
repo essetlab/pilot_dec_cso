@@ -24,7 +24,10 @@ import {
   HRBA_EXTERNAL_COURSE_SLUG,
   HRBA_EXTERNAL_COURSE_VERSION_ID,
 } from "./external-course-config";
-import type { ExternalCourseLaunchData } from "./external-course-types";
+import type {
+  ExternalCourseAssessmentResult,
+  ExternalCourseLaunchData,
+} from "./external-course-types";
 import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
 
@@ -46,6 +49,63 @@ function buildCertificateCode(courseVersionId: string, userId: string) {
   const randSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
 
   return `CERT-${versionSuffix}-${userSuffix}-${randSuffix}`;
+}
+
+function normalizeAssessmentResult(
+  assessment: ExternalCourseAssessmentResult | undefined,
+) {
+  if (!assessment) {
+    return null;
+  }
+
+  const score = assessment.score;
+  const maxScore = assessment.maxScore;
+  const computedPercentage =
+    assessment.percentage ??
+    (score !== undefined && maxScore !== undefined && maxScore > 0
+      ? (score / maxScore) * 100
+      : undefined);
+
+  if (
+    score !== undefined &&
+    maxScore !== undefined &&
+    (score < 0 || maxScore <= 0 || score > maxScore)
+  ) {
+    return null;
+  }
+
+  if (
+    computedPercentage === undefined ||
+    !Number.isFinite(computedPercentage) ||
+    computedPercentage < 0 ||
+    computedPercentage > 100 ||
+    typeof assessment.passed !== "boolean"
+  ) {
+    return null;
+  }
+
+  const submittedAt = assessment.submittedAt ? new Date(assessment.submittedAt) : new Date();
+
+  if (Number.isNaN(submittedAt.getTime())) {
+    return null;
+  }
+
+  return {
+    attemptNumber: assessment.attemptNumber,
+    maxScore:
+      maxScore !== undefined
+        ? Math.round(maxScore)
+        : score !== undefined
+          ? Math.round(score)
+          : 100,
+    passed: assessment.passed,
+    percentage: computedPercentage,
+    score:
+      score !== undefined
+        ? Math.round(score)
+        : Math.round(computedPercentage),
+    submittedAt,
+  };
 }
 
 async function ensureIntegrationOwner() {
@@ -507,6 +567,7 @@ export async function getExternalCourseLaunchData(
 }
 
 export async function recordExternalCourseProgress({
+  assessment,
   completed,
   completedModuleIds,
   courseSlug,
@@ -519,6 +580,7 @@ export async function recordExternalCourseProgress({
   session,
   userId,
 }: {
+  assessment?: ExternalCourseAssessmentResult;
   completed: boolean;
   completedModuleIds: string[];
   courseSlug: string;
@@ -631,18 +693,14 @@ export async function recordExternalCourseProgress({
   });
 
   let certificateCode: string | null = null;
+  let certificateStatus:
+    | "not-completed"
+    | "assessment-missing"
+    | "assessment-failed"
+    | "issued"
+    | "already-issued" = shouldComplete ? "assessment-missing" : "not-completed";
 
   if (shouldComplete) {
-    const quiz = await prisma.quiz.findUnique({
-      include: { questions: true },
-      where: { id: HRBA_EXTERNAL_COURSE_QUIZ_ID },
-    });
-    const question = quiz?.questions[0];
-
-    if (!quiz || !question) {
-      return { success: false, error: "Completion quiz is not configured" };
-    }
-
     const existingCertificate = await prisma.certificate.findUnique({
       where: {
         userId_courseVersionId: {
@@ -654,47 +712,86 @@ export async function recordExternalCourseProgress({
 
     if (existingCertificate) {
       certificateCode = existingCertificate.certificateCode;
+      certificateStatus = "already-issued";
+    } else if (!assessment) {
+      certificateStatus = "assessment-missing";
     } else {
-      const attempt = await prisma.quizAttempt.create({
-        data: {
-          answersJson: toJson({
-            [question.id]: "completed",
-            completedModuleIds,
-            currentModuleId,
-            currentScreenId,
-            iframeOrigin,
-            source: "external-course-postmessage",
-          }),
-          courseId: course.id,
-          courseVersionId: version.id,
-          maxScore: 1,
-          passed: true,
-          percentage: 100,
-          quizId: quiz.id,
-          score: 1,
-          status: QuizAttemptStatus.PASSED,
-          submittedAt: new Date(),
-          userId: user.id,
-        },
-      });
+      const normalizedAssessment = normalizeAssessmentResult(assessment);
 
-      const certificate = await prisma.certificate.create({
-        data: {
-          certificateCode: buildCertificateCode(version.id, user.id),
-          completionDate: new Date(),
-          courseId: course.id,
-          courseTitleSnapshot: course.title,
-          courseVersionId: version.id,
-          enrollmentId: enrollment.id,
-          issuerNameSnapshot: issuerName,
-          participantNameSnapshot: user.fullName || user.email,
-          quizAttemptId: attempt.id,
-          status: CertificateStatus.ISSUED,
-          userId: user.id,
-        },
-      });
+      if (!normalizedAssessment) {
+        certificateStatus = "assessment-missing";
+      } else {
+        const quiz = await prisma.quiz.findUnique({
+          include: { questions: true },
+          where: { id: HRBA_EXTERNAL_COURSE_QUIZ_ID },
+        });
+        const question = quiz?.questions[0];
 
-      certificateCode = certificate.certificateCode;
+        if (!quiz || !question) {
+          return { success: false, error: "Completion quiz is not configured" };
+        }
+
+        const passThreshold = quiz.passThreshold ?? course.defaultPassThreshold ?? 80;
+        const assessmentPassed =
+          normalizedAssessment.passed &&
+          normalizedAssessment.percentage >= passThreshold;
+
+        const attempt = await prisma.quizAttempt.create({
+          data: {
+            answersJson: toJson({
+              [question.id]: assessmentPassed ? "completed" : "not completed",
+              assessment: {
+                attemptNumber: normalizedAssessment.attemptNumber,
+                maxScore: normalizedAssessment.maxScore,
+                passed: normalizedAssessment.passed,
+                percentage: normalizedAssessment.percentage,
+                score: normalizedAssessment.score,
+                submittedAt: normalizedAssessment.submittedAt.toISOString(),
+              },
+              completedModuleIds,
+              currentModuleId,
+              currentScreenId,
+              iframeOrigin,
+              source: "external-course-postmessage",
+            }),
+            courseId: course.id,
+            courseVersionId: version.id,
+            maxScore: normalizedAssessment.maxScore,
+            passed: assessmentPassed,
+            percentage: normalizedAssessment.percentage,
+            quizId: quiz.id,
+            score: normalizedAssessment.score,
+            status: assessmentPassed
+              ? QuizAttemptStatus.PASSED
+              : QuizAttemptStatus.FAILED,
+            submittedAt: normalizedAssessment.submittedAt,
+            userId: user.id,
+          },
+        });
+
+        if (assessmentPassed) {
+          const certificate = await prisma.certificate.create({
+            data: {
+              certificateCode: buildCertificateCode(version.id, user.id),
+              completionDate: new Date(),
+              courseId: course.id,
+              courseTitleSnapshot: course.title,
+              courseVersionId: version.id,
+              enrollmentId: enrollment.id,
+              issuerNameSnapshot: issuerName,
+              participantNameSnapshot: user.fullName || user.email,
+              quizAttemptId: attempt.id,
+              status: CertificateStatus.ISSUED,
+              userId: user.id,
+            },
+          });
+
+          certificateCode = certificate.certificateCode;
+          certificateStatus = "issued";
+        } else {
+          certificateStatus = "assessment-failed";
+        }
+      }
     }
   }
 
@@ -713,6 +810,7 @@ export async function recordExternalCourseProgress({
   return {
     success: true,
     certificateCode,
+    certificateStatus,
     completed: shouldComplete,
     progressPercent: shouldComplete ? 100 : boundedProgress,
   };

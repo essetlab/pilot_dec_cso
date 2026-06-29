@@ -1,5 +1,14 @@
 export const EXTERNAL_COURSE_PROGRESS_MESSAGE = "cso-learning-hub:external-course-progress";
 
+export type ExternalCourseAssessmentResult = {
+  attemptNumber?: number;
+  maxScore?: number;
+  passed?: boolean;
+  percentage?: number;
+  score?: number;
+  submittedAt?: string;
+};
+
 export type ExternalCourseProgressMessage = {
   type: typeof EXTERNAL_COURSE_PROGRESS_MESSAGE;
   version: 1;
@@ -13,6 +22,7 @@ export type ExternalCourseProgressMessage = {
   currentModuleId: string | null;
   currentScreenId: string | null;
   sentAt: string;
+  assessment?: ExternalCourseAssessmentResult;
 };
 
 export type ExternalCourseLaunchData = {

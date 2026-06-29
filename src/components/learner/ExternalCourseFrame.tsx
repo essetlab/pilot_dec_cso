@@ -3,10 +3,44 @@
 import { useEffect, useRef, useState } from "react";
 import { ActionButton, AlertMessage, SectionHeader, StatusBadge } from "@/components/ui";
 import {
+  type ExternalCourseAssessmentResult,
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
   type ExternalCourseLaunchData,
   type ExternalCourseProgressMessage,
 } from "@/lib/external-course-types";
+
+function isOptionalNumber(value: unknown) {
+  return value === undefined || (typeof value === "number" && Number.isFinite(value));
+}
+
+function isOptionalBoolean(value: unknown) {
+  return value === undefined || typeof value === "boolean";
+}
+
+function isOptionalString(value: unknown) {
+  return value === undefined || typeof value === "string";
+}
+
+function isAssessmentResult(value: unknown): value is ExternalCourseAssessmentResult {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const assessment = value as Record<string, unknown>;
+
+  return (
+    isOptionalNumber(assessment.attemptNumber) &&
+    isOptionalNumber(assessment.maxScore) &&
+    isOptionalBoolean(assessment.passed) &&
+    isOptionalNumber(assessment.percentage) &&
+    isOptionalNumber(assessment.score) &&
+    isOptionalString(assessment.submittedAt)
+  );
+}
 
 function isProgressMessage(value: unknown): value is ExternalCourseProgressMessage {
   if (!value || typeof value !== "object") {
@@ -22,7 +56,8 @@ function isProgressMessage(value: unknown): value is ExternalCourseProgressMessa
     typeof message.userId === "string" &&
     typeof message.progressPercent === "number" &&
     typeof message.completed === "boolean" &&
-    Array.isArray(message.completedModuleIds)
+    Array.isArray(message.completedModuleIds) &&
+    isAssessmentResult(message.assessment)
   );
 }
 
@@ -86,7 +121,7 @@ export function ExternalCourseFrame({
         progressMessage.completed
           ? result.certificateCode
             ? `Course completed. Certificate issued: ${result.certificateCode}.`
-            : "Course completed. Your certificate is already available."
+            : "Course completion saved. Certificate eligibility depends on the final assessment result."
           : "Progress saved.",
       );
     }
