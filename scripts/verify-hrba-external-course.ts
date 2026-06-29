@@ -10,7 +10,7 @@ import {
   registerHrbaExternalCourse,
 } from "../src/lib/external-course-workflow";
 import type { AuthSession } from "../src/lib/auth/session-codec";
-import { EnrollmentStatus } from "../src/generated/prisma/client";
+import { EnrollmentStatus, QuizAttemptStatus } from "../src/generated/prisma/client";
 import { prisma } from "../src/lib/prisma";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -89,6 +89,16 @@ async function countCertificates(userId: string) {
   });
 }
 
+async function countAttempts(userId: string, status?: QuizAttemptStatus) {
+  return prisma.quizAttempt.count({
+    where: {
+      courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
+      status,
+      userId,
+    },
+  });
+}
+
 async function main() {
   await registerHrbaExternalCourse();
   const session = await participantSession();
@@ -144,6 +154,74 @@ async function main() {
     "Partial progress must not issue a certificate.",
   );
 
+  const failedSubmittedAt = new Date().toISOString();
+  const failedIncompleteAssessmentResult = await recordExternalCourseProgress({
+    ...baseMessage,
+    assessment: {
+      attemptNumber: 1,
+      maxScore: 10,
+      passed: false,
+      percentage: 70,
+      score: 7,
+      submittedAt: failedSubmittedAt,
+    },
+    completed: false,
+    currentModuleId: "module_05_hrba_meal",
+    currentScreenId: "M5-FINAL-ASSESSMENT",
+    progressPercent: 90,
+  });
+
+  assert(
+    failedIncompleteAssessmentResult.success,
+    `Expected incomplete failing assessment save: ${failedIncompleteAssessmentResult.error}`,
+  );
+  assert(
+    failedIncompleteAssessmentResult.certificateStatus === "assessment-failed",
+    "Expected completed=false failing assessment to return assessment-failed.",
+  );
+  assert(
+    !failedIncompleteAssessmentResult.completed,
+    "Expected completed=false failing assessment to keep enrollment incomplete.",
+  );
+  assert(
+    failedIncompleteAssessmentResult.progressPercent === 90,
+    "Expected completed=false failing assessment to preserve partial progress.",
+  );
+  assert(
+    (await countAttempts(session.userId, QuizAttemptStatus.FAILED)) === 1,
+    "Expected completed=false failing assessment to record one failed attempt.",
+  );
+  assert(
+    (await countCertificates(session.userId)) === 0,
+    "Completed=false failing assessment must not issue a certificate.",
+  );
+
+  const duplicateFailedIncompleteAssessmentResult =
+    await recordExternalCourseProgress({
+      ...baseMessage,
+      assessment: {
+        attemptNumber: 1,
+        maxScore: 10,
+        passed: false,
+        percentage: 70,
+        score: 7,
+        submittedAt: failedSubmittedAt,
+      },
+      completed: false,
+      currentModuleId: "module_05_hrba_meal",
+      currentScreenId: "M5-FINAL-ASSESSMENT",
+      progressPercent: 90,
+    });
+
+  assert(
+    duplicateFailedIncompleteAssessmentResult.success,
+    `Expected duplicate failed assessment to be accepted: ${duplicateFailedIncompleteAssessmentResult.error}`,
+  );
+  assert(
+    (await countAttempts(session.userId, QuizAttemptStatus.FAILED)) === 1,
+    "Repeated identical failed assessment must not create duplicate attempts.",
+  );
+
   const missingAssessmentResult = await recordExternalCourseProgress({
     ...baseMessage,
     completed: true,
@@ -167,7 +245,7 @@ async function main() {
   const failingAssessmentResult = await recordExternalCourseProgress({
     ...baseMessage,
     assessment: {
-      attemptNumber: 1,
+      attemptNumber: 2,
       maxScore: 10,
       passed: false,
       percentage: 70,
@@ -190,16 +268,21 @@ async function main() {
     (await countCertificates(session.userId)) === 0,
     "Failing assessment must not issue a certificate.",
   );
+  assert(
+    (await countAttempts(session.userId, QuizAttemptStatus.FAILED)) === 2,
+    "Expected different failing retake evidence to record a second failed attempt.",
+  );
 
+  const passingSubmittedAt = new Date().toISOString();
   const passingAssessmentResult = await recordExternalCourseProgress({
     ...baseMessage,
     assessment: {
-      attemptNumber: 2,
+      attemptNumber: 3,
       maxScore: 10,
       passed: true,
       percentage: 90,
       score: 9,
-      submittedAt: new Date().toISOString(),
+      submittedAt: passingSubmittedAt,
     },
     completed: true,
     progressPercent: 100,
@@ -216,6 +299,37 @@ async function main() {
   assert(
     passingAssessmentResult.certificateCode,
     "Expected certificate code after passing assessment.",
+  );
+  assert(
+    (await countCertificates(session.userId)) === 1,
+    "Passing assessment must issue exactly one certificate.",
+  );
+
+  const repeatedPassingAssessmentResult = await recordExternalCourseProgress({
+    ...baseMessage,
+    assessment: {
+      attemptNumber: 3,
+      maxScore: 10,
+      passed: true,
+      percentage: 90,
+      score: 9,
+      submittedAt: passingSubmittedAt,
+    },
+    completed: true,
+    progressPercent: 100,
+  });
+
+  assert(
+    repeatedPassingAssessmentResult.success,
+    `Expected repeated passing completion to be accepted: ${repeatedPassingAssessmentResult.error}`,
+  );
+  assert(
+    repeatedPassingAssessmentResult.certificateStatus === "already-issued",
+    "Expected repeated passing completion to return already-issued.",
+  );
+  assert(
+    (await countCertificates(session.userId)) === 1,
+    "Repeated passing completion must not issue a duplicate certificate.",
   );
 
   const invalidContextResult = await recordExternalCourseProgress({
@@ -283,6 +397,8 @@ async function main() {
       {
         certificateCode: certificate.certificateCode,
         courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
+        failedAttemptCount: attempts.filter((attempt) => attempt.status === "FAILED")
+          .length,
         failedAttemptRecorded: attempts.some((attempt) => attempt.status === "FAILED"),
         iframeOrigin: launchData.allowedOrigin,
         iframeSrcIncludesPortalEmbed: launchData.iframeSrc.includes("embed=portal"),
