@@ -10,6 +10,17 @@ import { prisma } from "./prisma";
 
 export type CourseFeedbackState = {
   attemptsCount: number;
+  existingFeedback?: {
+    certificateProcessRating: number | null;
+    consentToUseAnonymizedFeedback: boolean;
+    contentClarityRating: number | null;
+    easeOfUseRating: number | null;
+    improvementSuggestion: string;
+    mostUseful: string;
+    overallRating: number | null;
+    technicalIssue: string;
+    usefulnessRating: number | null;
+  };
   existingFeedbackId: string | null;
   lessonsComplete: boolean;
   message: string;
@@ -18,23 +29,27 @@ export type CourseFeedbackState = {
 };
 
 export type FeedbackSubmissionInput = {
-  accessibilityIssue: boolean | null;
-  clarityRating: number | null;
-  comment: string;
+  certificateProcessRating: number | null;
+  consentToUseAnonymizedFeedback: boolean;
+  contentClarityRating: number | null;
   courseSlug: string;
-  rating: number | null;
+  easeOfUseRating: number | null;
+  improvementSuggestion: string;
+  mostUseful: string;
+  overallRating: number | null;
   session: AuthSession | null;
+  technicalIssue: string;
   usefulnessRating: number | null;
 };
 
 export type FeedbackSubmissionResult = {
   code:
     | "created"
-    | "duplicate"
     | "invalid-course"
     | "invalid-rating"
     | "locked"
     | "not-enrolled"
+    | "updated"
     | "unauthorized";
   error?: string;
   feedbackId?: string;
@@ -83,9 +98,20 @@ type FeedbackContext =
       attemptsCount: number;
       courseId: string;
       existingFeedback: {
+        certificateProcessRating: number | null;
+        clarityRating: number | null;
+        consentToUseAnonymizedFeedback: boolean;
+        easeOfUseRating: number | null;
         id: string;
         createdAt: Date;
+        improvementSuggestion: string | null;
+        mostUseful: string | null;
+        rating: number | null;
+        technicalIssue: string | null;
+        usefulnessRating: number | null;
+        updatedAt: Date;
       } | null;
+      enrollmentId: string;
       lessonsComplete: boolean;
       userId: string;
     }
@@ -136,11 +162,23 @@ function feedbackStateFromContext(context: Extract<FeedbackContext, { code: "ok"
   if (context.existingFeedback) {
     return {
       attemptsCount: context.attemptsCount,
+      existingFeedback: {
+        certificateProcessRating: context.existingFeedback.certificateProcessRating,
+        consentToUseAnonymizedFeedback:
+          context.existingFeedback.consentToUseAnonymizedFeedback,
+        contentClarityRating: context.existingFeedback.clarityRating,
+        easeOfUseRating: context.existingFeedback.easeOfUseRating,
+        improvementSuggestion: context.existingFeedback.improvementSuggestion ?? "",
+        mostUseful: context.existingFeedback.mostUseful ?? "",
+        overallRating: context.existingFeedback.rating,
+        technicalIssue: context.existingFeedback.technicalIssue ?? "",
+        usefulnessRating: context.existingFeedback.usefulnessRating,
+      },
       existingFeedbackId: context.existingFeedback.id,
       lessonsComplete: context.lessonsComplete,
-      message: "Your feedback has already been submitted for this course.",
+      message: "Your feedback has been submitted for this course. You can update it if needed.",
       status: "submitted",
-      submittedAt: context.existingFeedback.createdAt.toISOString(),
+      submittedAt: context.existingFeedback.updatedAt.toISOString(),
     };
   }
 
@@ -263,14 +301,24 @@ async function resolveCourseFeedbackContext(
     }),
     prisma.feedback.findFirst({
       orderBy: { createdAt: "desc" },
-      select: {
-        createdAt: true,
-        id: true,
-      },
       where: {
         courseId: course.id,
         type: FeedbackType.COURSE_FEEDBACK,
         userId: dbUser.id,
+      },
+      select: {
+        certificateProcessRating: true,
+        clarityRating: true,
+        consentToUseAnonymizedFeedback: true,
+        createdAt: true,
+        easeOfUseRating: true,
+        id: true,
+        improvementSuggestion: true,
+        mostUseful: true,
+        rating: true,
+        technicalIssue: true,
+        updatedAt: true,
+        usefulnessRating: true,
       },
     }),
   ]);
@@ -279,6 +327,7 @@ async function resolveCourseFeedbackContext(
     attemptsCount,
     code: "ok",
     courseId: course.id,
+    enrollmentId: enrollment.id,
     existingFeedback,
     lessonsComplete,
     userId: dbUser.id,
@@ -315,47 +364,68 @@ export async function submitCourseFeedback(
   }
 
   const state = feedbackStateFromContext(context);
-  if (state.status === "submitted") {
-    return {
-      code: "duplicate",
-      error: "Your feedback has already been submitted for this course.",
-      success: false,
-    };
-  }
-
   if (state.status === "locked") {
     return { code: "locked", error: state.message, success: false };
   }
 
   if (
-    !isRating(input.rating) ||
+    !isRating(input.overallRating) ||
     !isRating(input.usefulnessRating) ||
-    !isRating(input.clarityRating) ||
-    input.accessibilityIssue === null
+    !isRating(input.easeOfUseRating) ||
+    !isRating(input.contentClarityRating) ||
+    (input.certificateProcessRating !== null && !isRating(input.certificateProcessRating))
   ) {
     return {
       code: "invalid-rating",
-      error: "Provide all required ratings using values from 1 to 5.",
+      error: "Please complete required rating fields.",
       success: false,
     };
   }
 
-  const trimmedComment = input.comment.trim().slice(0, 2000);
-  const feedback = await prisma.feedback.create({
-    data: {
-      accessibilityIssue: input.accessibilityIssue,
-      clarityRating: input.clarityRating,
-      comment: trimmedComment || null,
-      courseId: context.courseId,
-      rating: input.rating,
-      type: FeedbackType.COURSE_FEEDBACK,
-      usefulnessRating: input.usefulnessRating,
-      userId: context.userId,
-    },
-    select: { id: true },
-  });
+  const mostUseful = input.mostUseful.trim().slice(0, 1200);
+  const improvementSuggestion = input.improvementSuggestion.trim().slice(0, 1200);
+  const technicalIssue = input.technicalIssue.trim().slice(0, 1200);
+  const commentParts = [
+    mostUseful ? `Most useful: ${mostUseful}` : "",
+    improvementSuggestion ? `Improve: ${improvementSuggestion}` : "",
+    technicalIssue ? `Technical issue: ${technicalIssue}` : "",
+  ].filter(Boolean);
+  const comment = commentParts.join("\n\n").slice(0, 2000);
 
-  return { code: "created", feedbackId: feedback.id, success: true };
+  const data = {
+    accessibilityIssue: false,
+    certificateProcessRating: input.certificateProcessRating,
+    clarityRating: input.contentClarityRating,
+    comment: comment || null,
+    consentToUseAnonymizedFeedback: input.consentToUseAnonymizedFeedback,
+    courseId: context.courseId,
+    easeOfUseRating: input.easeOfUseRating,
+    enrollmentId: context.enrollmentId,
+    improvementSuggestion: improvementSuggestion || null,
+    mostUseful: mostUseful || null,
+    rating: input.overallRating,
+    technicalIssue: technicalIssue || null,
+    type: FeedbackType.COURSE_FEEDBACK,
+    usefulnessRating: input.usefulnessRating,
+    userId: context.userId,
+  };
+
+  const feedback = state.existingFeedbackId
+    ? await prisma.feedback.update({
+        data,
+        select: { id: true },
+        where: { id: state.existingFeedbackId },
+      })
+    : await prisma.feedback.create({
+        data,
+        select: { id: true },
+      });
+
+  return {
+    code: state.existingFeedbackId ? "updated" : "created",
+    feedbackId: feedback.id,
+    success: true,
+  };
 }
 
 export async function getFeedbackSummaryData(

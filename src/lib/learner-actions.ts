@@ -504,11 +504,16 @@ export async function submitCourseFeedbackAction(
 ): Promise<ActionState> {
   try {
     const courseSlug = formData.get("courseSlug") as string;
-    const rating = parseRating(formData.get("rating"));
+    const overallRating = parseRating(formData.get("overallRating"));
     const usefulnessRating = parseRating(formData.get("usefulnessRating"));
-    const clarityRating = parseRating(formData.get("clarityRating"));
-    const accessibilityIssue = parseAccessibilityIssue(formData.get("accessibilityIssue"));
-    const comment = typeof formData.get("comment") === "string" ? String(formData.get("comment")) : "";
+    const easeOfUseRating = parseRating(formData.get("easeOfUseRating"));
+    const contentClarityRating = parseRating(formData.get("contentClarityRating"));
+    const certificateProcessRating = parseRating(formData.get("certificateProcessRating"));
+    const consentToUseAnonymizedFeedback =
+      formData.get("consentToUseAnonymizedFeedback") === "on";
+    const mostUseful = formString(formData.get("mostUseful"));
+    const improvementSuggestion = formString(formData.get("improvementSuggestion"));
+    const technicalIssue = formString(formData.get("technicalIssue"));
 
     if (!courseSlug) {
       return { success: false, error: "Missing course identifier" };
@@ -516,12 +521,16 @@ export async function submitCourseFeedbackAction(
 
     const session = await getCurrentSession();
     const result = await submitCourseFeedback({
-      accessibilityIssue,
-      clarityRating,
-      comment,
+      certificateProcessRating,
+      consentToUseAnonymizedFeedback,
+      contentClarityRating,
       courseSlug,
-      rating,
+      easeOfUseRating,
+      improvementSuggestion,
+      mostUseful,
+      overallRating,
       session,
+      technicalIssue,
       usefulnessRating,
     });
 
@@ -553,22 +562,14 @@ function parseRating(value: FormDataEntryValue | null) {
     return null;
   }
 
+  if (value === "not-applicable") {
+    return null;
+  }
+
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) ? parsed : null;
 }
 
-function parseAccessibilityIssue(value: FormDataEntryValue | null) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  if (value === "yes" || value === "true") {
-    return true;
-  }
-
-  if (value === "no" || value === "false") {
-    return false;
-  }
-
-  return null;
+function formString(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value : "";
 }

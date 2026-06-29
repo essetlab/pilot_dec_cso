@@ -206,7 +206,9 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
     segments[0] === "courses" &&
     segments[2] === "feedback"
   ) {
-    const course = await getLearnerCourseBySlug(segments[1]);
+    const course = await getLearnerCourseBySlug(segments[1], {
+      initializeEnrollment: false,
+    });
 
     if (!course) {
       notFound();

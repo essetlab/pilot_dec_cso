@@ -205,12 +205,16 @@ async function main() {
   console.log("PASS: completed participant can access feedback form.");
 
   const invalidResult = await submitCourseFeedback({
-    accessibilityIssue: false,
-    clarityRating: 4,
-    comment: "This invalid attempt should not persist.",
+    certificateProcessRating: null,
+    consentToUseAnonymizedFeedback: false,
+    contentClarityRating: 4,
     courseSlug: testSlug,
-    rating: 6,
+    easeOfUseRating: 4,
+    improvementSuggestion: "This invalid attempt should not persist.",
+    mostUseful: "",
+    overallRating: 6,
     session: completedParticipantSession,
+    technicalIssue: "",
     usefulnessRating: 5,
   });
   assert(!invalidResult.success && invalidResult.code === "invalid-rating", "Expected invalid rating rejection.");
@@ -218,45 +222,57 @@ async function main() {
   console.log("PASS: invalid rating rejected without persistence.");
 
   const validResult = await submitCourseFeedback({
-    accessibilityIssue: true,
-    clarityRating: 4,
-    comment: "Useful course, but one handout needs a clearer accessible format.",
+    certificateProcessRating: 4,
+    consentToUseAnonymizedFeedback: true,
+    contentClarityRating: 4,
     courseSlug: testSlug,
-    rating: 5,
+    easeOfUseRating: 4,
+    improvementSuggestion: "One handout needs a clearer accessible format.",
+    mostUseful: "The practical checklist was useful.",
+    overallRating: 5,
     session: completedParticipantSession,
+    technicalIssue: "One document was difficult to open.",
     usefulnessRating: 5,
   });
   assert(validResult.success, `Expected valid feedback submission, got ${validResult.code}.`);
   assert((await feedbackCount()) === 1, "Expected exactly one feedback record after valid submission.");
-  console.log("PASS: valid feedback saved with ratings, accessibility issue, and comment.");
+  console.log("PASS: valid feedback saved with structured ratings and short text fields.");
 
   const submittedState = await getCourseFeedbackState(testSlug, completedParticipantSession);
   assert(submittedState.status === "submitted", `Expected submitted feedback state, got ${submittedState.status}.`);
   assert(submittedState.existingFeedbackId, "Submitted state should include existing feedback id.");
   console.log("PASS: existing feedback returns submitted state.");
 
-  const duplicateResult = await submitCourseFeedback({
-    accessibilityIssue: false,
-    clarityRating: 5,
-    comment: "Duplicate submission should not persist.",
+  const updateResult = await submitCourseFeedback({
+    certificateProcessRating: null,
+    consentToUseAnonymizedFeedback: true,
+    contentClarityRating: 5,
     courseSlug: testSlug,
-    rating: 5,
+    easeOfUseRating: 5,
+    improvementSuggestion: "Updated suggestion should replace the prior response.",
+    mostUseful: "Updated usefulness note.",
+    overallRating: 5,
     session: completedParticipantSession,
+    technicalIssue: "",
     usefulnessRating: 5,
   });
-  assert(!duplicateResult.success && duplicateResult.code === "duplicate", "Expected duplicate submission rejection.");
-  assert((await feedbackCount()) === 1, "Duplicate feedback submission should not create another record.");
-  console.log("PASS: duplicate feedback is rejected.");
+  assert(updateResult.success && updateResult.code === "updated", "Expected existing feedback to update.");
+  assert((await feedbackCount()) === 1, "Updated feedback should not create another record.");
+  console.log("PASS: existing feedback is updated without creating duplicates.");
 
   const lockedState = await getCourseFeedbackState(testSlug, lockedParticipantSession);
   assert(lockedState.status === "locked", `Expected locked feedback state, got ${lockedState.status}.`);
   const lockedResult = await submitCourseFeedback({
-    accessibilityIssue: false,
-    clarityRating: 4,
-    comment: "Locked participant submission should not persist.",
+    certificateProcessRating: null,
+    consentToUseAnonymizedFeedback: false,
+    contentClarityRating: 4,
     courseSlug: testSlug,
-    rating: 4,
+    easeOfUseRating: 4,
+    improvementSuggestion: "Locked participant submission should not persist.",
+    mostUseful: "",
+    overallRating: 4,
     session: lockedParticipantSession,
+    technicalIssue: "",
     usefulnessRating: 4,
   });
   assert(!lockedResult.success && lockedResult.code === "locked", "Expected locked participant rejection.");
@@ -265,7 +281,6 @@ async function main() {
 
   const adminSummary = await getFeedbackSummaryData(adminSession);
   assert(adminSummary.totalFeedback >= 1, "Expected admin feedback summary to include the test feedback.");
-  assert(adminSummary.totalAccessibilityIssues >= 1, "Expected admin feedback summary to include accessibility issue count.");
   assert(adminSummary.showComments, "Admins should be allowed to see protected recent comments.");
   assert(adminSummary.recentComments.some((comment) => comment.courseTitle === "R17 Feedback Verification"), "Expected protected comment in admin summary.");
   console.log("PASS: admin summary includes metrics and protected comments.");

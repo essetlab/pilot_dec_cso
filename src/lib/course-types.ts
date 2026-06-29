@@ -92,6 +92,8 @@ export type LearnerCourseSummary = PublicCourseSummary & {
   certificateHref: string;
   certificateIssuedAt?: string;
   certificateStatus: string;
+  feedbackHref: string;
+  feedbackStatus: "Feedback not submitted" | "Feedback submitted";
   learnerHref: string;
   finalTestHref: string;
   primaryAction: string;

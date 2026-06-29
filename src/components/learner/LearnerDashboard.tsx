@@ -112,6 +112,9 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
               value={course.progress}
             />
           </div>
+          <p className="mt-4 text-sm font-semibold text-[#26536c]">
+            {course.feedbackStatus}
+          </p>
         </div>
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
           <ActionButton href={course.primaryActionHref} size="lg">
@@ -126,6 +129,11 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
               {course.secondaryAction}
             </ActionButton>
           )}
+          {(course.progress > 0 || course.certificateCode) ? (
+            <ActionButton href={course.feedbackHref} size="lg" variant="outline">
+              Give course feedback
+            </ActionButton>
+          ) : null}
         </div>
       </div>
     </article>
@@ -137,6 +145,8 @@ function CourseCard({
   learnerHref,
   primaryAction,
   primaryActionHref,
+  feedbackHref,
+  feedbackStatus,
   progress,
   statusLabel,
   title,
@@ -151,6 +161,7 @@ function CourseCard({
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={capacityArea} tone="blue" />
             <StatusBadge label={statusLabel} tone={tone} />
+            <StatusBadge label={feedbackStatus} tone={feedbackStatus === "Feedback submitted" ? "green" : "gray"} />
           </div>
           <h3 className="mt-4 text-lg font-semibold leading-snug text-dark-ink">
             {title}
@@ -166,6 +177,11 @@ function CourseCard({
         >
           {primaryAction}
         </ActionButton>
+        {isStarted ? (
+          <ActionButton className="sm:mt-1" href={feedbackHref} variant="outline">
+            Give course feedback
+          </ActionButton>
+        ) : null}
       </div>
     </article>
   );

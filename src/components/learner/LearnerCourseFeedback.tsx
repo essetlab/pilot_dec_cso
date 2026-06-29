@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { ActionButton, SectionHeader, StatusBadge } from "@/components/ui";
 import type { LearnerCourseDetail } from "@/lib/course-types";
 import type { CourseFeedbackState } from "@/lib/feedback-workflow";
 import { submitCourseFeedbackAction } from "@/lib/learner-actions";
+
+type RatingValue = number | null;
 
 function GuidanceCard({
   children,
@@ -23,46 +25,76 @@ function GuidanceCard({
 }
 
 function RatingRadioGroup({
-  label,
-  value,
-  onChange,
-  error,
+  allowNotApplicable = false,
   disabled,
+  error,
+  label,
+  onChange,
+  value,
 }: {
-  label: string;
-  value: number | null;
-  onChange: (val: number) => void;
-  error?: boolean;
+  allowNotApplicable?: boolean;
   disabled?: boolean;
+  error?: boolean;
+  label: string;
+  onChange: (val: RatingValue) => void;
+  value: RatingValue;
 }) {
   return (
-    <div className="rounded-card border border-design-border bg-white-surface p-5 shadow-soft">
-      <h3 className="text-sm font-semibold text-deep-navy">{label}</h3>
+    <fieldset className="rounded-card border border-design-border bg-white-surface p-5 shadow-soft">
+      <legend className="text-sm font-semibold text-deep-navy">{label}</legend>
       <div className="mt-4 flex flex-wrap gap-3">
         {[1, 2, 3, 4, 5].map((num) => {
           const isSelected = value === num;
+
           return (
             <button
-              key={num}
-              type="button"
-              disabled={disabled}
-              onClick={() => onChange(num)}
-              className={`flex size-11 items-center justify-center rounded-full text-base font-semibold border transition-all ${
+              className={`flex size-11 items-center justify-center rounded-full border text-base font-semibold transition-all ${
                 isSelected
-                  ? "bg-dec-blue border-dec-blue text-white shadow-soft"
-                  : "bg-white border-design-border text-dark-ink hover:border-dec-blue/60 hover:bg-dec-blue/5"
-              } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  ? "border-dec-blue bg-dec-blue text-white shadow-soft"
+                  : "border-design-border bg-white text-dark-ink hover:border-dec-blue/60 hover:bg-dec-blue/5"
+              } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+              disabled={disabled}
+              key={num}
+              onClick={() => onChange(num)}
+              type="button"
             >
               {num}
             </button>
           );
         })}
+        {allowNotApplicable ? (
+          <button
+            className={`min-h-11 rounded-full border px-4 text-sm font-semibold transition-all ${
+              value === null
+                ? "border-dec-green bg-dec-green/15 text-[#426f1c]"
+                : "border-design-border bg-white text-dark-ink hover:border-dec-green/60 hover:bg-dec-green/10"
+            } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+            disabled={disabled}
+            onClick={() => onChange(null)}
+            type="button"
+          >
+            Not applicable
+          </button>
+        ) : null}
       </div>
-      {error && (
+      {error ? (
         <p className="mt-2 text-xs font-semibold text-red-600">
           Please select a rating between 1 and 5.
         </p>
-      )}
+      ) : null}
+    </fieldset>
+  );
+}
+
+function SafeFeedbackNote() {
+  return (
+    <div className="rounded-[20px] border border-dec-blue/25 bg-dec-blue/10 p-5">
+      <h2 className="text-sm font-semibold text-deep-navy">Safe feedback note</h2>
+      <p className="mt-3 text-sm leading-7 text-[#26536c]">
+        Please keep your feedback general. Do not include personal complaints,
+        survivor stories, exact locations, names of community members, or
+        confidential organizational information.
+      </p>
     </div>
   );
 }
@@ -77,6 +109,10 @@ function formatFeedbackDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function existingValue(state: CourseFeedbackState) {
+  return state.existingFeedback;
+}
+
 export function LearnerCourseFeedback({
   course,
   feedbackState,
@@ -84,60 +120,56 @@ export function LearnerCourseFeedback({
   course: LearnerCourseDetail;
   feedbackState: CourseFeedbackState;
 }) {
-  const [rating, setRating] = useState<number | null>(null);
-  const [usefulness, setUsefulness] = useState<number | null>(null);
-  const [clarity, setClarity] = useState<number | null>(null);
-  const [hasAccessibilityIssue, setHasAccessibilityIssue] = useState<boolean | null>(null);
-  const [comment, setComment] = useState<string>("");
-
-  const [isSubmitted, setIsSubmitted] = useState<boolean>(feedbackState.status === "submitted");
+  const saved = useMemo(() => existingValue(feedbackState), [feedbackState]);
+  const [overallRating, setOverallRating] = useState<RatingValue>(
+    saved?.overallRating ?? null,
+  );
+  const [usefulnessRating, setUsefulnessRating] = useState<RatingValue>(
+    saved?.usefulnessRating ?? null,
+  );
+  const [easeOfUseRating, setEaseOfUseRating] = useState<RatingValue>(
+    saved?.easeOfUseRating ?? null,
+  );
+  const [contentClarityRating, setContentClarityRating] = useState<RatingValue>(
+    saved?.contentClarityRating ?? null,
+  );
+  const [certificateProcessRating, setCertificateProcessRating] =
+    useState<RatingValue>(saved?.certificateProcessRating ?? null);
+  const [mostUseful, setMostUseful] = useState(saved?.mostUseful ?? "");
+  const [improvementSuggestion, setImprovementSuggestion] = useState(
+    saved?.improvementSuggestion ?? "",
+  );
+  const [technicalIssue, setTechnicalIssue] = useState(saved?.technicalIssue ?? "");
+  const [consentToUseAnonymizedFeedback, setConsentToUseAnonymizedFeedback] =
+    useState(saved?.consentToUseAnonymizedFeedback ?? false);
+  const [hasSubmitted, setHasSubmitted] = useState(
+    feedbackState.status === "submitted",
+  );
+  const [savedAt, setSavedAt] = useState(feedbackState.submittedAt);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const [showRatingError, setShowRatingError] = useState(false);
-  const [showUsefulnessError, setShowUsefulnessError] = useState(false);
-  const [showClarityError, setShowClarityError] = useState(false);
-  const [showAccError, setShowAccError] = useState(false);
+  const isLocked = feedbackState.status === "locked";
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
 
-    if (feedbackState.status !== "eligible") {
+    if (isLocked) {
       setErrorMsg(feedbackState.message);
       return;
     }
 
-    let hasErrors = false;
-    if (rating === null) {
-      setShowRatingError(true);
-      hasErrors = true;
-    } else {
-      setShowRatingError(false);
-    }
+    const hasMissingRequiredRating =
+      overallRating === null ||
+      usefulnessRating === null ||
+      easeOfUseRating === null ||
+      contentClarityRating === null;
 
-    if (usefulness === null) {
-      setShowUsefulnessError(true);
-      hasErrors = true;
-    } else {
-      setShowUsefulnessError(false);
-    }
+    setShowErrors(hasMissingRequiredRating);
 
-    if (clarity === null) {
-      setShowClarityError(true);
-      hasErrors = true;
-    } else {
-      setShowClarityError(false);
-    }
-
-    if (hasAccessibilityIssue === null) {
-      setShowAccError(true);
-      hasErrors = true;
-    } else {
-      setShowAccError(false);
-    }
-
-    if (hasErrors) {
-      setErrorMsg("Please complete all required fields before submitting.");
+    if (hasMissingRequiredRating) {
+      setErrorMsg("Please complete required rating fields.");
       return;
     }
 
@@ -145,219 +177,228 @@ export function LearnerCourseFeedback({
     startTransition(async () => {
       const formData = new FormData();
       formData.append("courseSlug", course.slug);
-      formData.append("rating", String(rating));
-      formData.append("usefulnessRating", String(usefulness));
-      formData.append("clarityRating", String(clarity));
-      formData.append("accessibilityIssue", hasAccessibilityIssue ? "yes" : "no");
-      formData.append("comment", comment);
+      formData.append("overallRating", String(overallRating));
+      formData.append("usefulnessRating", String(usefulnessRating));
+      formData.append("easeOfUseRating", String(easeOfUseRating));
+      formData.append("contentClarityRating", String(contentClarityRating));
+      formData.append(
+        "certificateProcessRating",
+        certificateProcessRating === null ? "not-applicable" : String(certificateProcessRating),
+      );
+      formData.append("mostUseful", mostUseful);
+      formData.append("improvementSuggestion", improvementSuggestion);
+      formData.append("technicalIssue", technicalIssue);
+      if (consentToUseAnonymizedFeedback) {
+        formData.append("consentToUseAnonymizedFeedback", "on");
+      }
 
       const result = await submitCourseFeedbackAction(formData);
 
       if (result.success) {
-        setIsSubmitted(true);
+        setHasSubmitted(true);
+        setSavedAt(new Date().toISOString());
       } else {
-        setErrorMsg(result.error || "Failed to submit feedback. Please try again.");
+        setErrorMsg(result.error || "Feedback could not be saved. Please try again.");
       }
     });
   };
 
-  if (isSubmitted) {
+  if (isLocked) {
     return (
       <div className="space-y-8">
-        <div className="overflow-hidden rounded-[28px] border border-design-border bg-white-surface shadow-card p-6 lg:p-8 text-center max-w-2xl mx-auto my-8">
-          <span className="inline-flex size-16 items-center justify-center rounded-full bg-dec-green/20 text-dec-green text-3xl mb-4" role="img" aria-label="Success">
-            ✨
-          </span>
-          <h1 className="text-3xl font-bold text-deep-navy">Feedback Submitted</h1>
-          <p className="mt-4 text-base leading-7 text-[#26536c] font-medium">
-            Thank you. Your feedback will help improve this course.
-          </p>
-          <p className="mt-2 text-sm font-semibold text-muted-text">
-            Submitted {formatFeedbackDate(feedbackState.submittedAt)}
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            <ActionButton href={`/learn/courses/${course.slug}`} variant="success">
-              Go to Course
-            </ActionButton>
-            <ActionButton href="/learn" variant="secondary">
-              Go to Dashboard
-            </ActionButton>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (feedbackState.status === "locked") {
-    return (
-      <div className="space-y-8">
-        <section className="overflow-hidden rounded-[28px] border border-design-border bg-white-surface shadow-card p-6 lg:p-8">
+        <section className="overflow-hidden rounded-[28px] border border-design-border bg-white-surface p-6 shadow-card lg:p-8">
           <div className="flex flex-wrap gap-2">
             <StatusBadge label={course.capacityArea} tone="blue" />
             <StatusBadge label="Feedback locked" tone="gold" />
           </div>
           <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight text-deep-navy sm:text-4xl">
-            Course Feedback: {course.title}
+            Course feedback
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-text">
             {feedbackState.message}
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <ActionButton href={`/learn/courses/${course.slug}`} variant="primary">
-              Continue Course
+              Continue learning
             </ActionButton>
-            <ActionButton href={`/learn/courses/${course.slug}/final-test`} variant="secondary">
-              Open Final Test
+            <ActionButton
+              href={`/learn/courses/${course.slug}/final-test`}
+              variant="secondary"
+            >
+              Final assessment
             </ActionButton>
           </div>
         </section>
 
-        <GuidanceCard title="Feedback opens after learning activity">
-          <p className="text-xs leading-6 text-[#26536c]">
-            Feedback is collected after course completion or final test activity so the course team can use informed participant input.
-          </p>
-        </GuidanceCard>
+        <SafeFeedbackNote />
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header Card */}
-      <section className="overflow-hidden rounded-[28px] border border-design-border bg-white-surface shadow-card p-6 lg:p-8">
+      <section className="overflow-hidden rounded-[28px] border border-design-border bg-white-surface p-6 shadow-card lg:p-8">
         <div className="flex flex-wrap gap-2">
           <StatusBadge label={course.capacityArea} tone="blue" />
-          <StatusBadge label="Course Feedback" tone="green" />
+          <StatusBadge label={hasSubmitted ? "Feedback submitted" : "Course feedback"} tone="green" />
         </div>
         <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight text-deep-navy sm:text-4xl">
-          Course Feedback: {course.title}
+          Course feedback
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-text">
-          Please take a moment to share your feedback. Your ratings and suggestions directly contribute to improvements in our capacity development courses.
+          Help us improve this course for local and grassroots CSOs. Please do
+          not include names, complaints, exact locations, survivor stories, or
+          confidential organizational information.
         </p>
+        {hasSubmitted ? (
+          <p className="mt-4 text-sm font-semibold text-[#426f1c]">
+            Thank you. Your feedback has been saved and will help improve the course.
+            Last saved {formatFeedbackDate(savedAt)}.
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <SectionHeader
-            description="Provide your honest rating on the learning materials, accessibility, and utility."
-            title="Feedback Questionnaire"
+            description="Use 1 for low and 5 for high. Keep written comments short and general."
+            title="Feedback form"
           />
 
-          {errorMsg && (
+          {errorMsg ? (
             <div className="rounded-[16px] border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">
               {errorMsg}
             </div>
-          )}
+          ) : null}
 
-          {/* Rating 1: Overall */}
           <RatingRadioGroup
-            label="1. How would you rate the overall quality of this course?"
-            value={rating}
-            onChange={(val) => {
-              setRating(val);
-              setShowRatingError(false);
-            }}
-            error={showRatingError}
             disabled={isPending}
+            error={showErrors && overallRating === null}
+            label="Overall, how would you rate this course?"
+            onChange={setOverallRating}
+            value={overallRating}
+          />
+          <RatingRadioGroup
+            disabled={isPending}
+            error={showErrors && usefulnessRating === null}
+            label="How useful was the course for your CSO work?"
+            onChange={setUsefulnessRating}
+            value={usefulnessRating}
+          />
+          <RatingRadioGroup
+            disabled={isPending}
+            error={showErrors && easeOfUseRating === null}
+            label="How easy was the course platform to use?"
+            onChange={setEaseOfUseRating}
+            value={easeOfUseRating}
+          />
+          <RatingRadioGroup
+            disabled={isPending}
+            error={showErrors && contentClarityRating === null}
+            label="How clear was the course content?"
+            onChange={setContentClarityRating}
+            value={contentClarityRating}
+          />
+          <RatingRadioGroup
+            allowNotApplicable
+            disabled={isPending}
+            label="If you received or tried to receive a certificate, how clear was the certificate process?"
+            onChange={setCertificateProcessRating}
+            value={certificateProcessRating}
           />
 
-          {/* Rating 2: Usefulness */}
-          <RatingRadioGroup
-            label="2. How useful was the course content for your day-to-day work?"
-            value={usefulness}
-            onChange={(val) => {
-              setUsefulness(val);
-              setShowUsefulnessError(false);
-            }}
-            error={showUsefulnessError}
-            disabled={isPending}
-          />
-
-          {/* Rating 3: Clarity */}
-          <RatingRadioGroup
-            label="3. How clear and easy to follow were the lessons and modules?"
-            value={clarity}
-            onChange={(val) => {
-              setClarity(val);
-              setShowClarityError(false);
-            }}
-            error={showClarityError}
-            disabled={isPending}
-          />
-
-          {/* Rating 4: Accessibility Issues */}
           <div className="rounded-card border border-design-border bg-white-surface p-5 shadow-soft">
-            <h3 className="text-sm font-semibold text-deep-navy">
-              4. Did you encounter any accessibility or usability issues?
-            </h3>
-            <div className="mt-4 flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-dark-ink">
-                <input
-                  type="radio"
-                  name="accessibilityIssue"
-                  disabled={isPending}
-                  checked={hasAccessibilityIssue === true}
-                  onChange={() => {
-                    setHasAccessibilityIssue(true);
-                    setShowAccError(false);
-                  }}
-                  className="size-4 accent-dec-blue"
-                />
-                Yes
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-dark-ink">
-                <input
-                  type="radio"
-                  name="accessibilityIssue"
-                  disabled={isPending}
-                  checked={hasAccessibilityIssue === false}
-                  onChange={() => {
-                    setHasAccessibilityIssue(false);
-                    setShowAccError(false);
-                  }}
-                  className="size-4 accent-dec-blue"
-                />
-                No
-              </label>
-            </div>
-            {showAccError && (
-              <p className="mt-2 text-xs font-semibold text-red-600">
-                Please select Yes or No.
-              </p>
-            )}
-          </div>
-
-          {/* Comment & Suggestions */}
-          <div className="rounded-card border border-design-border bg-white-surface p-5 shadow-soft">
-            <label htmlFor="feedback-comment" className="text-sm font-semibold text-deep-navy block">
-              5. Do you have any suggestions for improving this course? (Optional)
+            <label className="block text-sm font-semibold text-deep-navy" htmlFor="most-useful">
+              What was most useful?
             </label>
             <textarea
-              id="feedback-comment"
-              rows={4}
-              disabled={isPending}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Share details about what you liked, or suggest changes..."
               className="mt-3 w-full rounded-control border border-design-border bg-white p-3 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+              disabled={isPending}
+              id="most-useful"
+              maxLength={1200}
+              onChange={(event) => setMostUseful(event.target.value)}
+              placeholder="Keep this general. Do not include names or sensitive details."
+              rows={3}
+              value={mostUseful}
             />
           </div>
 
-          <div className="flex gap-4">
-            <ActionButton type="submit" variant="success" disabled={isPending}>
-              {isPending ? "Submitting..." : "Submit Feedback"}
+          <div className="rounded-card border border-design-border bg-white-surface p-5 shadow-soft">
+            <label
+              className="block text-sm font-semibold text-deep-navy"
+              htmlFor="improvement-suggestion"
+            >
+              What should be improved?
+            </label>
+            <textarea
+              className="mt-3 w-full rounded-control border border-design-border bg-white p-3 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+              disabled={isPending}
+              id="improvement-suggestion"
+              maxLength={1200}
+              onChange={(event) => setImprovementSuggestion(event.target.value)}
+              placeholder="Share a general improvement suggestion."
+              rows={3}
+              value={improvementSuggestion}
+            />
+          </div>
+
+          <div className="rounded-card border border-design-border bg-white-surface p-5 shadow-soft">
+            <label className="block text-sm font-semibold text-deep-navy" htmlFor="technical-issue">
+              Did you face any technical issue?
+            </label>
+            <textarea
+              className="mt-3 w-full rounded-control border border-design-border bg-white p-3 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+              disabled={isPending}
+              id="technical-issue"
+              maxLength={1200}
+              onChange={(event) => setTechnicalIssue(event.target.value)}
+              placeholder="Describe the issue without adding private account details."
+              rows={3}
+              value={technicalIssue}
+            />
+          </div>
+
+          <label className="flex gap-3 rounded-card border border-design-border bg-white-surface p-5 text-sm font-medium leading-6 text-dark-ink shadow-soft">
+            <input
+              checked={consentToUseAnonymizedFeedback}
+              className="mt-1 size-4 shrink-0 accent-dec-blue"
+              disabled={isPending}
+              onChange={(event) =>
+                setConsentToUseAnonymizedFeedback(event.target.checked)
+              }
+              type="checkbox"
+            />
+            <span>
+              I agree that my feedback may be used in anonymized learning
+              summaries to improve the programme.
+            </span>
+          </label>
+
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <ActionButton disabled={isPending} type="submit" variant="success">
+              {isPending
+                ? "Saving feedback..."
+                : hasSubmitted
+                  ? "Update feedback"
+                  : "Save feedback"}
             </ActionButton>
-            <ActionButton href={`/learn/courses/${course.slug}`} variant="secondary" disabled={isPending}>
-              Cancel
+            <ActionButton
+              disabled={isPending}
+              href={`/learn/courses/${course.slug}`}
+              variant="secondary"
+            >
+              Continue learning
             </ActionButton>
           </div>
         </form>
 
         <aside className="space-y-5 lg:sticky lg:top-6">
+          <SafeFeedbackNote />
           <GuidanceCard title="Why your feedback matters">
             <p className="text-xs leading-6 text-[#26536c]">
-              We regularly analyze participant feedback to revise lesson materials, improve platform accessibility, and ensure training aligns with real-world needs of grassroots civil society organizations.
+              The programme team uses structured, anonymized learning summaries
+              to improve course content, platform usability, and certificate
+              guidance for pilot learners.
             </p>
           </GuidanceCard>
         </aside>

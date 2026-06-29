@@ -665,6 +665,7 @@ model Enrollment {
   courseVersion   CourseVersion      @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
   lessonProgress  LessonProgress[]
   certificates    Certificate[]
+  feedback         Feedback[]
 
   @@unique([userId, courseVersionId])
   @@index([courseId])
@@ -743,20 +744,30 @@ model Feedback {
   type               FeedbackType @default(COURSE_FEEDBACK)
   userId             String
   courseId           String?
+  enrollmentId       String?
   lessonId           String?
   rating             Int?
   usefulnessRating   Int?
+  easeOfUseRating    Int?
   clarityRating      Int?
+  certificateProcessRating Int?
   accessibilityIssue Boolean      @default(false)
+  mostUseful         String?
+  improvementSuggestion String?
+  technicalIssue     String?
+  consentToUseAnonymizedFeedback Boolean @default(false)
   comment            String?
   createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
   user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   course             Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollment         Enrollment?  @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
   lesson             Lesson?      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@index([type])
   @@index([userId])
   @@index([courseId])
+  @@index([enrollmentId])
   @@index([lessonId])
 }
 

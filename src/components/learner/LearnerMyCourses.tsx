@@ -161,6 +161,8 @@ function LearnerCourseCard({
   certificateStatus,
   currentLesson,
   duration,
+  feedbackHref,
+  feedbackStatus,
   href,
   primaryAction,
   primaryActionHref,
@@ -195,6 +197,10 @@ function LearnerCourseCard({
             <StatusBadge label={statusLabel} tone={statusTone} />
             <StatusBadge label={capacityArea} tone="blue" />
             <StatusBadge label={certificateStatus} tone="gold" />
+            <StatusBadge
+              label={feedbackStatus}
+              tone={feedbackStatus === "Feedback submitted" ? "green" : "gray"}
+            />
           </div>
           <h2 className="mt-4 text-2xl font-semibold leading-tight text-dark-ink">
             {title}
@@ -234,6 +240,11 @@ function LearnerCourseCard({
           {verifyCertificateHref ? (
             <ActionButton href={verifyCertificateHref} variant="outline">
               Verify certificate
+            </ActionButton>
+          ) : null}
+          {(progress > 0 || certificateCode) ? (
+            <ActionButton href={feedbackHref} variant="outline">
+              Give course feedback
             </ActionButton>
           ) : null}
           <ActionButton

@@ -6,6 +6,7 @@ import {
   EnrollmentStatus,
   LessonProgressStatus,
   CertificateStatus,
+  FeedbackType,
 } from "../generated/prisma/enums";
 import {
   CERTIFICATE_PASS_THRESHOLD_LABEL,
@@ -406,6 +407,7 @@ function getLearnerSummary(
     certificateCode: string;
     issuedAt: Date;
   } | null,
+  hasFeedback = false,
 ): LearnerCourseSummary {
   const hasCertificate = Boolean(certificate);
   const isStarted = course.progress > 0;
@@ -424,6 +426,7 @@ function getLearnerSummary(
     ? `/learn/certificates/${certificateKey(certificate.certificateCode)}/download`
     : undefined;
   const finalTestHref = `/learn/courses/${course.slug}/final-test`;
+  const feedbackHref = `/learn/courses/${course.slug}/feedback`;
   const primaryAction = hasCertificate
     ? "View certificate"
     : finalAssessmentAvailable
@@ -462,6 +465,8 @@ function getLearnerSummary(
       : finalAssessmentAvailable
         ? "Final assessment"
         : "Certificate path",
+    feedbackHref,
+    feedbackStatus: hasFeedback ? "Feedback submitted" : "Feedback not submitted",
     finalTestHref,
     learnerHref,
     primaryAction,
@@ -747,19 +752,33 @@ export async function getLearnerCourseSummaries(): Promise<
     const records = await queryLearnerCourseRecords();
 
     if (records.length > 0) {
-      const enrollments = await prisma.enrollment.findMany({
-        where: { userId: dbUser.id },
-        include: {
-          lessonProgress: true,
-        },
-      });
-
-      const certificates = await prisma.certificate.findMany({
-        where: {
-          status: CertificateStatus.ISSUED,
-          userId: dbUser.id,
-        },
-      });
+      const [enrollments, certificates, feedback] = await Promise.all([
+        prisma.enrollment.findMany({
+          where: { userId: dbUser.id },
+          include: {
+            lessonProgress: true,
+          },
+        }),
+        prisma.certificate.findMany({
+          where: {
+            status: CertificateStatus.ISSUED,
+            userId: dbUser.id,
+          },
+        }),
+        prisma.feedback.findMany({
+          select: { courseId: true },
+          where: {
+            courseId: { not: null },
+            type: FeedbackType.COURSE_FEEDBACK,
+            userId: dbUser.id,
+          },
+        }),
+      ]);
+      const feedbackCourseIds = new Set(
+        feedback
+          .map((entry) => entry.courseId)
+          .filter((courseId): courseId is string => Boolean(courseId)),
+      );
 
       return records.map((record) => {
         const summary = mapDatabaseCourseToSummary(record);
@@ -813,7 +832,7 @@ export async function getLearnerCourseSummaries(): Promise<
           summary.currentModule = currentModuleTitle;
         }
 
-        return getLearnerSummary(summary, certificate);
+        return getLearnerSummary(summary, certificate, feedbackCourseIds.has(record.id));
       });
     }
   } catch (error) {
@@ -827,8 +846,10 @@ export async function getLearnerCourseSummaries(): Promise<
 
 export async function getLearnerCourseBySlug(
   slug: string,
+  options: { initializeEnrollment?: boolean } = {},
 ): Promise<LearnerCourseDetail | null> {
   try {
+    const initializeEnrollment = options.initializeEnrollment ?? true;
     const session = mockSession || await getCurrentSession();
     if (!session) {
       return null;
@@ -883,6 +904,10 @@ export async function getLearnerCourseBySlug(
       });
 
       if (!enrollment) {
+        if (!initializeEnrollment) {
+          return getLearnerDetail(mapDatabaseCourseToDetail(record));
+        }
+
         enrollment = await prisma.$transaction(async (tx) => {
           const existing = await tx.enrollment.findUnique({
             where: {
