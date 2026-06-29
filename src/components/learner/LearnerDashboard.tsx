@@ -2,7 +2,11 @@ import { ActionButton, MetricCard, SectionHeader, StatusBadge } from "@/componen
 import type { LearnerCourseSummary } from "@/lib/course-types";
 
 function getSummaryCards(courses: LearnerCourseSummary[]) {
-  const inProgress = courses.filter((course) => course.progress > 0).length;
+  const inProgress = courses.filter((course) => course.statusLabel === "In progress").length;
+  const completed = courses.filter((course) =>
+    ["Completed", "Certificate issued"].includes(course.statusLabel),
+  ).length;
+  const certificates = courses.filter((course) => course.certificateCode).length;
 
   return [
     {
@@ -15,13 +19,13 @@ function getSummaryCards(courses: LearnerCourseSummary[]) {
       helperText: "Completed learning will appear here.",
       label: "Courses completed",
       tone: "green" as const,
-      value: 0,
+      value: completed,
     },
     {
       helperText: "Certificates unlock after completion rules are met.",
       label: "Certificates earned",
       tone: "orange" as const,
-      value: 0,
+      value: certificates,
     },
     {
       helperText: "Browse public learning opportunities.",
@@ -66,17 +70,20 @@ function LearningPreview({ course }: { course: LearnerCourseSummary }) {
   return (
     <div className="rounded-[24px] border border-white/15 bg-white/10 p-5 text-white shadow-soft backdrop-blur">
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm font-semibold text-white">Current lesson</span>
+        <span className="text-sm font-semibold text-white">Current course</span>
         <span className="rounded-full bg-dec-green px-3 py-1 text-xs font-semibold text-deep-navy">
           {course.progress}%
         </span>
       </div>
       <h2 className="mt-5 text-2xl font-semibold leading-tight">
-        {course.currentLesson}
+        {course.title}
       </h2>
       <p className="mt-3 text-sm leading-6 text-white/75">
-        Continue {course.shortTitle} with a practical lesson connected to your
-        CSO learning path.
+        {course.certificateCode
+          ? "Your certificate is issued and ready to download."
+          : course.progress > 0
+            ? `Next: ${course.currentLesson}`
+            : "Start when you are ready."}
       </p>
       <div className="mt-6">
         <ProgressBar label="Course progress" value={course.progress} />
@@ -90,12 +97,14 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
     <article className="rounded-[24px] border border-design-border bg-white-surface p-6 shadow-soft lg:p-7">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl">
-          <StatusBadge label="Continue learning" tone="green" />
+          <StatusBadge label={course.statusLabel} tone={course.certificateCode ? "gold" : "green"} />
           <h2 className="mt-4 text-2xl font-semibold leading-tight text-dark-ink">
             {course.title}
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-text">
-            Current lesson: {course.currentLesson}
+            {course.certificateCode
+              ? `Certificate issued: ${course.certificateCode}`
+              : `Next step: ${course.currentLesson}`}
           </p>
           <div className="mt-5 max-w-xl">
             <ProgressBar
@@ -105,12 +114,18 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
           </div>
         </div>
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
-          <ActionButton href={course.learnerHref} size="lg">
-            Continue Learning
+          <ActionButton href={course.primaryActionHref} size="lg">
+            {course.primaryAction}
           </ActionButton>
-          <ActionButton href="/courses" size="lg" variant="secondary">
-            Browse Courses
-          </ActionButton>
+          {course.certificateDownloadHref ? (
+            <ActionButton href={course.certificateDownloadHref} size="lg" variant="success">
+              Download certificate
+            </ActionButton>
+          ) : (
+            <ActionButton href={course.secondaryActionHref} size="lg" variant="secondary">
+              {course.secondaryAction}
+            </ActionButton>
+          )}
         </div>
       </div>
     </article>
@@ -121,11 +136,13 @@ function CourseCard({
   capacityArea,
   learnerHref,
   primaryAction,
+  primaryActionHref,
   progress,
   statusLabel,
   title,
 }: LearnerCourseSummary) {
   const isStarted = progress > 0;
+  const tone = statusLabel === "Certificate issued" ? "gold" : isStarted ? "green" : "gray";
 
   return (
     <article className="rounded-card border border-design-border bg-white-surface p-5 shadow-soft">
@@ -133,7 +150,7 @@ function CourseCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={capacityArea} tone="blue" />
-            <StatusBadge label={statusLabel} tone={isStarted ? "green" : "gray"} />
+            <StatusBadge label={statusLabel} tone={tone} />
           </div>
           <h3 className="mt-4 text-lg font-semibold leading-snug text-dark-ink">
             {title}
@@ -144,7 +161,7 @@ function CourseCard({
         </div>
         <ActionButton
           className="sm:mt-1"
-          href={learnerHref}
+          href={primaryActionHref ?? learnerHref}
           variant={isStarted ? "primary" : "secondary"}
         >
           {primaryAction}
@@ -154,30 +171,39 @@ function CourseCard({
   );
 }
 
-function CertificatePreview() {
+function CertificatePreview({ course }: { course?: LearnerCourseSummary }) {
+  const hasCertificate = Boolean(course?.certificateCode);
+
   return (
     <article className="rounded-[24px] border border-design-border bg-white-surface p-6 shadow-soft">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <StatusBadge label="Certificate" tone="gold" />
+          <StatusBadge label={hasCertificate ? "Certificate issued" : "Certificate"} tone="gold" />
           <h2 className="mt-4 text-xl font-semibold text-dark-ink">
-            Certificate not yet earned
+            {hasCertificate ? "Certificate ready" : "Certificate not yet earned"}
           </h2>
         </div>
         <div
           aria-hidden="true"
           className="flex size-12 items-center justify-center rounded-control bg-dec-green/15 text-lg font-bold text-[#426f1c]"
         >
-          0
+          {hasCertificate ? 1 : 0}
         </div>
       </div>
       <p className="mt-4 text-sm leading-6 text-muted-text">
-        Complete the required lessons and final test to unlock your certificate.
+        {hasCertificate
+          ? "Your certificate is issued. You can verify it publicly or download the PDF."
+          : "Certificates are issued after course completion and a passing final assessment."}
       </p>
-      <div className="mt-6">
-        <ActionButton href="/learn/certificates" variant="secondary">
-          View Certificates
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:flex-col">
+        <ActionButton href={course?.certificateHref ?? "/learn/certificates"} variant="secondary">
+          View certificate
         </ActionButton>
+        {course?.certificateDownloadHref ? (
+          <ActionButton href={course.certificateDownloadHref} variant="success">
+            Download certificate
+          </ActionButton>
+        ) : null}
       </div>
     </article>
   );
@@ -200,11 +226,15 @@ function SupportCard() {
 
 export function LearnerDashboard({
   courses,
+  learnerName,
 }: {
   courses: LearnerCourseSummary[];
+  learnerName: string;
 }) {
   const primaryCourse =
-    courses.find((course) => course.progress > 0) ?? courses[0];
+    courses.find((course) => course.certificateCode) ??
+    courses.find((course) => course.progress > 0) ??
+    courses[0];
   const summaryCards = getSummaryCards(courses);
   const activeCourses = courses.slice(0, 3);
 
@@ -217,7 +247,7 @@ export function LearnerDashboard({
               Learner dashboard
             </p>
             <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
-              Welcome back, Participant
+              Welcome back, {learnerName}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-white/75">
               Continue your CSO learning journey and track your progress.
@@ -264,7 +294,7 @@ export function LearnerDashboard({
         </div>
 
         <div className="space-y-6">
-          <CertificatePreview />
+          <CertificatePreview course={primaryCourse} />
           <SupportCard />
         </div>
       </section>
@@ -277,13 +307,13 @@ export function LearnerDashboard({
               Keep learning at your own pace
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-text">
-              Continue the proposal course now, or explore other practical courses
-              designed for local and grassroots CSOs.
+              Continue your current course, complete the final assessment when it is ready,
+              or download your certificate after it is issued.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <ActionButton href={primaryCourse?.learnerHref ?? "/learn/my-courses"}>
-              Continue Learning
+            <ActionButton href={primaryCourse?.primaryActionHref ?? "/learn/my-courses"}>
+              {primaryCourse?.primaryAction ?? "Review course progress"}
             </ActionButton>
             <ActionButton href="/courses" variant="secondary">
               Explore Courses

@@ -5,6 +5,7 @@ import {
   QuizQuestionType,
   EnrollmentStatus,
   LessonProgressStatus,
+  CertificateStatus,
 } from "../generated/prisma/enums";
 import {
   CERTIFICATE_PASS_THRESHOLD_LABEL,
@@ -395,24 +396,90 @@ function mapDatabaseContentBlock(
 }
 
 
+function certificateKey(certificateCode: string) {
+  return encodeURIComponent(certificateCode);
+}
+
 function getLearnerSummary(
   course: PublicCourseSummary,
-  hasCertificate: boolean = false,
+  certificate?: {
+    certificateCode: string;
+    issuedAt: Date;
+  } | null,
 ): LearnerCourseSummary {
+  const hasCertificate = Boolean(certificate);
   const isStarted = course.progress > 0;
-  const isCompleted = course.status === "Completed";
+  const isCompleted = course.status === "Completed" || course.progress >= 100;
+  const finalAssessmentAvailable =
+    !hasCertificate &&
+    course.finalTest === "Configured" &&
+    (course.progress >= 90 || isCompleted);
   const learnerHref = course.isExternalCourse
     ? `/learn/courses/${course.slug}/external`
     : `/learn/courses/${course.slug}`;
+  const certificateHref = certificate
+    ? `/learn/certificates/${certificateKey(certificate.certificateCode)}`
+    : `/learn/certificates/${course.slug}`;
+  const certificateDownloadHref = certificate
+    ? `/learn/certificates/${certificateKey(certificate.certificateCode)}/download`
+    : undefined;
+  const finalTestHref = `/learn/courses/${course.slug}/final-test`;
+  const primaryAction = hasCertificate
+    ? "View certificate"
+    : finalAssessmentAvailable
+      ? "Continue final assessment"
+      : isStarted
+        ? "Continue learning"
+        : "Start course";
+  const primaryActionHref = hasCertificate
+    ? certificateHref
+    : finalAssessmentAvailable
+      ? (course.isExternalCourse ? learnerHref : finalTestHref)
+      : learnerHref;
+  const secondaryAction = hasCertificate
+    ? "Download certificate"
+    : finalAssessmentAvailable
+      ? "Review course progress"
+      : isStarted
+        ? "Final assessment"
+        : "View public course";
+  const secondaryActionHref = hasCertificate
+    ? certificateDownloadHref
+    : finalAssessmentAvailable
+      ? learnerHref
+      : isStarted
+        ? (course.isExternalCourse ? learnerHref : finalTestHref)
+        : course.href;
 
   return {
     ...course,
-    certificateStatus: hasCertificate ? "Issued" : "Certificate path",
-    finalTestHref: `/learn/courses/${course.slug}/final-test`,
+    certificateCode: certificate?.certificateCode,
+    certificateDownloadHref,
+    certificateHref,
+    certificateIssuedAt: certificate?.issuedAt.toISOString(),
+    certificateStatus: hasCertificate
+      ? "Certificate issued"
+      : finalAssessmentAvailable
+        ? "Final assessment"
+        : "Certificate path",
+    finalTestHref,
     learnerHref,
-    primaryAction: isCompleted ? "Review Course" : (isStarted ? "Continue Learning" : "Start Course"),
-    secondaryAction: isCompleted ? "View Certificate" : (isStarted ? "Final Test" : "View Public Course"),
-    statusLabel: isCompleted ? "Completed" : (isStarted ? "In progress" : "Not started"),
+    primaryAction,
+    primaryActionHref,
+    secondaryAction,
+    secondaryActionHref: secondaryActionHref ?? certificateHref,
+    statusLabel: hasCertificate
+      ? "Certificate issued"
+      : isCompleted
+        ? "Completed"
+        : finalAssessmentAvailable
+          ? "Final assessment available"
+          : isStarted
+            ? "In progress"
+            : "Not started",
+    verifyCertificateHref: certificate
+      ? `/verify-certificate?code=${certificateKey(certificate.certificateCode)}`
+      : undefined,
   };
 }
 
@@ -688,7 +755,10 @@ export async function getLearnerCourseSummaries(): Promise<
       });
 
       const certificates = await prisma.certificate.findMany({
-        where: { userId: dbUser.id },
+        where: {
+          status: CertificateStatus.ISSUED,
+          userId: dbUser.id,
+        },
       });
 
       return records.map((record) => {
@@ -697,7 +767,7 @@ export async function getLearnerCourseSummaries(): Promise<
         const enrollment = enrollments.find(
           (e) => e.courseVersionId === latestVersionId,
         );
-        const hasCert = certificates.some(
+        const certificate = certificates.find(
           (c) => c.courseVersionId === latestVersionId,
         );
 
@@ -743,7 +813,7 @@ export async function getLearnerCourseSummaries(): Promise<
           summary.currentModule = currentModuleTitle;
         }
 
-        return getLearnerSummary(summary, hasCert);
+        return getLearnerSummary(summary, certificate);
       });
     }
   } catch (error) {

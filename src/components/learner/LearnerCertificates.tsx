@@ -103,6 +103,11 @@ function EarnedCertificateCard({
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <ActionButton href={certificate.certificateHref}>View Certificate</ActionButton>
+            {certificate.verifyHref ? (
+              <ActionButton href={certificate.verifyHref} variant="outline">
+                Verify certificate
+              </ActionButton>
+            ) : null}
             {certificate.downloadHref ? (
               <ActionButton href={certificate.downloadHref} variant="success">
                 Download certificate
@@ -254,7 +259,7 @@ export function LearnerCertificates({
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-5">
           <SectionHeader
-            description="Earned certificates appear as issued records. Locked certificates remain available from the related course detail."
+            description="Issued certificates include a certificate code, public verification link, and downloadable PDF."
             title="Earned certificates"
           />
           {data.certificates.length > 0 ? (

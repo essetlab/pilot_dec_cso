@@ -87,12 +87,19 @@ export type LearnerFinalTestQuestion = {
 };
 
 export type LearnerCourseSummary = PublicCourseSummary & {
+  certificateCode?: string;
+  certificateDownloadHref?: string;
+  certificateHref: string;
+  certificateIssuedAt?: string;
   certificateStatus: string;
   learnerHref: string;
   finalTestHref: string;
   primaryAction: string;
+  primaryActionHref: string;
   secondaryAction: string;
+  secondaryActionHref: string;
   statusLabel: string;
+  verifyCertificateHref?: string;
 };
 
 export type LearnerCourseDetail = Omit<PublicCourseDetail, "modules"> & {

@@ -60,7 +60,7 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
   if (actualRoute === "/learn") {
     const courses = await getLearnerCourseSummaries();
 
-    return <LearnerDashboard courses={courses} />;
+    return <LearnerDashboard courses={courses} learnerName={session.name} />;
   }
 
   if (actualRoute === "/learn/my-courses") {

@@ -2,10 +2,12 @@ import { ActionButton, MetricCard, SectionHeader, StatusBadge } from "@/componen
 import type { LearnerCourseSummary } from "@/lib/course-types";
 
 function getSummaryCards(courses: LearnerCourseSummary[]) {
-  const completed = courses.filter((course) => course.statusLabel === "Completed");
+  const completed = courses.filter((course) =>
+    ["Completed", "Certificate issued"].includes(course.statusLabel),
+  );
   const inProgress = courses.filter((course) => course.statusLabel === "In progress");
   const notStarted = courses.filter((course) => course.statusLabel === "Not started");
-  const certificates = courses.filter((course) => course.certificateStatus === "Issued");
+  const certificates = courses.filter((course) => course.certificateCode);
 
   return [
     {
@@ -83,7 +85,8 @@ function PageHero({ course }: { course?: LearnerCourseSummary }) {
             {course ? `Continue ${course.shortTitle}` : "Continue learning"}
           </h2>
           <p className="mt-3 text-sm leading-6 text-white/70">
-            Pick up from your current lesson and keep moving toward the final test.
+            Pick up from your current course and keep moving toward completion,
+            final assessment, and certificate.
           </p>
           <div className="mt-6 rounded-[18px] bg-white p-4">
             <ProgressBar label="Course progress" value={course?.progress ?? 0} />
@@ -153,27 +156,43 @@ function CourseFilterBar() {
 
 function LearnerCourseCard({
   capacityArea,
+  certificateCode,
+  certificateDownloadHref,
   certificateStatus,
   currentLesson,
   duration,
   href,
   primaryAction,
+  primaryActionHref,
   learnerHref,
   finalTestHref,
   progress,
   secondaryAction,
+  secondaryActionHref,
   statusLabel,
   description,
   title,
+  verifyCertificateHref,
 }: LearnerCourseSummary) {
   const isInProgress = statusLabel === "In progress";
+  const isCertificateIssued = statusLabel === "Certificate issued";
+  const isFinalAssessment = statusLabel === "Final assessment available";
+  const statusTone = isCertificateIssued
+    ? "gold"
+    : isFinalAssessment
+      ? "purple"
+      : isInProgress
+        ? "green"
+        : statusLabel === "Completed"
+          ? "blue"
+          : "gray";
 
   return (
     <article className="rounded-[24px] border border-design-border bg-white-surface p-6 shadow-soft">
       <div className="grid gap-6 lg:grid-cols-[1fr_240px] lg:items-start">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge label={statusLabel} tone={isInProgress ? "green" : "gray"} />
+            <StatusBadge label={statusLabel} tone={statusTone} />
             <StatusBadge label={capacityArea} tone="blue" />
             <StatusBadge label={certificateStatus} tone="gold" />
           </div>
@@ -185,12 +204,20 @@ function LearnerCourseCard({
             <div className="rounded-[18px] bg-soft-bg p-4">
               <dt className="font-medium text-muted-text">Current lesson</dt>
               <dd className="mt-1 font-semibold leading-6 text-dark-ink">
-                {currentLesson}
+                {isCertificateIssued
+                  ? "Course complete"
+                  : isFinalAssessment
+                    ? "Final assessment"
+                    : currentLesson}
               </dd>
             </div>
             <div className="rounded-[18px] bg-soft-bg p-4">
-              <dt className="font-medium text-muted-text">Estimated time</dt>
-              <dd className="mt-1 font-semibold text-dark-ink">{duration}</dd>
+              <dt className="font-medium text-muted-text">
+                {certificateCode ? "Certificate code" : "Estimated time"}
+              </dt>
+              <dd className="mt-1 font-semibold text-dark-ink">
+                {certificateCode ?? duration}
+              </dd>
             </div>
           </dl>
           <div className="mt-5">
@@ -198,8 +225,21 @@ function LearnerCourseCard({
           </div>
         </div>
         <div className="flex flex-col gap-3 rounded-[20px] border border-design-border bg-soft-bg p-4">
-          <ActionButton href={learnerHref}>{primaryAction}</ActionButton>
-          <ActionButton href={isInProgress ? finalTestHref : href} variant="secondary">
+          <ActionButton href={primaryActionHref ?? learnerHref}>{primaryAction}</ActionButton>
+          {certificateDownloadHref ? (
+            <ActionButton href={certificateDownloadHref} variant="success">
+              Download certificate
+            </ActionButton>
+          ) : null}
+          {verifyCertificateHref ? (
+            <ActionButton href={verifyCertificateHref} variant="outline">
+              Verify certificate
+            </ActionButton>
+          ) : null}
+          <ActionButton
+            href={secondaryActionHref ?? (isInProgress ? finalTestHref : href)}
+            variant="secondary"
+          >
             {secondaryAction}
           </ActionButton>
         </div>
@@ -231,8 +271,8 @@ function CompletedStatePreview() {
         Completed courses will appear here.
       </h2>
       <p className="mt-3 text-sm leading-7 text-[#426f1c]">
-        When you complete eligible courses, related certificates will appear in
-        Certificates.
+        When you complete eligible courses and pass the final assessment, related
+        certificates will appear in Certificates.
       </p>
       <div className="mt-5">
         <ActionButton href="/learn/certificates" variant="secondary">

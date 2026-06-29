@@ -25,6 +25,7 @@ export type LearnerCertificateSummary = {
   issuedAt: string;
   participantName: string;
   status: CertificateRecordStatus;
+  verifyHref: string | null;
 };
 
 export type LearnerCertificateListData = {
@@ -293,6 +294,7 @@ export async function getLearnerCertificateListData(
       issuedAt: formatDate(certificate.issuedAt),
       participantName: cleanPresentationText(certificate.participantNameSnapshot ?? user.fullName),
       status: "Issued",
+      verifyHref: `/verify-certificate?code=${certificateKey(certificate)}`,
     })),
     metrics: {
       earned: certificates.length,
