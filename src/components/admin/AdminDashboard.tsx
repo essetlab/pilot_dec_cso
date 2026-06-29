@@ -14,6 +14,7 @@ const quickActions = [
   ["Manage courses", "/admin/courses"],
   ["Review courses", "/admin/review"],
   ["View monitoring", "/admin/monitoring"],
+  ["Pilot monitoring", "/admin/pilot-monitoring"],
 ] as const;
 
 function Panel({
@@ -86,11 +87,11 @@ function DashboardHeader({ data }: { data: AdminDashboardData }) {
             </ActionButton>
             <ActionButton
               className="text-white hover:bg-white/10 hover:text-white"
-              href="/admin/monitoring"
+              href="/admin/pilot-monitoring"
               size="lg"
               variant="ghost"
             >
-              View Monitoring
+              Pilot Monitoring
             </ActionButton>
           </div>
         </div>

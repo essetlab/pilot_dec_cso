@@ -7,6 +7,7 @@ import { AdminCourses } from "@/components/admin/AdminCourses";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminMonitoring } from "@/components/admin/AdminMonitoring";
 import { AdminOrganizationDetail, AdminOrganizations } from "@/components/admin/AdminOrganizations";
+import { AdminPilotMonitoring } from "@/components/admin/AdminPilotMonitoring";
 import { AdminReferenceData } from "@/components/admin/AdminReferenceData";
 import { AdminReview } from "@/components/admin/AdminReview";
 import { AdminReviewDetail } from "@/components/admin/AdminReviewDetail";
@@ -37,6 +38,7 @@ import {
 } from "@/lib/admin-people-workflow";
 import { getFeedbackSummaryData } from "@/lib/feedback-workflow";
 import { getMonitoringData } from "@/lib/monitoring-workflow";
+import { getPilotMonitoringData } from "@/lib/pilot-monitoring-workflow";
 import {
   getReferenceDataPageData,
   type ReferenceDataCategoryKey,
@@ -345,6 +347,12 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
         showAdminActions={canAccessAdmin(session)}
       />
     );
+  }
+
+  if (actualRoute === "/admin/pilot-monitoring") {
+    const pilotMonitoringData = await getPilotMonitoringData(session);
+
+    return <AdminPilotMonitoring data={pilotMonitoringData} />;
   }
 
   if (actualRoute === "/admin/settings") {

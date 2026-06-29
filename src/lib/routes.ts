@@ -63,6 +63,7 @@ export const adminNav: NavItem[] = [
   { href: "/admin/certificates", label: "Certificates" },
   { href: "/admin/reference-data", label: "Reference Data" },
   { href: "/admin/monitoring", label: "Monitoring" },
+  { href: "/admin/pilot-monitoring", label: "Pilot Monitoring" },
   { href: "/admin/audit-log", label: "Audit Log" },
   { href: "/admin/settings", label: "Settings" },
 ];
@@ -334,6 +335,11 @@ export const adminRoutes: Record<string, RouteDefinition> = {
     emptyTitle: "Monitoring data will appear after participants start learning.",
     emptyDescription:
       "Metrics and tables will populate after learning activity, certificates, and feedback exist.",
+  },
+  "/admin/pilot-monitoring": {
+    title: "Pilot Monitoring",
+    purpose:
+      "Show aggregate pilot learner registration, enrollment, progress, assessment, certificate, and feedback metrics.",
   },
   "/admin/audit-log": {
     title: "Audit Log",
