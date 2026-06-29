@@ -192,6 +192,28 @@ model User {
   @@index([status])
 }
 
+model ExternalCourseLaunchToken {
+  id              String    @id @default(cuid())
+  tokenHash       String    @unique
+  userId          String
+  courseId        String
+  courseVersionId String
+  enrollmentId    String
+  courseSlug      String
+  allowedOrigin   String
+  portalOrigin    String
+  expiresAt       DateTime
+  lastUsedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([courseVersionId])
+  @@index([enrollmentId])
+  @@index([courseSlug])
+  @@index([expiresAt])
+}
+
 model Role {
   id              String               @id @default(cuid())
   key             RoleKey              @unique

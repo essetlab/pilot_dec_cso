@@ -53,7 +53,7 @@ function isProgressMessage(value: unknown): value is ExternalCourseProgressMessa
     message.type === EXTERNAL_COURSE_PROGRESS_MESSAGE &&
     message.version === 1 &&
     typeof message.courseSlug === "string" &&
-    typeof message.userId === "string" &&
+    (message.userId === undefined || typeof message.userId === "string") &&
     typeof message.progressPercent === "number" &&
     typeof message.completed === "boolean" &&
     Array.isArray(message.completedModuleIds) &&
@@ -89,10 +89,18 @@ export function ExternalCourseFrame({
 
       const response = await fetch("/api/external-course-progress", {
         body: JSON.stringify({
-          ...progressMessage,
-          courseVersionId: launchData.courseVersionId,
-          enrollmentId: launchData.enrollmentId,
+          assessment: progressMessage.assessment,
+          completed: progressMessage.completed,
+          completedModuleIds: progressMessage.completedModuleIds,
+          courseSlug: progressMessage.courseSlug,
+          currentModuleId: progressMessage.currentModuleId,
+          currentScreenId: progressMessage.currentScreenId,
           iframeOrigin: launchData.allowedOrigin,
+          launchToken: launchData.launchToken,
+          progressPercent: progressMessage.progressPercent,
+          sentAt: progressMessage.sentAt,
+          type: progressMessage.type,
+          version: progressMessage.version,
         }),
         credentials: "same-origin",
         headers: {
@@ -135,10 +143,7 @@ export function ExternalCourseFrame({
         return;
       }
 
-      if (
-        event.data.courseSlug !== launchData.courseSlug ||
-        event.data.userId !== launchData.userId
-      ) {
+      if (event.data.courseSlug !== launchData.courseSlug) {
         return;
       }
 

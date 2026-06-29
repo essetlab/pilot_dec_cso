@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { createHash, randomBytes } from "node:crypto";
 import {
   ContentBlockType,
   CourseLevel,
@@ -32,9 +33,18 @@ import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
 
 const issuerName = "DEC / WHH CSF+ CSO Learning Hub";
+const externalCourseLaunchTokenTtlMs = 8 * 60 * 60 * 1000;
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue;
+}
+
+function createExternalCourseLaunchToken() {
+  return randomBytes(32).toString("base64url");
+}
+
+function hashExternalCourseLaunchToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 function getPortalOrigin() {
@@ -674,21 +684,42 @@ export async function getExternalCourseLaunchData(
     return null;
   }
 
+  const now = new Date();
+  const launchToken = createExternalCourseLaunchToken();
+
+  await prisma.externalCourseLaunchToken.deleteMany({
+    where: {
+      expiresAt: {
+        lt: now,
+      },
+    },
+  });
+
+  await prisma.externalCourseLaunchToken.create({
+    data: {
+      allowedOrigin,
+      courseId: course.id,
+      courseSlug: course.slug,
+      courseVersionId: version.id,
+      enrollmentId: enrollment.id,
+      expiresAt: new Date(now.getTime() + externalCourseLaunchTokenTtlMs),
+      portalOrigin: getPortalOrigin(),
+      tokenHash: hashExternalCourseLaunchToken(launchToken),
+      userId: user.id,
+    },
+  });
+
   iframeUrl.searchParams.set("embed", "portal");
   iframeUrl.searchParams.set("portalOrigin", getPortalOrigin());
   iframeUrl.searchParams.set("courseSlug", course.slug);
-  iframeUrl.searchParams.set("userId", user.id);
-  iframeUrl.searchParams.set("enrollmentId", enrollment.id);
-  iframeUrl.searchParams.set("courseVersionId", version.id);
+  iframeUrl.searchParams.set("launchToken", launchToken);
 
   return {
     allowedOrigin,
     courseSlug: course.slug,
     courseTitle: course.title,
-    courseVersionId: version.id,
-    enrollmentId: enrollment.id,
     iframeSrc: iframeUrl.toString(),
-    userId: user.id,
+    launchToken,
   };
 }
 
@@ -697,43 +728,63 @@ export async function recordExternalCourseProgress({
   completed,
   completedModuleIds,
   courseSlug,
-  courseVersionId,
   currentModuleId,
   currentScreenId,
-  enrollmentId,
   iframeOrigin,
+  launchToken,
   progressPercent,
   session,
-  userId,
 }: {
   assessment?: ExternalCourseAssessmentResult;
   completed: boolean;
   completedModuleIds: string[];
   courseSlug: string;
-  courseVersionId: string;
   currentModuleId: string | null;
   currentScreenId: string | null;
-  enrollmentId: string;
   iframeOrigin: string;
+  launchToken: string;
   progressPercent: number;
   session: AuthSession | null;
-  userId: string;
 }) {
-  if (!session?.email || session.userId !== userId) {
+  if (!session?.email || !session.userId) {
     return { success: false, error: "Unauthorized" };
   }
 
   const user = await prisma.user.findUnique({
     where: { email: session.email },
   });
-  if (!user || user.id !== userId) {
+  if (!user || user.id !== session.userId) {
     return { success: false, error: "Unauthorized" };
+  }
+
+  if (!launchToken) {
+    return { success: false, error: "Invalid launch token" };
+  }
+
+  const tokenRecord = await prisma.externalCourseLaunchToken.findUnique({
+    where: { tokenHash: hashExternalCourseLaunchToken(launchToken) },
+  });
+
+  if (!tokenRecord || tokenRecord.expiresAt.getTime() <= Date.now()) {
+    return { success: false, error: "Invalid launch token" };
+  }
+
+  if (tokenRecord.userId !== user.id) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  if (tokenRecord.courseSlug !== courseSlug) {
+    return { success: false, error: "Invalid launch context" };
+  }
+
+  if (tokenRecord.allowedOrigin !== iframeOrigin) {
+    return { success: false, error: "Invalid course origin" };
   }
 
   const course = await prisma.course.findUnique({
     include: {
       versions: {
-        where: { id: courseVersionId, status: CourseStatus.PUBLISHED },
+        where: { id: tokenRecord.courseVersionId, status: CourseStatus.PUBLISHED },
       },
     },
     where: { slug: courseSlug },
@@ -751,17 +802,22 @@ export async function recordExternalCourseProgress({
 
   const boundedProgress = Math.max(0, Math.min(100, Math.round(progressPercent)));
   const enrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseVersionId: {
-        courseVersionId: version.id,
-        userId: user.id,
-      },
-    },
+    where: { id: tokenRecord.enrollmentId },
   });
 
-  if (!enrollment || enrollment.id !== enrollmentId) {
+  if (
+    !enrollment ||
+    enrollment.userId !== user.id ||
+    enrollment.courseId !== course.id ||
+    enrollment.courseVersionId !== version.id
+  ) {
     return { success: false, error: "Enrollment not found" };
   }
+
+  await prisma.externalCourseLaunchToken.update({
+    data: { lastUsedAt: new Date() },
+    where: { id: tokenRecord.id },
+  });
 
   const alreadyCompleted = enrollment.status === EnrollmentStatus.COMPLETED;
   const shouldComplete = completed || alreadyCompleted;

@@ -9,6 +9,10 @@ import {
   recordExternalCourseProgress,
   registerHrbaExternalCourse,
 } from "../src/lib/external-course-workflow";
+import {
+  getLearnerCertificatePdfData,
+  getPublicCertificateVerificationData,
+} from "../src/lib/certificate-workflow";
 import type { AuthSession } from "../src/lib/auth/session-codec";
 import { EnrollmentStatus, QuizAttemptStatus } from "../src/generated/prisma/client";
 import { prisma } from "../src/lib/prisma";
@@ -19,7 +23,7 @@ function assert(condition: unknown, message: string): asserts condition {
   }
 }
 
-async function participantSession(): Promise<AuthSession> {
+async function participantSession(email = "participant2@demo.local"): Promise<AuthSession> {
   const user = await prisma.user.findUnique({
     include: {
       roleAssignments: {
@@ -28,10 +32,10 @@ async function participantSession(): Promise<AuthSession> {
         },
       },
     },
-    where: { email: "participant2@demo.local" },
+    where: { email },
   });
 
-  assert(user, "Expected demo participant participant2@demo.local to exist.");
+  assert(user, `Expected demo participant ${email} to exist.`);
 
   return {
     email: user.email,
@@ -45,6 +49,12 @@ async function participantSession(): Promise<AuthSession> {
 }
 
 async function resetExternalCourseState(userId: string) {
+  await prisma.externalCourseLaunchToken.deleteMany({
+    where: {
+      courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
+      userId,
+    },
+  });
   await prisma.certificate.deleteMany({
     where: {
       courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
@@ -116,8 +126,84 @@ async function main() {
     "Expected iframe source to include embed=portal.",
   );
   assert(
-    launchData.iframeSrc.includes(`userId=${encodeURIComponent(session.userId)}`),
-    "Expected iframe source to include the participant user id.",
+    !launchData.iframeSrc.includes("userId="),
+    "Expected iframe source to exclude raw user id.",
+  );
+  assert(
+    !launchData.iframeSrc.includes("enrollmentId="),
+    "Expected iframe source to exclude raw enrollment id.",
+  );
+  assert(
+    !launchData.iframeSrc.includes("courseVersionId="),
+    "Expected iframe source to exclude raw course version id.",
+  );
+  assert(
+    launchData.iframeSrc.includes("launchToken="),
+    "Expected iframe source to include an opaque launch token.",
+  );
+  assert(
+    launchData.launchToken && !launchData.launchToken.includes(session.userId),
+    "Expected launch token to be opaque and not contain the participant id.",
+  );
+
+  const launchEnrollment = await prisma.enrollment.findUnique({
+    include: {
+      lessonProgress: true,
+    },
+    where: {
+      userId_courseVersionId: {
+        courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
+        userId: session.userId,
+      },
+    },
+  });
+
+  assert(launchEnrollment, "Expected enrollment to exist after external launch.");
+
+  const invalidTokenResult = await recordExternalCourseProgress({
+    completed: false,
+    completedModuleIds: ["module_01_hrba_foundations"],
+    courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
+    currentModuleId: "module_01_hrba_foundations",
+    currentScreenId: "M1-S01",
+    iframeOrigin: launchData.allowedOrigin,
+    launchToken: "not-a-valid-launch-token",
+    progressPercent: 10,
+    session,
+  });
+
+  assert(!invalidTokenResult.success, "Expected invalid launch token to be rejected.");
+
+  const otherSession = await participantSession("participant1@demo.local");
+  const mismatchResult = await recordExternalCourseProgress({
+    completed: false,
+    completedModuleIds: ["module_01_hrba_foundations"],
+    courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
+    currentModuleId: "module_01_hrba_foundations",
+    currentScreenId: "M1-S01",
+    iframeOrigin: launchData.allowedOrigin,
+    launchToken: launchData.launchToken,
+    progressPercent: 10,
+    session: otherSession,
+  });
+
+  assert(!mismatchResult.success, "Expected launch token/session mismatch to be rejected.");
+
+  const invalidOriginResult = await recordExternalCourseProgress({
+    completed: false,
+    completedModuleIds: ["module_01_hrba_foundations"],
+    courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
+    currentModuleId: "module_01_hrba_foundations",
+    currentScreenId: "M1-S01",
+    iframeOrigin: "http://invalid-origin.local",
+    launchToken: launchData.launchToken,
+    progressPercent: 10,
+    session,
+  });
+
+  assert(
+    !invalidOriginResult.success,
+    "Expected launch token/origin mismatch to be rejected.",
   );
 
   const baseMessage = {
@@ -129,13 +215,11 @@ async function main() {
       "module_05_hrba_meal",
     ],
     courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
-    courseVersionId: launchData.courseVersionId,
     currentModuleId: "module_05_hrba_meal",
     currentScreenId: "M5-PLAYER-COMPLETE",
-    enrollmentId: launchData.enrollmentId,
     iframeOrigin: launchData.allowedOrigin,
+    launchToken: launchData.launchToken,
     session,
-    userId: session.userId,
   };
 
   const progressResult = await recordExternalCourseProgress({
@@ -335,11 +419,11 @@ async function main() {
   const invalidContextResult = await recordExternalCourseProgress({
     ...baseMessage,
     completed: false,
-    enrollmentId: "not-this-enrollment",
+    courseSlug: "not-this-course",
     progressPercent: 40,
   });
 
-  assert(!invalidContextResult.success, "Expected invalid enrollment context to fail.");
+  assert(!invalidContextResult.success, "Expected invalid launch context to fail.");
 
   const enrollment = await prisma.enrollment.findUnique({
     include: {
@@ -347,7 +431,7 @@ async function main() {
     },
     where: {
       userId_courseVersionId: {
-        courseVersionId: launchData.courseVersionId,
+        courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
         userId: session.userId,
       },
     },
@@ -363,7 +447,7 @@ async function main() {
   const certificate = await prisma.certificate.findUnique({
     where: {
       userId_courseVersionId: {
-        courseVersionId: launchData.courseVersionId,
+        courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
         userId: session.userId,
       },
     },
@@ -378,7 +462,7 @@ async function main() {
   const attempts = await prisma.quizAttempt.findMany({
     orderBy: { submittedAt: "asc" },
     where: {
-      courseVersionId: launchData.courseVersionId,
+      courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
       userId: session.userId,
     },
   });
@@ -392,6 +476,20 @@ async function main() {
     "Expected passed external assessment attempt to be recorded.",
   );
 
+  const publicVerification = await getPublicCertificateVerificationData(certificate.certificateCode);
+  assert(publicVerification, "Expected public certificate verification data.");
+  assert(
+    publicVerification.certificateCode === certificate.certificateCode,
+    "Expected public verification to return the issued certificate code.",
+  );
+
+  const pdfData = await getLearnerCertificatePdfData(certificate.certificateCode, session);
+  assert(pdfData, "Expected learner certificate PDF data.");
+  assert(
+    pdfData.certificateCode === certificate.certificateCode,
+    "Expected learner certificate PDF data to match the issued certificate.",
+  );
+
   console.log(
     JSON.stringify(
       {
@@ -401,9 +499,19 @@ async function main() {
           .length,
         failedAttemptRecorded: attempts.some((attempt) => attempt.status === "FAILED"),
         iframeOrigin: launchData.allowedOrigin,
+        iframeSrcExcludesRawIds:
+          !launchData.iframeSrc.includes("userId=") &&
+          !launchData.iframeSrc.includes("enrollmentId=") &&
+          !launchData.iframeSrc.includes("courseVersionId="),
         iframeSrcIncludesPortalEmbed: launchData.iframeSrc.includes("embed=portal"),
+        iframeSrcIncludesLaunchToken: launchData.iframeSrc.includes("launchToken="),
+        invalidLaunchContextRejected: !invalidContextResult.success,
+        invalidTokenRejected: !invalidTokenResult.success,
+        certificatePdfDataAvailable: pdfData.certificateCode === certificate.certificateCode,
         passedAttemptRecorded: attempts.some((attempt) => attempt.status === "PASSED"),
         progressPercent: enrollment.progressPercent,
+        publicVerificationWorks: publicVerification.certificateCode === certificate.certificateCode,
+        tokenSessionMismatchRejected: !mismatchResult.success,
         status: enrollment.status,
       },
       null,

@@ -133,14 +133,12 @@ export async function POST(request: NextRequest) {
     completed: record.completed === true,
     completedModuleIds: asStringArray(record.completedModuleIds),
     courseSlug: asString(record.courseSlug),
-    courseVersionId: asString(record.courseVersionId),
     currentModuleId: asNullableString(record.currentModuleId),
     currentScreenId: asNullableString(record.currentScreenId),
-    enrollmentId: asString(record.enrollmentId),
     iframeOrigin: asString(record.iframeOrigin),
+    launchToken: asString(record.launchToken),
     progressPercent,
     session,
-    userId: asString(record.userId),
   });
 
   if (!result.success) {

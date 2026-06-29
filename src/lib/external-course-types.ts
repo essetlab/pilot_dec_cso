@@ -13,7 +13,7 @@ export type ExternalCourseProgressMessage = {
   type: typeof EXTERNAL_COURSE_PROGRESS_MESSAGE;
   version: 1;
   courseSlug: string;
-  userId: string;
+  userId?: string;
   enrollmentId?: string;
   courseVersionId?: string;
   progressPercent: number;
@@ -29,8 +29,6 @@ export type ExternalCourseLaunchData = {
   allowedOrigin: string;
   courseSlug: string;
   courseTitle: string;
-  courseVersionId: string;
-  enrollmentId: string;
   iframeSrc: string;
-  userId: string;
+  launchToken: string;
 };
