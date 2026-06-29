@@ -103,6 +103,11 @@ function EarnedCertificateCard({
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <ActionButton href={certificate.certificateHref}>View Certificate</ActionButton>
+            {certificate.downloadHref ? (
+              <ActionButton href={certificate.downloadHref} variant="success">
+                Download certificate
+              </ActionButton>
+            ) : null}
             <ActionButton href={certificate.courseHref} variant="secondary">
               Review Course
             </ActionButton>
@@ -321,9 +326,16 @@ export function LearnerCertificateDetail({
             <h2 className="text-xl font-semibold text-deep-navy">Actions</h2>
             <div className="mt-5 flex flex-col gap-3">
               {isIssued ? (
-                <ActionButton onClick={() => window.print()}>
-                  Print / Download Certificate
-                </ActionButton>
+                <>
+                  {certificate.downloadHref ? (
+                    <ActionButton href={certificate.downloadHref} variant="success">
+                      Download certificate
+                    </ActionButton>
+                  ) : null}
+                  <ActionButton onClick={() => window.print()} variant="secondary">
+                    Print Preview
+                  </ActionButton>
+                </>
               ) : (
                 <ActionButton href={certificate.finalTestHref}>
                   View Final Test

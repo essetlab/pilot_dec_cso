@@ -18,6 +18,7 @@ export type CertificateRecordStatus = "Issued" | "Locked";
 
 export type LearnerCertificateSummary = {
   certificateCode: string | null;
+  downloadHref: string | null;
   certificateHref: string;
   courseHref: string;
   courseTitle: string;
@@ -42,6 +43,7 @@ export type LearnerCertificateDetailData = {
   courseHref: string;
   courseSlug: string;
   courseTitle: string;
+  downloadHref: string | null;
   finalTestHref: string;
   issuedAt: string | null;
   issuerName: string;
@@ -86,6 +88,15 @@ export type PublicCertificateVerificationData = {
   issuerName: string;
   participantName: string;
   status: "Issued" | "Revoked" | "Expired" | "Inactive";
+};
+
+export type LearnerCertificatePdfData = {
+  certificateCode: string;
+  completionDate: Date | null;
+  courseTitle: string;
+  issuedAt: Date;
+  issuerName: string;
+  participantName: string;
 };
 
 function formatDate(value: Date | null | undefined) {
@@ -155,6 +166,7 @@ function mapIssuedCertificate(certificate: {
     courseHref: `/learn/courses/${certificate.course.slug}`,
     courseSlug: certificate.course.slug,
     courseTitle: certificate.courseTitleSnapshot ?? certificate.course.title,
+    downloadHref: `/learn/certificates/${certificateKey(certificate)}/download`,
     finalTestHref: `/learn/courses/${certificate.course.slug}/final-test`,
     issuedAt: formatDate(certificate.issuedAt),
     issuerName:
@@ -275,6 +287,7 @@ export async function getLearnerCertificateListData(
     certificates: certificates.map((certificate) => ({
       certificateCode: cleanPresentationText(certificate.certificateCode),
       certificateHref: `/learn/certificates/${certificateKey(certificate)}`,
+      downloadHref: `/learn/certificates/${certificateKey(certificate)}/download`,
       courseHref: `/learn/courses/${certificate.course.slug}`,
       courseTitle: certificate.courseTitleSnapshot ?? certificate.course.title,
       issuedAt: formatDate(certificate.issuedAt),
@@ -356,6 +369,7 @@ export async function getLearnerCertificateDetailData(
     courseHref: `/learn/courses/${lockedCourse.slug}`,
     courseSlug: lockedCourse.slug,
     courseTitle: lockedCourse.title,
+    downloadHref: null,
     finalTestHref: `/learn/courses/${lockedCourse.slug}/final-test`,
     issuedAt: null,
     issuerName: "DEC / WHH CSF+ CSO Learning Hub",
@@ -363,6 +377,58 @@ export async function getLearnerCertificateDetailData(
     passThresholdLabel: CERTIFICATE_PASS_THRESHOLD_LABEL,
     passThresholdRule: formatCertificateThresholdRule(),
     status: "Locked",
+  };
+}
+
+export async function getLearnerCertificatePdfData(
+  certificateCode: string,
+  session: AuthSession | null,
+): Promise<LearnerCertificatePdfData | null> {
+  const user = await getSessionUser(session);
+  if (!user) {
+    return null;
+  }
+
+  const decoded = decodeURIComponent(certificateCode);
+  const certificate = await prisma.certificate.findFirst({
+    select: {
+      certificateCode: true,
+      completionDate: true,
+      course: {
+        select: {
+          title: true,
+        },
+      },
+      courseTitleSnapshot: true,
+      issuedAt: true,
+      issuerNameSnapshot: true,
+      participantNameSnapshot: true,
+      status: true,
+    },
+    where: {
+      OR: [
+        { certificateCode: decoded },
+        { certificateCode: { equals: decoded, mode: "insensitive" } },
+      ],
+      status: CertificateStatus.ISSUED,
+      userId: user.id,
+    },
+  });
+
+  if (!certificate) {
+    return null;
+  }
+
+  return {
+    certificateCode: cleanPresentationText(certificate.certificateCode),
+    completionDate: certificate.completionDate,
+    courseTitle: certificate.courseTitleSnapshot ?? certificate.course.title,
+    issuedAt: certificate.issuedAt,
+    issuerName:
+      certificate.issuerNameSnapshot ?? "DEC / WHH CSF+ CSO Learning Hub",
+    participantName: cleanPresentationText(
+      certificate.participantNameSnapshot ?? user.fullName,
+    ),
   };
 }
 
