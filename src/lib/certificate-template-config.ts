@@ -18,8 +18,9 @@ export const certificateTemplateConfig = {
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000",
   colors: {
     body: rgb(0.15, 0.17, 0.2),
+    courseTitle: rgb(0.02, 0.28, 0.52),
     muted: rgb(0.29, 0.33, 0.38),
-    name: rgb(0.05, 0.1, 0.18),
+    name: rgb(0.01, 0.06, 0.15),
   },
   fields: {
     learnerName: {
@@ -40,7 +41,7 @@ export const certificateTemplateConfig = {
       maxLines: 2,
       maxWidth: 760,
       x: 724,
-      y: 501,
+      y: 493,
     },
     dateAwarded: {
       align: "center",

@@ -187,6 +187,8 @@ function drawConfiguredText({
   const color =
     field === certificateTemplateConfig.fields.learnerName
       ? certificateTemplateConfig.colors.name
+      : field === certificateTemplateConfig.fields.courseTitle
+        ? certificateTemplateConfig.colors.courseTitle
       : field === certificateTemplateConfig.fields.verificationUrl
         ? certificateTemplateConfig.colors.muted
         : certificateTemplateConfig.colors.body;
