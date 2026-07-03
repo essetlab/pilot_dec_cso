@@ -181,6 +181,22 @@ function getShortTitle(title: string) {
     .replace(" in Practice", "");
 }
 
+function getFallbackReason(error: unknown) {
+  if (error && typeof error === "object") {
+    const record = error as { code?: unknown; name?: unknown };
+    const code = typeof record.code === "string" ? record.code : null;
+    const name = typeof record.name === "string" ? record.name : "Database error";
+
+    return code ? `${name} (${code})` : name;
+  }
+
+  return "Database error";
+}
+
+function logCourseDataFallback(source: string, error: unknown) {
+  console.warn(`${source}: using fallback course data. ${getFallbackReason(error)}.`);
+}
+
 const courseSelectFields = {
   assignedCreator: {
     select: {
@@ -655,7 +671,7 @@ export async function getPublicCourseSummaries(
       return filterPublicCourseSummaries(records.map(mapDatabaseCourseToSummary), filters);
     }
   } catch (error) {
-    console.error("Error in getPublicCourseSummaries query:", error);
+    logCourseDataFallback("getPublicCourseSummaries", error);
   }
 
   return filterPublicCourseSummaries(
@@ -686,7 +702,7 @@ export async function getPublicCourseBySlug(
       return null;
     }
   } catch (error) {
-    console.error("Error in getPublicCourseBySlug query:", error);
+    logCourseDataFallback("getPublicCourseBySlug", error);
   }
 
   const demoCourse = DEMO_COURSES.find(
@@ -836,7 +852,7 @@ export async function getLearnerCourseSummaries(): Promise<
       });
     }
   } catch (error) {
-    console.error("Error in getLearnerCourseSummaries query:", error);
+    logCourseDataFallback("getLearnerCourseSummaries", error);
   }
 
   return getDemoSummaries()
@@ -1048,7 +1064,7 @@ export async function getLearnerCourseBySlug(
       return null;
     }
   } catch (error) {
-    console.error("Error in getLearnerCourseBySlug query/enrollment:", error);
+    logCourseDataFallback("getLearnerCourseBySlug", error);
   }
 
   if (slug === DEMO_PROPOSAL_COURSE.slug) {
