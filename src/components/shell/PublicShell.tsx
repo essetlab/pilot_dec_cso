@@ -26,6 +26,33 @@ const publicItems: NavItem[] = [
   { href: "/verify-certificate", label: "VERIFY CERTIFICATE" },
 ];
 
+const footerPlatformLinks: NavItem[] = [
+  { href: "/", label: "Home" },
+  { href: "/courses", label: "Courses" },
+  { href: "/verify-certificate", label: "Verify Certificate" },
+];
+
+const footerAccountLinks: NavItem[] = [
+  { href: "/sign-in", label: "Sign In" },
+  { href: "/register", label: "Register" },
+];
+
+const footerTrustLinks: NavItem[] = [
+  { href: "/support", label: "Help / Support" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/accessibility", label: "Accessibility" },
+];
+
+const partnerLogos = [
+  { alt: "Development Expertise Center logo", src: "/logos/dec-logo.png" },
+  { alt: "Welt Hunger Hilfe logo", src: "/logos/whh-logo.png" },
+  { alt: "CoSAP logo", src: "/logos/cosap-logo.png" },
+  { alt: "Ziviler Friedensdienst logo", src: "/logos/zfd-logo.png" },
+  { alt: "Pastoralist Forum Ethiopia logo", src: "/logos/pfe-logo.png" },
+  { alt: "European Union logo", src: "/logos/eu-logo.png" },
+];
+
 /* ── Globe Icon ─────────────────────────────────────────── */
 const GlobeIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -327,7 +354,7 @@ export function PublicFooter() {
       {/* Main Footer Content */}
       <div className="border-t border-slate-200 bg-deep-navy text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-8">
-          <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr]">
+          <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
             {/* Logo & Description */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
@@ -353,21 +380,13 @@ export function PublicFooter() {
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Platform</h3>
               <ul className="mt-4 space-y-2 text-sm text-slate-300">
-                <li>
-                  <Link className="hover:text-white focus-visible:outline-dec-blue transition" href="/">
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:text-white focus-visible:outline-dec-blue transition" href="/verify-certificate">
-                    Verify Certificate
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:text-white focus-visible:outline-dec-blue transition" href="/courses">
-                    Courses
-                  </Link>
-                </li>
+                {footerPlatformLinks.map((item) => (
+                  <li key={item.href}>
+                    <Link className="hover:text-white focus-visible:outline-dec-blue transition" href={item.href}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -375,16 +394,27 @@ export function PublicFooter() {
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Account</h3>
               <ul className="mt-4 space-y-2 text-sm text-slate-300">
-                <li>
-                  <Link className="hover:text-white focus-visible:outline-dec-blue transition" href="/sign-in">
-                    Sign In
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:text-white focus-visible:outline-dec-blue transition" href="/register">
-                    Register
-                  </Link>
-                </li>
+                {footerAccountLinks.map((item) => (
+                  <li key={item.href}>
+                    <Link className="hover:text-white focus-visible:outline-dec-blue transition" href={item.href}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Trust Links */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Trust &amp; Support</h3>
+              <ul className="mt-4 space-y-2 text-sm text-slate-300">
+                {footerTrustLinks.map((item) => (
+                  <li key={item.href}>
+                    <Link className="hover:text-white focus-visible:outline-dec-blue transition" href={item.href}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -396,22 +426,25 @@ export function PublicFooter() {
         </div>
       </div>
 
-      {/* Full-width edge-to-edge Partner Logo Strip — sits at the very bottom */}
+      {/* Full-width edge-to-edge partner recognition strip. */}
       <div className="w-full bg-slate-50 border-t border-slate-200">
-        <div className="flex items-center justify-center gap-6 px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-4 px-4 py-5 sm:px-6 lg:px-8 md:flex-row md:gap-6">
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 shrink-0 whitespace-nowrap">
             Our Partners &amp; Donors
           </p>
           <div className="h-5 w-px bg-slate-300 shrink-0 hidden sm:block" />
-          <div className="flex-1 flex justify-center overflow-hidden">
-            <Image
-              alt="Programme partner logo strip — DEC, Welt Hunger Hilfe, CoSAP, Ziviler Friedensdienst, Pastoralist Forum Ethiopia, EU"
-              className="h-auto max-h-10 w-full object-contain opacity-75 hover:opacity-100 transition-opacity duration-300"
-              height={821}
-              sizes="100vw"
-              src="/logos/partner-logo-strip.png"
-              width={1916}
-            />
+          <div className="grid w-full flex-1 grid-cols-2 items-center justify-items-center gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {partnerLogos.map((logo) => (
+              <div className="relative h-10 w-full max-w-[132px]" key={logo.src}>
+                <Image
+                  alt={logo.alt}
+                  className="object-contain opacity-80 transition-opacity duration-300 hover:opacity-100"
+                  fill
+                  sizes="132px"
+                  src={logo.src}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>

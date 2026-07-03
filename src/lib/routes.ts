@@ -92,6 +92,26 @@ export const publicRoutes: Record<string, RouteDefinition> = {
     purpose:
       "Allow public verification of an issued certificate without exposing private learner data.",
   },
+  "/support": {
+    title: "Help / Support",
+    purpose:
+      "Provide pilot learners with account, launch, certificate, and safe-use support guidance.",
+  },
+  "/privacy": {
+    title: "Privacy",
+    purpose:
+      "Explain pilot learner data use and privacy limits in plain language.",
+  },
+  "/terms": {
+    title: "Terms",
+    purpose:
+      "Explain respectful and safe use of the pilot learning platform.",
+  },
+  "/accessibility": {
+    title: "Accessibility",
+    purpose:
+      "Explain mobile, low-bandwidth, and accessibility intentions for pilot learners.",
+  },
 };
 
 export const authRoutes: Record<string, RouteDefinition> = {

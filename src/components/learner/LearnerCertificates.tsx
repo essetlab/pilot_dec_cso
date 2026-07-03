@@ -28,8 +28,8 @@ function CertificateHeaderCard() {
             Completion and pass score required.
           </h2>
           <p className="mt-3 text-sm leading-6 text-white/70">
-            Certificates remain locked until course completion and the required
-            final test threshold are met.
+            Certificate available after completing the required learning
+            activities and scoring 80% or above on the final assessment.
           </p>
         </div>
       </div>
@@ -65,6 +65,12 @@ function HowCertificatesWorkCard({
           </li>
         ))}
       </ol>
+      <p className="mt-6 rounded-[18px] border border-design-border bg-soft-bg p-4 text-xs leading-6 text-muted-text">
+        This certificate confirms that the named learner completed the course
+        requirements and passed the final assessment. It does not replace
+        organizational due diligence, safeguarding review, legal compliance
+        checks, or partnership assessment.
+      </p>
     </article>
   );
 }
@@ -164,7 +170,8 @@ function EarnedCertificatePreview({
           {certificate.participantName}
         </p>
         <p className="mt-8 text-sm leading-6 text-muted-text">
-          For successfully completing all requirements for the course.
+          This confirms the named learner completed the course requirements and
+          passed the final assessment.
         </p>
         <div className="mx-auto mt-12 grid max-w-2xl gap-4 border-t pt-6 text-left text-xs sm:grid-cols-3">
           <div>

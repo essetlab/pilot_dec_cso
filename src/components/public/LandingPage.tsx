@@ -73,34 +73,34 @@ const GraphicIcon = ({ className }: { className?: string }) => (
 );
 
 const trustMarkers = [
-  "Mobile-friendly",
-  "Practical",
-  "Step-by-step",
-  "Certificate-ready",
+  "Practical courses",
+  "Local CSO context",
+  "Peer learning vision",
+  "Certificate eligible",
 ];
 
 const features = [
   {
-    title: "Practical and work-ready",
-    description: "Skills you can apply right away.",
+    title: "Practical Courses",
+    description: "Short, structured courses linked to everyday CSO tasks.",
     icon: BriefcaseIcon,
     tone: "green",
   },
   {
-    title: "Grounded in local realities",
-    description: "Designed for local needs and contexts.",
-    icon: PeopleIcon,
+    title: "Guided Learning Journeys",
+    description: "Learn step by step through practical activities, checks, and support.",
+    icon: ListIcon,
     tone: "blue",
   },
   {
-    title: "Structured learning journeys",
-    description: "Clear paths with practical activities.",
-    icon: ListIcon,
+    title: "Peer Learning Vision",
+    description: "The Hub will grow toward safe exchange among local and grassroots CSOs.",
+    icon: PeopleIcon,
     tone: "green",
   },
   {
-    title: "Progress and certificates",
-    description: "Track progress and earn recognised certificates.",
+    title: "Co-created Practice",
+    description: "Future tools and resources will support locally led practice and shared learning.",
     icon: BadgeIcon,
     tone: "blue",
   },
@@ -136,14 +136,35 @@ const experienceItems = [
     icon: GraphicIcon,
   },
   {
-    title: "Resource library",
-    description: "Useful tools and downloadable learning materials.",
+    title: "Course tools and resources",
+    description: "Downloadable tools and resources inside courses.",
     icon: ResourceIcon,
   },
   {
     title: "Official certificates",
-    description: "Recognition after requirements are met.",
+    description: "Recognition after completion and final assessment requirements are met.",
     icon: BadgeIcon,
+  },
+];
+
+const pathwayItems = [
+  {
+    title: "Learn",
+    status: "Available now",
+    description:
+      "Start with practical courses, guided activities, progress tracking, final assessment, feedback, and certificates.",
+  },
+  {
+    title: "Exchange",
+    status: "Future vision",
+    description:
+      "The Hub can grow toward safe peer exchange among local and grassroots CSOs after the pilot learning journey is stable.",
+  },
+  {
+    title: "Co-create",
+    status: "Future vision",
+    description:
+      "Later stages can support locally led tools and shared practice with consent, moderation, and safety review.",
   },
 ];
 
@@ -162,10 +183,10 @@ function HeroSection() {
             DEC LEARNING PLATFORM
           </span>
           <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.95] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
-            Learn, Adapt, Grow
+            Learn. Connect. Grow.
           </h1>
           <p className="mt-6 max-w-xl text-lg sm:text-xl text-slate-100 leading-relaxed font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
-            Practical digital learning for local and grassroots CSOs.
+            A practical learning hub where local and grassroots CSOs build skills, share experience, and grow their capacity to lead change.
           </p>
           
           <div className="mt-10 flex flex-wrap gap-4">
@@ -251,7 +272,7 @@ function AboutPlatformSection() {
             A practical learning space for stronger CSOs
           </h2>
           <p className="mt-5 text-base leading-relaxed text-slate-600">
-            The CSO Learning Hub equips local organisations with the practical knowledge and tools to plan, manage, and grow community impact.
+            The CSO Learning Hub starts with practical courses for the current pilot learning journey. It supports learners to build skills, track progress, complete final assessments, and use private tools for their own CSO practice.
           </p>
           
           <ul className="mt-8 grid gap-3 sm:grid-cols-2" aria-label="Platform details">
@@ -276,6 +297,50 @@ function AboutPlatformSection() {
             src="/images/landing-about.png"
             priority
           />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PathwaySection() {
+  return (
+    <section className="bg-white py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#145a85]">
+            PLATFORM PATHWAY
+          </span>
+          <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-slate-900">
+            Learn → Exchange → Co-create
+          </h2>
+          <p className="mt-4 text-base leading-7 text-slate-600">
+            The current pilot focuses on learning. Peer exchange and co-created practice are future-aware directions, not active public modules in this release.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-5 lg:grid-cols-3">
+          {pathwayItems.map((item, index) => (
+            <article
+              className="rounded-card border border-slate-200 bg-slate-50 p-6 shadow-soft"
+              key={item.title}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dceef8] text-sm font-bold text-[#145a85]">
+                  {index + 1}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-600 shadow-soft">
+                  {item.status}
+                </span>
+              </div>
+              <h3 className="mt-5 text-xl font-bold text-slate-900">
+                {item.title}
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                {item.description}
+              </p>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -358,7 +423,7 @@ function CoursePreviewCard({ course }: { course: CourseType }) {
 }
 
 function CourseShowcaseSection({ courses }: { courses: CourseType[] }) {
-  // Render the three core Phase 1 courses
+  // Render the first available course journeys.
   const featuredCourses = courses.length > 0 ? courses.slice(0, 3) : DEMO_COURSES.slice(0, 3);
 
   return (
@@ -370,10 +435,10 @@ function CourseShowcaseSection({ courses }: { courses: CourseType[] }) {
               COURSE LIBRARY
             </span>
             <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-slate-900">
-              Start with practical Phase 1 course journeys
+              Start with current learning journeys
             </h2>
             <p className="mt-2 text-base text-slate-600">
-              Short, focused courses to strengthen core capacities.
+              Short, focused courses for local and grassroots CSOs, with clear certificate rules where eligible.
             </p>
           </div>
           <ActionButton href="/courses" variant="secondary" className="shrink-0 self-start sm:self-auto">
@@ -433,6 +498,83 @@ function LearningExperienceSection() {
   );
 }
 
+function PracticalToolsSection() {
+  return (
+    <section className="bg-white py-20">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#145a85]">
+            PRACTICAL TOOLS
+          </span>
+          <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-slate-900">
+            Downloadable tools and resources inside courses
+          </h2>
+          <p className="mt-4 text-base leading-7 text-slate-600">
+            Courses can include worksheets, prompts, and resources that learners use privately for their own CSO practice. The pilot does not open public resource uploads or public proof galleries.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            "Course-linked worksheets",
+            "Private practical prompts",
+            "Safe evidence reminders",
+            "Downloadable learning resources",
+          ].map((item) => (
+            <div className="rounded-card border border-slate-200 bg-slate-50 p-5 shadow-soft" key={item}>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8f5d6] text-[#3a6118]">
+                <CheckIcon className="h-5 w-5" />
+              </span>
+              <p className="mt-4 text-sm font-semibold leading-6 text-slate-800">
+                {item}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CommunityVisionSection() {
+  return (
+    <section className="border-y border-slate-200 bg-slate-50 py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#145a85]">
+              GROWING CSO LEARNING COMMUNITY
+            </span>
+            <h2 className="mt-3 font-display text-4xl font-bold leading-tight text-slate-900">
+              A future path for safe peer learning
+            </h2>
+            <p className="mt-4 text-base leading-7 text-slate-600">
+              The Hub is designed to grow from practical courses toward safe exchange among local and grassroots CSOs. Community spaces, forums, and co-creation workflows are future-stage features and are not active in this pilot.
+            </p>
+          </div>
+          <div className="rounded-panel border border-slate-200 bg-white p-6 shadow-card">
+            <h3 className="text-xl font-bold text-slate-900">
+              Current pilot focus
+            </h3>
+            <ul className="mt-5 grid gap-3">
+              {[
+                "Register and sign in as a learner.",
+                "Launch practical courses through the Hub.",
+                "Track progress and complete final assessments.",
+                "Earn certificates only after required completion and 80%+ final assessment.",
+              ].map((item) => (
+                <li className="flex gap-3 text-sm leading-6 text-slate-600" key={item}>
+                  <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#91C852]" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CTASection() {
   return (
     <section className="py-20 bg-white">
@@ -452,7 +594,7 @@ function CTASection() {
                 Ready to start your CSO learning journey?
               </h2>
               <p className="mt-3 max-w-xl text-sky-200 text-sm sm:text-base leading-relaxed">
-                Explore practical courses designed to help CSOs strengthen skills and create lasting impact in their communities.
+                Explore practical courses designed to help local and grassroots CSOs strengthen everyday programme practice.
               </p>
             </div>
           </div>
@@ -462,7 +604,7 @@ function CTASection() {
               href="/courses" 
               className="bg-white text-[#0e4a6e] border-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] hover:bg-slate-50 hover:text-[#0e4a6e] font-bold w-full sm:w-auto"
             >
-              Go to Catalog
+              Explore Courses
             </ActionButton>
             <ActionButton
               className="border-white/50 bg-white/10 text-white hover:bg-white/20 hover:text-white hover:border-white/70 w-full sm:w-auto"
@@ -487,9 +629,12 @@ export function LandingPage({
     <div className="flex flex-col">
       <HeroSection />
       <CoreFeaturesSection />
+      <PathwaySection />
       <AboutPlatformSection />
       <CourseShowcaseSection courses={courses} />
       <LearningExperienceSection />
+      <PracticalToolsSection />
+      <CommunityVisionSection />
       <CTASection />
     </div>
   );

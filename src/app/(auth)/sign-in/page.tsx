@@ -46,7 +46,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 Sign in to continue learning
               </h1>
               <p className="mt-5 text-base leading-8 text-muted-text sm:text-lg">
-                Access your courses, progress, certificates, and role-specific workspace.
+                Access your courses, progress, certificates, and learner profile.
               </p>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
 
               <div className="mt-6">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-text">
-                  Quick learner access
+                  Pilot learner access
                 </p>
               </div>
               <div className="grid gap-3">
@@ -155,7 +155,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
                           </p>
                         </div>
                         <ActionButton className="w-full sm:w-auto" type="submit">
-                          Continue
+                          Continue as learner
                         </ActionButton>
                       </div>
                     </form>
@@ -175,7 +175,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-slate-200">
                     Continue practical lessons, track progress, and work toward
-                    a certificate-ready course outcome.
+                    a certificate-eligible course outcome.
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-4 text-center">
@@ -191,20 +191,28 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <StatusBadge label="Mobile-friendly" tone="green" />
-                  <StatusBadge label="Certificate-ready" tone="gold" />
+                  <StatusBadge label="Certificate eligible" tone="gold" />
                   <StatusBadge label="Step-by-step" tone="blue" />
                 </div>
               </div>
             </div>
 
             <p className="mt-6 text-center text-sm text-muted-text">
-              Need to browse first?{" "}
+              Need help or want to browse first?{" "}
               <Link
                 className="font-semibold text-dec-blue underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue"
                 href="/courses"
               >
                 Explore courses
               </Link>
+              {" "}or read the{" "}
+              <Link
+                className="font-semibold text-dec-blue underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue"
+                href="/support"
+              >
+                support guidance
+              </Link>
+              .
             </p>
           </div>
         </div>

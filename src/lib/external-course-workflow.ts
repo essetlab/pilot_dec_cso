@@ -310,13 +310,13 @@ async function ensureHrbaCapacityArea() {
       name: "Human Rights-Based Approach",
       slug: "human-rights-based-approach",
       description:
-        "Practical HRBA learning for local CSOs, including participation, accountability, inclusion, implementation, and MEAL.",
+        "Practical HRBA learning for local CSOs, including participation, inclusion, accountability, dignity, safe evidence use, and project-cycle decisions.",
       isActive: true,
       sortOrder: 20,
     },
     update: {
       description:
-        "Practical HRBA learning for local CSOs, including participation, accountability, inclusion, implementation, and MEAL.",
+        "Practical HRBA learning for local CSOs, including participation, inclusion, accountability, dignity, safe evidence use, and project-cycle decisions.",
       isActive: true,
       sortOrder: 20,
     },
@@ -345,9 +345,9 @@ export async function registerHrbaExternalCourse() {
       language: "English",
       level: CourseLevel.FOUNDATIONAL,
       longDescription:
-        "This interactive HRBA course is delivered through a dedicated course app embedded in the CSO Learning Hub. Participants move through five practical modules covering HRBA foundations, everyday CSO practice, project design, implementation, and MEAL. The portal keeps enrollment, completion, and certificate records while the embedded course provides the interactive learning experience.",
+        "Apply human rights-based thinking to everyday CSO programme work by strengthening participation, inclusion, accountability, dignity, and safe evidence use. This interactive HRBA course focuses on rights-holders, duty-bearers, participation, inclusion, non-discrimination, power and barriers, safe evidence, project-cycle decisions, final assessment, and certificate eligibility.",
       shortDescription:
-        "A five-module interactive course on applying a human rights-based approach in local CSO practice.",
+        "Apply human rights-based thinking to everyday CSO programme work by strengthening participation, inclusion, accountability, dignity, and safe evidence use.",
       slug: HRBA_EXTERNAL_COURSE_SLUG,
       status: CourseStatus.PUBLISHED,
       targetAudience:
@@ -368,9 +368,9 @@ export async function registerHrbaExternalCourse() {
       language: "English",
       level: CourseLevel.FOUNDATIONAL,
       longDescription:
-        "This interactive HRBA course is delivered through a dedicated course app embedded in the CSO Learning Hub. Participants move through five practical modules covering HRBA foundations, everyday CSO practice, project design, implementation, and MEAL. The portal keeps enrollment, completion, and certificate records while the embedded course provides the interactive learning experience.",
+        "Apply human rights-based thinking to everyday CSO programme work by strengthening participation, inclusion, accountability, dignity, and safe evidence use. This interactive HRBA course focuses on rights-holders, duty-bearers, participation, inclusion, non-discrimination, power and barriers, safe evidence, project-cycle decisions, final assessment, and certificate eligibility.",
       shortDescription:
-        "A five-module interactive course on applying a human rights-based approach in local CSO practice.",
+        "Apply human rights-based thinking to everyday CSO programme work by strengthening participation, inclusion, accountability, dignity, and safe evidence use.",
       status: CourseStatus.PUBLISHED,
       targetAudience:
         "Local and grassroots CSO staff, focal persons, facilitators, and programme teams applying HRBA in practical project work.",
@@ -497,10 +497,11 @@ export async function registerHrbaExternalCourse() {
   });
 
   const outcomes = [
-    "Explain HRBA concepts in plain language for everyday CSO work.",
-    "Identify rights-holders, duty-bearers, supporting actors, power dynamics, and participation risks.",
-    "Apply HRBA thinking to project design, implementation, and adaptation decisions.",
-    "Use safe evidence, feedback, indicators, and reporting practices in HRBA-informed MEAL.",
+    "Identify rights-holders, duty-bearers, and supporting actors in practical CSO situations.",
+    "Recognize barriers to participation, access, information, and accountability.",
+    "Apply HRBA principles to project design and implementation choices.",
+    "Use safe, practical analysis without exposing people or sensitive information.",
+    "Prepare for a final assessment linked to HRBA practice.",
   ];
 
   for (const [index, statement] of outcomes.entries()) {

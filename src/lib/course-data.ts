@@ -73,6 +73,28 @@ const statusLabels: Record<CourseStatus, string> = {
   UNPUBLISHED: "Unpublished",
 };
 
+const HRBA_PUBLIC_SLUGS = new Set([
+  "human-rights-based-approach-practice",
+  "applying-human-rights-based-approach-in-cso-practice",
+]);
+
+const HRBA_COURSE_PROMISE =
+  "Apply human rights-based thinking to everyday CSO programme work by strengthening participation, inclusion, accountability, dignity, and safe evidence use.";
+
+const HRBA_COURSE_OVERVIEW = [
+  HRBA_COURSE_PROMISE,
+  "This course helps local and grassroots CSO programme teams apply HRBA in practical decisions across everyday work. It focuses on rights-holders, duty-bearers, participation, inclusion, accountability, non-discrimination, power and barriers, safe evidence, and project-cycle decisions.",
+  "Learners complete the required learning activities and final assessment through the Hub-supported course flow. Certificate eligibility requires course completion and a final assessment score of 80% or above.",
+].join("\n\n");
+
+const HRBA_LEARNING_OUTCOMES = [
+  "Identify rights-holders, duty-bearers, and supporting actors in practical CSO situations.",
+  "Recognize barriers to participation, access, information, and accountability.",
+  "Apply HRBA principles to project design and implementation choices.",
+  "Use safe, practical analysis without exposing people or sensitive information.",
+  "Prepare for a final assessment linked to HRBA practice.",
+];
+
 const blockTypeLabels: Record<string, string> = {
   ACCORDION: "Accordion",
   CASE_STUDY: "Case Study",
@@ -107,6 +129,35 @@ function getDemoCourseBySlug(slug: string) {
 
 function getDemoDetail(slug: string): PublicCourseDetail {
   const course = getDemoCourseBySlug(slug);
+
+  if (HRBA_PUBLIC_SLUGS.has(course.slug)) {
+    return {
+      ...toDemoSummary(course),
+      modules: [
+        {
+          lessons: [
+            "Rights-holders, duty-bearers, and supporting actors",
+            "Participation, inclusion, and non-discrimination",
+          ],
+          title: "HRBA foundations",
+        },
+        {
+          lessons: [
+            "Power, barriers, and accountability in practice",
+            "Safe evidence for project-cycle decisions",
+          ],
+          title: "Applying HRBA in CSO work",
+        },
+        {
+          lessons: ["Final assessment", "Certificate and continued learning"],
+          title: "Final assessment and certificate",
+        },
+      ],
+      outcomes: [...HRBA_LEARNING_OUTCOMES],
+      longDescription: HRBA_COURSE_OVERVIEW,
+      shortDescription: HRBA_COURSE_PROMISE,
+    };
+  }
 
   return {
     ...toDemoSummary(course),
@@ -573,17 +624,19 @@ function mapDatabaseCourseToSummary(
   const finalTest = record.finalTestRequired ? "Configured" : fallback.finalTest;
 
   return {
-    access: record.visibility === CourseVisibility.PUBLIC ? "Public" : fallback.access,
+    access: record.visibility === CourseVisibility.PUBLIC ? "Available now" : fallback.access,
     audience: record.targetAudience ?? fallback.audience,
     capacityArea,
     certificate: record.certificateEligible
-      ? "Certificate included"
+      ? "Certificate eligible"
       : fallback.certificate,
     certificateEligible: record.certificateEligible ? "Yes" : "No",
     creator: cleanPresentationText(record.assignedCreator.fullName),
     currentLesson: fallback.currentLesson,
     currentModule: fallback.currentModule,
-    description: record.shortDescription,
+    description: HRBA_PUBLIC_SLUGS.has(record.slug)
+      ? HRBA_COURSE_PROMISE
+      : record.shortDescription,
     duration: formatDuration(record.estimatedDurationMinutes, fallback.duration),
     finalTest,
     href: `/courses/${record.slug}`,
@@ -599,7 +652,9 @@ function mapDatabaseCourseToSummary(
     progress: fallback.progress,
     resources: String(resourceCount),
     reviewStatus: statusLabels[record.status],
-    shortTitle: getShortTitle(record.title),
+    shortTitle: HRBA_PUBLIC_SLUGS.has(record.slug)
+      ? "Human Rights-Based Approach"
+      : getShortTitle(record.title),
     slug: record.slug,
     status: statusLabels[record.status],
     title: record.title,
@@ -616,10 +671,16 @@ function mapDatabaseCourseToDetail(
 
   return {
     ...summary,
-    longDescription: record.longDescription || record.shortDescription,
+    longDescription: HRBA_PUBLIC_SLUGS.has(record.slug)
+      ? HRBA_COURSE_OVERVIEW
+      : record.longDescription || record.shortDescription,
     modules: modules.length > 0 ? modules : getDemoDetail(record.slug).modules,
-    outcomes: outcomes.length > 0 ? outcomes : getDemoDetail(record.slug).outcomes,
-    shortDescription: record.shortDescription,
+    outcomes: HRBA_PUBLIC_SLUGS.has(record.slug)
+      ? HRBA_LEARNING_OUTCOMES
+      : outcomes.length > 0 ? outcomes : getDemoDetail(record.slug).outcomes,
+    shortDescription: HRBA_PUBLIC_SLUGS.has(record.slug)
+      ? HRBA_COURSE_PROMISE
+      : record.shortDescription,
   };
 }
 
@@ -636,6 +697,12 @@ function filterPublicCourseSummaries(
   const search = normalizeFilterValue(filters.search).toLowerCase();
   const capacityArea = normalizeFilterValue(filters.capacityArea);
   const access = normalizeFilterValue(filters.access);
+  const normalizedAccess =
+    access === "Public"
+      ? "Available now"
+      : access === "Assigned"
+        ? "Assigned access"
+        : access;
   const certificate = normalizeFilterValue(filters.certificate);
   const level = normalizeFilterValue(filters.level);
 
@@ -651,10 +718,17 @@ function filterPublicCourseSummaries(
         course.creator,
       ].some((value) => value.toLowerCase().includes(search));
     const matchesCapacity = !capacityArea || course.capacityArea === capacityArea;
-    const matchesAccess = !access || course.access === access;
+    const courseAccess =
+      course.access === "Public"
+        ? "Available now"
+        : course.access === "Assigned"
+          ? "Assigned access"
+          : course.access;
+    const matchesAccess = !normalizedAccess || courseAccess === normalizedAccess;
     const matchesCertificate =
       !certificate ||
-      (certificate === "Certificate included" && course.certificateEligible === "Yes");
+      (certificate === "Certificate included" || certificate === "Certificate eligible") &&
+      course.certificateEligible === "Yes";
     const matchesLevel = !level || course.level === level;
 
     return matchesSearch && matchesCapacity && matchesAccess && matchesCertificate && matchesLevel;

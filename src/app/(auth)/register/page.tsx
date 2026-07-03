@@ -15,8 +15,8 @@ type PageProps = {
 
 const errorMessage: Record<string, string> = {
   "duplicate-email": "This email is already registered. Please sign in.",
-  "email-not-invited": "We could not confirm this email for the current pilot.",
-  "invalid-access-code": "The pilot access code is not valid.",
+  "email-not-invited": "We could not confirm this email for the current pilot. Check the invitation details shared by the programme team.",
+  "invalid-access-code": "The pilot access code is not valid. Check the code shared by the programme team and try again.",
   "missing-fields": "Please complete all required fields.",
   "password-mismatch": "Passwords do not match.",
   "rate-limited": "Too many registration attempts. Please wait and try again.",
@@ -82,6 +82,11 @@ function RegisterForm({
             Register with the email address invited for the pilot. Your account
             lets you access courses, save progress, and receive certificates for
             eligible courses.
+          </p>
+          <p className="mt-2 text-sm leading-6 text-muted-text">
+            Please do not enter sensitive case details, complaints, survivor
+            stories, exact locations, political details, or confidential
+            organization information in this form.
           </p>
         </div>
         <StatusBadge label="Learner only" tone="green" />
@@ -178,7 +183,15 @@ function RegisterForm({
           />
           <span>
             I agree to use the CSO Learning Hub for pilot learning activities and
-            accept the Terms and Privacy statement for learner account data.
+            accept the{" "}
+            <Link className="font-semibold underline-offset-4 hover:underline" href="/terms">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link className="font-semibold underline-offset-4 hover:underline" href="/privacy">
+              Privacy
+            </Link>{" "}
+            statement for learner account data.
           </span>
         </label>
 
@@ -232,6 +245,9 @@ function SupportNote() {
         detail is unclear, contact your CSO focal person or programme team.
       </p>
       <div className="mt-5 flex flex-col gap-3">
+        <ActionButton href="/support" variant="secondary">
+          Open Support Guidance
+        </ActionButton>
         <ActionButton href="/courses" variant="secondary">
           Browse Courses
         </ActionButton>

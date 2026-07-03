@@ -11,6 +11,18 @@ const badgeToneByCourseTone: Record<PublicCourseSummary["tone"], "blue" | "green
   navy: "blue",
 };
 
+function formatAccessLabel(access: string) {
+  if (access === "Public") {
+    return "Available now";
+  }
+
+  if (access === "Assigned") {
+    return "Assigned access";
+  }
+
+  return access;
+}
+
 function CataloguePageHeader() {
   return (
     <section className="grid gap-8 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-end lg:py-16">
@@ -95,13 +107,13 @@ function CatalogueFilterBar({ filters }: { filters: PublicCourseFilters }) {
         <FilterSelect
           label="Access"
           name="access"
-          options={["All access", "Public", "Assigned"]}
+          options={["All access", "Available now", "Assigned access"]}
           value={filters.access}
         />
         <FilterSelect
           label="Certificate"
           name="certificate"
-          options={["Any certificate", "Certificate included"]}
+          options={["Any certificate", "Certificate eligible"]}
           value={filters.certificate}
         />
         <FilterSelect
@@ -138,7 +150,7 @@ function FeaturedCourseCard({ course }: { course: PublicCourseSummary }) {
         <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-12">
           <div className="flex flex-wrap gap-2">
             <StatusBadge label={course.capacityArea} tone="green" />
-            <StatusBadge label={course.access} tone="blue" />
+            <StatusBadge label={formatAccessLabel(course.access)} tone="blue" />
           </div>
           <h2
             className="mt-6 max-w-3xl font-display text-4xl leading-tight text-deep-navy sm:text-5xl"
@@ -153,14 +165,14 @@ function FeaturedCourseCard({ course }: { course: PublicCourseSummary }) {
             <CourseMetaPill label={`Duration: ${course.duration}`} />
             <CourseMetaPill label={`Level: ${course.level}`} />
             <CourseMetaPill label={course.lessons} />
-            <CourseMetaPill label="Certificate included" />
+            <CourseMetaPill label="Certificate eligible" />
           </div>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <ActionButton href={course.href} size="lg">
               Explore Course
             </ActionButton>
             <p className="text-sm font-semibold text-[#426f1c]">
-              Certificate included
+              Certificate eligible
             </p>
           </div>
         </div>
@@ -179,7 +191,7 @@ function CourseCatalogueCard({ course }: { course: PublicCourseSummary }) {
             label={course.capacityArea}
             tone={badgeToneByCourseTone[course.tone]}
           />
-          <StatusBadge label={course.access} tone="gray" />
+          <StatusBadge label={formatAccessLabel(course.access)} tone="gray" />
         </div>
         <h3 className="mt-5 text-xl font-semibold leading-tight text-dark-ink">
           {course.title}
@@ -188,13 +200,14 @@ function CourseCatalogueCard({ course }: { course: PublicCourseSummary }) {
           {course.description}
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <CourseMetaPill label={course.duration} />
-          <CourseMetaPill label={course.level} />
-          <CourseMetaPill label={course.lessons} />
-        </div>
+            <CourseMetaPill label={course.duration} />
+            <CourseMetaPill label={course.level} />
+            <CourseMetaPill label={course.lessons} />
+            <CourseMetaPill label={formatAccessLabel(course.access)} />
+          </div>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-design-border pt-5">
           <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[#426f1c]">
-            Certificate included
+            Certificate eligible
           </span>
           <ActionButton href={course.href} size="sm" variant="secondary">
             View Course

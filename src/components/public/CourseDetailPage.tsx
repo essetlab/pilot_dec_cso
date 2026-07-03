@@ -72,6 +72,10 @@ function CourseInfoCard({ course }: { course: PublicCourseDetail }) {
     { label: "Capacity area", value: course.capacityArea },
   ];
   const certificateIncluded = course.certificateEligible === "Yes";
+  const certificateRule =
+    "Certificate available after completing the required learning activities and scoring 80% or above on the final assessment.";
+  const certificateDisclaimer =
+    "This certificate confirms that the named learner completed the course requirements and passed the final assessment. It does not replace organizational due diligence, safeguarding review, legal compliance checks, or partnership assessment.";
 
   return (
     <aside className="rounded-panel border border-design-border bg-white-surface p-5 shadow-card lg:sticky lg:top-28">
@@ -96,9 +100,14 @@ function CourseInfoCard({ course }: { course: PublicCourseDetail }) {
         </p>
         <p className="mt-2 text-sm leading-6 text-muted-text">
           {certificateIncluded
-            ? "Participants can work toward a certificate after completing required lessons and the final test."
+            ? certificateRule
             : "This course focuses on learning and practice without a certificate requirement."}
         </p>
+        {certificateIncluded ? (
+          <p className="mt-3 text-xs leading-6 text-muted-text">
+            {certificateDisclaimer}
+          </p>
+        ) : null}
       </div>
       <div className="mt-6 grid gap-3">
         <ActionButton href={courseStartHref(course)}>Start Course</ActionButton>
@@ -127,6 +136,21 @@ function CourseOverview({ course }: { course: PublicCourseDetail }) {
             <p key={paragraph}>{paragraph}</p>
           ))}
       </div>
+    </section>
+  );
+}
+
+function PracticalOutputNote() {
+  return (
+    <section className="rounded-panel border border-dec-blue/20 bg-dec-blue/10 p-6 shadow-soft sm:p-8">
+      <SectionHeader
+        eyebrow="Safe practical work"
+        title="Private tools for your own CSO practice"
+        description="Practical activities and course resources are for learning and internal use. They are not public proof, donor evidence, or visible to other learners by default."
+      />
+      <p className="mt-5 text-sm leading-7 text-[#26536c]">
+        Do not include names, survivor stories, exact locations, complaints, political details, safeguarding cases, or confidential organizational information.
+      </p>
     </section>
   );
 }
@@ -242,7 +266,8 @@ function CourseDetailCTA({ course }: { course: PublicCourseDetail }) {
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-sky-50">
           Sign in to start learning, track your progress, complete the course,
-          and continue toward any available certificate.
+          and continue toward any available certificate after the required
+          activities and 80%+ final assessment are complete.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <ActionButton
@@ -274,6 +299,7 @@ export function CourseDetailPage({ course }: { course: PublicCourseDetail }) {
         <div className="grid gap-8">
           <CourseOverview course={course} />
           <LearningOutcomeList outcomes={course.outcomes} />
+          <PracticalOutputNote />
           <ModuleOutline modules={course.modules} />
           <AudienceAndAccess course={course} />
         </div>

@@ -48,7 +48,7 @@ function InitialState() {
       </h2>
       <p className="mt-3 text-sm leading-7 text-[#26536c]">
         Enter the certificate code exactly as shown on the certificate. The
-        result shows only public verification details.
+        result shows only safe public certificate details.
       </p>
     </article>
   );
@@ -104,7 +104,8 @@ function VerifiedState({
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-text">
           This public result confirms the certificate record without exposing
-          private learner account, assessment, progress, or organization data.
+          learner email, assessment answers, private progress details, portfolio
+          content, internal IDs, or private organization details.
         </p>
       </div>
 
@@ -158,6 +159,16 @@ export function CertificateVerificationPage({
             Verification results are limited to certificate status, recipient
             display name, course title, issue date, certificate code, and issuing
             platform.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-muted-text">
+            Verification does not show learner email, assessment answers,
+            private progress details, portfolio content, internal IDs, or
+            private organization details.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-muted-text">
+            A certificate confirms completion and final assessment performance.
+            It does not replace organizational due diligence, safeguarding
+            review, legal compliance checks, or partnership assessment.
           </p>
         </aside>
       </section>
