@@ -4,7 +4,7 @@ Date prepared: 2026-07-04
 
 ## 1. Internal Pilot Objective
 
-Internal Pilot 0 tests the full CSO Learning Hub HRBA learner journey with two internal HCDA test learners before inviting real CSO learners.
+Internal Pilot 0 tests the full CSO Learning Hub HRBA learner journey with two internal test learners before inviting real CSO learners.
 
 Objective:
 
@@ -21,7 +21,7 @@ Pilot access code: `[to be confirmed]`
 | Learner | Email | Organization | Role | Region | Learner type | Pilot access code | Device/browser | Registration status | Sign-in status |
 |---|---|---|---|---|---|---|---|---|---|
 | Daniel Negash Kebede | agiledatawise@gmail.com | HCDA | Program Manager | Addis Ababa | Participant / CSO learner | `[to be confirmed]` | `[device/browser]` | `[pending / complete / blocked]` | `[pending / complete / blocked]` |
-| Mulu Taddese Ayana | essetlab@gmail.com | HCDA | MEAL Officer | Oromia | Participant / CSO learner | `[to be confirmed]` | `[device/browser]` | `[pending / complete / blocked]` | `[pending / complete / blocked]` |
+| Mulu Taddese Ayana | essetlab@gmail.com | ANGAFA | MEAL Officer | Oromia | Participant / CSO learner | `[to be confirmed]` | `[device/browser]` | `[pending / complete / blocked]` | `[pending / complete / blocked]` |
 
 ## 3. Pre-Launch Smoke Check Table
 
