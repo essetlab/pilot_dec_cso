@@ -580,12 +580,12 @@ export async function getExternalCourseLaunchData(
   courseSlug: string,
   session: AuthSession | null,
 ): Promise<ExternalCourseLaunchData | null> {
-  if (!session?.email) {
+  if (!session?.userId) {
     return null;
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.email },
+    where: { id: session.userId },
   });
   if (!user) {
     return null;
@@ -747,14 +747,14 @@ export async function recordExternalCourseProgress({
   progressPercent: number;
   session: AuthSession | null;
 }) {
-  if (!session?.email || !session.userId) {
+  if (!session?.userId) {
     return { success: false, error: "Unauthorized" };
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.email },
+    where: { id: session.userId },
   });
-  if (!user || user.id !== session.userId) {
+  if (!user) {
     return { success: false, error: "Unauthorized" };
   }
 

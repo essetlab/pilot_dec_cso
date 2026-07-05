@@ -31,6 +31,7 @@
     "verify:s4-registration": "node --import jiti/register scripts/verify-s4-supabase-registration.ts",
     "verify:s5-signin": "node --import jiti/register scripts/verify-s5-supabase-signin.ts",
     "verify:s6-route-roles": "node --import jiti/register scripts/verify-s6-route-roles.ts",
+    "verify:s7-hrba-supabase-compat": "node --import jiti/register scripts/verify-s7-hrba-supabase-compat.ts",
     "verify:course-alignment": "node --import jiti/register scripts/verify-course-alignment.ts",
     "verify:build-studio-blocks": "node --import jiti/register scripts/verify-build-studio-blocks.ts",
     "verify:build-studio-block-editing": "node --import jiti/register scripts/verify-build-studio-block-editing.ts",
