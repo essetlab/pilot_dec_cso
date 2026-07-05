@@ -557,7 +557,7 @@ async function getSessionDbUser(session: AuthSession | null) {
       id: true,
     },
     where: {
-      email: session.email,
+      id: session.userId,
     },
   });
 }

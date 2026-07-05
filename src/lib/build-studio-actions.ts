@@ -561,7 +561,7 @@ async function getSessionDbUserId() {
     redirect("/unauthorized?from=/creator/courses");
   }
 
-  if (!session.email) {
+  if (!session.userId) {
     return {
       dbUserId: null,
       isAdmin: hasAnyRole(session, ["SUPER_ADMIN", "PLATFORM_ADMIN"]),
@@ -573,7 +573,7 @@ async function getSessionDbUserId() {
       id: true,
     },
     where: {
-      email: session.email,
+      id: session.userId,
     },
   });
 
@@ -2543,7 +2543,7 @@ async function verifyCreatorAccess(courseIdOrSlug: string) {
   }
 
   const dbUser = await prisma.user.findUnique({
-    where: { email: session.email },
+    where: { id: session.userId },
   });
   if (!dbUser) {
     throw new Error("Unauthorized: User not found");

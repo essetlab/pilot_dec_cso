@@ -445,7 +445,7 @@ async function main() {
     "Expected draft fixture to be hidden from public catalogue data.",
   );
 
-  courseData.setMockSession({ email: participant.email });
+  courseData.setMockSession({ email: participant.email, userId: participant.id });
   const learnerCourse = await courseData.getLearnerCourseBySlug(fixtureSlug);
   courseData.setMockSession(null);
   assert(learnerCourse, "Expected published fixture to resolve for participant.");

@@ -233,7 +233,7 @@ async function main() {
   assert(preview?.template.templateId === "LT-RESOURCE-TOOLKIT", "Expected creator preview to use saved template.");
 
   const courseData = loadCourseDataModule();
-  courseData.setMockSession({ email: participant.email });
+  courseData.setMockSession({ email: participant.email, userId: participant.id });
   const learnerCourse = await courseData.getLearnerCourseBySlug(created.slug);
   courseData.setMockSession(null);
   assert(learnerCourse?.template.templateId === "LT-RESOURCE-TOOLKIT", "Expected learner route data to use saved template.");

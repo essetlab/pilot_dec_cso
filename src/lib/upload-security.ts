@@ -111,10 +111,10 @@ async function validateCreatorCanUpload(courseId: string): Promise<UploadFailure
     return { error: "Unauthorized", status: 401, success: false };
   }
 
-  const dbUser = session.email
+  const dbUser = session.userId
     ? await prisma.user.findUnique({
         select: { id: true },
-        where: { email: session.email },
+        where: { id: session.userId },
       })
     : null;
   const isAdmin = hasAnyRole(session, ["SUPER_ADMIN", "PLATFORM_ADMIN"]);

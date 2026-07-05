@@ -137,9 +137,9 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
     let totalAttemptsCount = 0;
     let lessonsComplete = false;
 
-    if (course.courseVersionId && session?.email) {
+    if (course.courseVersionId && session.userId) {
       const dbUser = await prisma.user.findUnique({
-        where: { email: session.email },
+        where: { id: session.userId },
       });
       if (dbUser) {
         const attempt = await prisma.quizAttempt.findFirst({

@@ -143,7 +143,7 @@ export async function getLearnerProfileData(
         },
       },
     },
-    where: { email: session.email },
+    where: { id: session.userId },
   });
 
   if (!user) {

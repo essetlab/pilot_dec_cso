@@ -230,7 +230,7 @@ async function main() {
 
   const { courseData, creatorPreviewData } = loadDataModules();
 
-  courseData.setMockSession({ email: participant.email });
+  courseData.setMockSession({ email: participant.email, userId: participant.id });
   const learnerCourse = await courseData.getLearnerCourseBySlug(fixtureSlug);
   const fallbackCourse = await courseData.getLearnerCourseBySlug(fallbackSlug);
   courseData.setMockSession(null);

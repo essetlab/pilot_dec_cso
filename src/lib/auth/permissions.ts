@@ -54,7 +54,12 @@ export function canAccessReview(session: AuthSession | null) {
 }
 
 export function canAccessPath(session: AuthSession | null, pathname: string) {
-  if (pathname === "/admin/monitoring" || pathname.startsWith("/admin/monitoring/")) {
+  if (
+    pathname === "/admin/monitoring" ||
+    pathname.startsWith("/admin/monitoring/") ||
+    pathname === "/admin/pilot-monitoring" ||
+    pathname.startsWith("/admin/pilot-monitoring/")
+  ) {
     return canAccessMonitoring(session);
   }
 

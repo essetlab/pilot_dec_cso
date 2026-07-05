@@ -217,7 +217,7 @@ async function resolveCourseFeedbackContext(
       organizationId: true,
       primaryCohortId: true,
     },
-    where: { email: session.email },
+    where: { id: session.userId },
   });
 
   if (!dbUser) {

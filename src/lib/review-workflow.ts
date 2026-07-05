@@ -569,10 +569,10 @@ function getBlockReadinessWarning(block: WorkflowBlock) {
 }
 
 async function queryWorkflowCourse(courseIdOrSlug: string, session?: AuthSession | null) {
-  const dbUser = session?.email
+  const dbUser = session?.userId
     ? await prisma.user.findUnique({
         select: { id: true },
-        where: { email: session.email },
+        where: { id: session.userId },
       })
     : null;
   const isAdmin = hasAnyRole(session ?? null, ["SUPER_ADMIN", "PLATFORM_ADMIN"]);
@@ -1292,7 +1292,7 @@ async function getDbUser(session: AuthSession | null) {
       id: true,
     },
     where: {
-      email: session.email,
+      id: session.userId,
     },
   });
 }

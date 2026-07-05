@@ -31,7 +31,7 @@ function optionalProfileString(value: FormDataEntryValue | null) {
 export async function updateLearnerProfileAction(formData: FormData) {
   const session = await getCurrentSession();
 
-  if (!session?.email) {
+  if (!session?.userId) {
     redirect("/sign-in?next=%2Flearn%2Fprofile");
   }
 
@@ -50,7 +50,7 @@ export async function updateLearnerProfileAction(formData: FormData) {
       preferredLanguage: optionalProfileString(formData.get("preferredLanguage")),
       region: optionalProfileString(formData.get("region")),
     },
-    where: { email: session.email },
+    where: { id: session.userId },
   });
 
   try {
@@ -83,7 +83,7 @@ export async function markLessonCompleteAction(
 
     // 2. DB User exists
     const dbUser = await prisma.user.findUnique({
-      where: { email: session.email },
+      where: { id: session.userId },
     });
     if (!dbUser) {
       return { success: false, error: "Unauthorized: User not found" };
@@ -270,7 +270,7 @@ export async function submitFinalTestAttemptAction(
 
     // 2. DB User exists
     const dbUser = await prisma.user.findUnique({
-      where: { email: session.email },
+      where: { id: session.userId },
     });
     if (!dbUser) {
       return { success: false, error: "Unauthorized: User not found" };

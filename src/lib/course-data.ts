@@ -26,8 +26,8 @@ import { prisma } from "./prisma";
 import { getCurrentSession } from "./auth/server";
 import { cleanPresentationText } from "./presentation-text";
 
-let mockSession: { email: string } | null = null;
-export function setMockSession(session: { email: string } | null) {
+let mockSession: { email: string; userId: string } | null = null;
+export function setMockSession(session: { email: string; userId: string } | null) {
   mockSession = session;
 }
 import type {
@@ -831,7 +831,7 @@ export async function getLearnerCourseSummaries(): Promise<
     }
 
     const dbUser = await prisma.user.findUnique({
-      where: { email: session.email },
+      where: { id: session.userId },
     });
     if (!dbUser) {
       return getDemoSummaries()
@@ -946,7 +946,7 @@ export async function getLearnerCourseBySlug(
     }
 
     const dbUser = await prisma.user.findUnique({
-      where: { email: session.email },
+      where: { id: session.userId },
     });
     if (!dbUser) {
       return null;

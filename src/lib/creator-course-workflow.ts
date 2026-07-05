@@ -260,10 +260,10 @@ async function getCreator(session: AuthSession | null): Promise<{
     return { creator: null, isAdmin: false };
   }
 
-  const creator = session?.email
+  const creator = session?.userId
     ? await prisma.user.findUnique({
         select: { id: true },
-        where: { email: session.email },
+        where: { id: session.userId },
       })
     : null;
 

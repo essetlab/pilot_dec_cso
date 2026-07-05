@@ -115,7 +115,7 @@ async function getSessionDbUser(session: AuthSession | null) {
 
   return prisma.user.findUnique({
     select: { id: true },
-    where: { email: session.email },
+    where: { id: session.userId },
   });
 }
 

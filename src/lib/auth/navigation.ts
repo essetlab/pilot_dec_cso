@@ -31,7 +31,7 @@ export function getAdminNav(session: AuthSession | null): NavItem[] {
   }
 
   return adminNav.filter((item) => {
-    if (item.href === "/admin/monitoring") {
+    if (item.href === "/admin/monitoring" || item.href === "/admin/pilot-monitoring") {
       return canAccessMonitoring(session);
     }
 

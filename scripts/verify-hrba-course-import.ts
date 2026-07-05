@@ -327,7 +327,7 @@ async function main() {
   assert(previewData.totalBlocks === 23, "Expected creator preview to use real HRBA blocks.");
   assert(previewData.template.templateId === "LT-PRACTICE-SCENARIO", "Expected creator preview selected template.");
 
-  courseData.setMockSession({ email: participant.email });
+  courseData.setMockSession({ email: participant.email, userId: participant.id });
   const learnerCourse = await courseData.getLearnerCourseBySlug(HRBA_COURSE_SLUG);
   courseData.setMockSession(null);
   assert(learnerCourse, "Expected participant learner course to resolve.");
