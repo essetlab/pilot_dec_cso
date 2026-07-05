@@ -3,8 +3,10 @@ import {
   RoleKey,
   UserStatus,
 } from "../generated/prisma/enums";
+import { createClient } from "@supabase/supabase-js";
 import { hashPassword, validatePasswordPolicy } from "./auth/passwords";
 import { prisma } from "./prisma";
+import { readSupabasePublicConfig } from "./supabase/config";
 
 export type PilotLearnerType = "participant" | "cso-focal-person";
 
@@ -22,20 +24,38 @@ export type PilotRegistrationInput = {
 };
 
 export type PilotRegistrationResult =
-  | { code: "created"; email: string; success: true; userId: string }
+  | {
+      authProvider: "local" | "supabase";
+      code: "created";
+      email: string;
+      success: true;
+      userId: string;
+    }
   | {
       code:
         | "duplicate-email"
         | "email-not-invited"
         | "invalid-access-code"
         | "missing-fields"
+        | "profile-link-failed"
         | "password-mismatch"
+        | "supabase-account-exists"
+        | "supabase-registration-failed"
         | "terms-required"
         | "weak-password";
       success: false;
     };
 
 const DEFAULT_PILOT_ACCESS_CODE = "HRBA-PILOT-2026";
+
+type SupabasePilotSignUpResult =
+  | { provider: "local" }
+  | { provider: "supabase"; success: true; userId: string }
+  | {
+      code: "supabase-account-exists" | "supabase-registration-failed";
+      provider: "supabase";
+      success: false;
+    };
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
@@ -75,6 +95,10 @@ export function getDefaultPilotAccessCodeForLocalDev() {
   return DEFAULT_PILOT_ACCESS_CODE;
 }
 
+export function isSupabasePilotRegistrationConfigured() {
+  return Boolean(readSupabasePublicConfig());
+}
+
 async function isEmailAllowed(email: string) {
   if (!usesStrictInvitedEmailMode()) {
     return true;
@@ -102,6 +126,165 @@ async function isEmailAllowed(email: string) {
       !invitation.usedAt &&
       invitation.expiresAt.getTime() >= Date.now(),
   );
+}
+
+export function buildPilotLearnerUserCreateData(input: {
+  authProvider: "local" | "supabase";
+  authProviderId?: string | null;
+  email: string;
+  fullName: string;
+  jobTitle: string;
+  learnerType: PilotLearnerType;
+  organizationId: string;
+  passwordHash?: string | null;
+  region: string;
+}) {
+  return {
+    authProvider: input.authProvider,
+    authProviderId: input.authProviderId ?? null,
+    department:
+      input.learnerType === "cso-focal-person"
+        ? "CSO focal person"
+        : "Participant",
+    email: input.email,
+    fullName: input.fullName,
+    jobTitle: input.jobTitle,
+    organizationId: input.organizationId,
+    passwordHash: input.passwordHash ?? null,
+    region: input.region,
+    status: UserStatus.ACTIVE,
+  };
+}
+
+function isSupabaseDuplicateAccountError(message: string) {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("already registered") ||
+    normalized.includes("already exists") ||
+    normalized.includes("user already") ||
+    normalized.includes("duplicate")
+  );
+}
+
+async function signUpSupabasePilotLearner(
+  email: string,
+  password: string,
+): Promise<SupabasePilotSignUpResult> {
+  const config = readSupabasePublicConfig();
+
+  if (!config) {
+    return { provider: "local" as const };
+  }
+
+  const supabase = createClient(config.url, config.publishableKey, {
+    auth: {
+      persistSession: false,
+    },
+  });
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) {
+    return {
+      code: isSupabaseDuplicateAccountError(error.message)
+        ? "supabase-account-exists"
+        : "supabase-registration-failed",
+      provider: "supabase" as const,
+      success: false as const,
+    };
+  }
+
+  if (
+    data.user &&
+    Array.isArray(data.user.identities) &&
+    data.user.identities.length === 0
+  ) {
+    return {
+      code: "supabase-account-exists" as const,
+      provider: "supabase" as const,
+      success: false as const,
+    };
+  }
+
+  if (!data.user?.id) {
+    return {
+      code: "supabase-registration-failed" as const,
+      provider: "supabase" as const,
+      success: false as const,
+    };
+  }
+
+  return {
+    provider: "supabase" as const,
+    success: true as const,
+    userId: data.user.id,
+  };
+}
+
+async function createPilotLearnerProfile(input: {
+  authProvider: "local" | "supabase";
+  authProviderId?: string | null;
+  email: string;
+  fullName: string;
+  jobTitle: string;
+  learnerType: PilotLearnerType;
+  organizationName: string;
+  passwordHash?: string | null;
+  region: string;
+}) {
+  return prisma.$transaction(async (tx) => {
+    const organization = await tx.organization.upsert({
+      create: {
+        name: input.organizationName,
+        region: input.region,
+        status: OrganizationStatus.ACTIVE,
+      },
+      update: {
+        region: input.region,
+        status: OrganizationStatus.ACTIVE,
+      },
+      where: { name: input.organizationName },
+    });
+
+    const participantRole = await tx.role.upsert({
+      create: {
+        description: "Learner access to courses, progress, and certificates.",
+        key: RoleKey.PARTICIPANT,
+        name: "Participant",
+      },
+      update: {},
+      where: { key: RoleKey.PARTICIPANT },
+    });
+
+    const user = await tx.user.create({
+      data: buildPilotLearnerUserCreateData({
+        authProvider: input.authProvider,
+        authProviderId: input.authProviderId,
+        email: input.email,
+        fullName: input.fullName,
+        jobTitle: input.jobTitle,
+        learnerType: input.learnerType,
+        organizationId: organization.id,
+        passwordHash: input.passwordHash,
+        region: input.region,
+      }),
+    });
+
+    await tx.userRoleAssignment.create({
+      data: {
+        assignedById: user.id,
+        isActive: true,
+        roleId: participantRole.id,
+        userId: user.id,
+      },
+    });
+
+    return user;
+  });
 }
 
 export async function registerPilotLearner(
@@ -157,62 +340,41 @@ export async function registerPilotLearner(
     return { code: "duplicate-email", success: false };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const organization = await tx.organization.upsert({
-      create: {
-        name: organizationName,
-        region,
-        status: OrganizationStatus.ACTIVE,
-      },
-      update: {
-        region,
-        status: OrganizationStatus.ACTIVE,
-      },
-      where: { name: organizationName },
+  const supabaseSignUp = await signUpSupabasePilotLearner(email, input.password);
+
+  if ("success" in supabaseSignUp && !supabaseSignUp.success) {
+    return { code: supabaseSignUp.code, success: false };
+  }
+
+  const isSupabaseRegistration =
+    supabaseSignUp.provider === "supabase" && "userId" in supabaseSignUp;
+
+  try {
+    const result = await createPilotLearnerProfile({
+      authProvider: isSupabaseRegistration ? "supabase" : "local",
+      authProviderId: isSupabaseRegistration ? supabaseSignUp.userId : null,
+      email,
+      fullName,
+      jobTitle,
+      learnerType: input.learnerType,
+      organizationName,
+      passwordHash: isSupabaseRegistration ? null : hashPassword(input.password),
+      region,
     });
 
-    const participantRole = await tx.role.upsert({
-      create: {
-        description: "Learner access to courses, progress, and certificates.",
-        key: RoleKey.PARTICIPANT,
-        name: "Participant",
-      },
-      update: {},
-      where: { key: RoleKey.PARTICIPANT },
+    return {
+      authProvider: isSupabaseRegistration ? "supabase" : "local",
+      code: "created",
+      email,
+      success: true,
+      userId: result.id,
+    };
+  } catch (error) {
+    console.error("Pilot learner profile creation failed after registration validation.", {
+      authProvider: isSupabaseRegistration ? "supabase" : "local",
+      error,
     });
 
-    const user = await tx.user.create({
-      data: {
-        department:
-          input.learnerType === "cso-focal-person"
-            ? "CSO focal person"
-            : "Participant",
-        email,
-        fullName,
-        jobTitle,
-        organizationId: organization.id,
-        passwordHash: hashPassword(input.password),
-        region,
-        status: UserStatus.ACTIVE,
-      },
-    });
-
-    await tx.userRoleAssignment.create({
-      data: {
-        assignedById: user.id,
-        isActive: true,
-        roleId: participantRole.id,
-        userId: user.id,
-      },
-    });
-
-    return user;
-  });
-
-  return {
-    code: "created",
-    email,
-    success: true,
-    userId: result.id,
-  };
+    return { code: "profile-link-failed", success: false };
+  }
 }

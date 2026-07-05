@@ -101,6 +101,15 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 </div>
               ) : null}
 
+              {notice === "supabase-registration-created" ? (
+                <div className="mt-5">
+                  <AlertMessage tone="success" title="Registration created">
+                    Your learner account was created. Supabase sign-in support
+                    is being completed in the next implementation slice.
+                  </AlertMessage>
+                </div>
+              ) : null}
+
               <form action={signInWithPassword} className="mt-6 grid gap-3 rounded-card border border-design-border bg-soft-bg p-4">
                 <input name="next" type="hidden" value={next ?? ""} />
                 <label className="text-sm font-semibold text-dark-ink">

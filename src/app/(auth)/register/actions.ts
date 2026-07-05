@@ -58,7 +58,10 @@ export async function registerPilotLearnerAction(formData: FormData) {
   }
 
   const params = new URLSearchParams({
-    notice: "pilot-registration-complete",
+    notice:
+      result.authProvider === "supabase"
+        ? "supabase-registration-created"
+        : "pilot-registration-complete",
   });
 
   if (next) {

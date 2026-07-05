@@ -19,7 +19,10 @@ const errorMessage: Record<string, string> = {
   "invalid-access-code": "The pilot access code is not valid. Check the code shared by the programme team and try again.",
   "missing-fields": "Please complete all required fields.",
   "password-mismatch": "Passwords do not match.",
+  "profile-link-failed": "Registration was started, but the learner profile could not be completed. Please contact support before trying again.",
   "rate-limited": "Too many registration attempts. Please wait and try again.",
+  "supabase-account-exists": "This email may already be registered in the pilot sign-in system. Please sign in when Supabase access is available or contact support.",
+  "supabase-registration-failed": "Registration could not be completed with the pilot sign-in system. Please contact support and try again later.",
   "terms-required": "Please accept the Terms and Privacy statement.",
   "weak-password":
     "Password must be at least 10 characters and include upper/lowercase letters and a number.",

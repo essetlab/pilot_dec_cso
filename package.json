@@ -28,6 +28,7 @@
     "verify:r22g": "node --import jiti/register scripts/verify-r22g.ts",
     "verify:r22h": "node --import jiti/register scripts/verify-r22h.ts",
     "verify:r23a": "node --import jiti/register scripts/verify-r23a.ts",
+    "verify:s4-registration": "node --import jiti/register scripts/verify-s4-supabase-registration.ts",
     "verify:course-alignment": "node --import jiti/register scripts/verify-course-alignment.ts",
     "verify:build-studio-blocks": "node --import jiti/register scripts/verify-build-studio-blocks.ts",
     "verify:build-studio-block-editing": "node --import jiti/register scripts/verify-build-studio-block-editing.ts",
