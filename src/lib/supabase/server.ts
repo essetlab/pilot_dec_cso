@@ -8,8 +8,8 @@ export async function createSupabaseServerClient() {
   const config = getSupabasePublicConfig();
   const cookieStore = await cookies();
 
-  // Dormant S2 utility for future Supabase Auth slices. This does not replace
-  // the current Hub getCurrentSession() or cso_lh_session behavior.
+  // Uses only public/publishable Supabase config. The service_role key must
+  // never be imported here because this client participates in request cookies.
   return createServerClient(config.url, config.publishableKey, {
     cookies: {
       getAll() {

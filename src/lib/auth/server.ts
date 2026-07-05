@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { resolveSupabaseHubSession } from "./hub-session";
 import {
   AUTH_COOKIE_NAME,
   createSessionCookieValue,
@@ -8,6 +9,8 @@ import {
   parseSessionCookieValue,
   type AuthSession,
 } from "./session-codec";
+import { readSupabasePublicConfig } from "../supabase/config";
+import { createSupabaseServerClient } from "../supabase/server";
 
 const cookieOptions = {
   httpOnly: true,
@@ -22,6 +25,31 @@ export async function getCurrentSession() {
   if (globalMock) {
     return globalMock;
   }
+
+  if (readSupabasePublicConfig()) {
+    try {
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user?.id || !user.email) {
+        return null;
+      }
+
+      const sessionResult = await resolveSupabaseHubSession({
+        email: user.email,
+        issuedAt: user.last_sign_in_at ?? new Date().toISOString(),
+        linkEmailFallback: false,
+        supabaseUserId: user.id,
+      });
+
+      return sessionResult.success ? sessionResult.session : null;
+    } catch {
+      return null;
+    }
+  }
+
   try {
     const cookieStore = await cookies();
     const cookieValue = cookieStore.get(AUTH_COOKIE_NAME)?.value;

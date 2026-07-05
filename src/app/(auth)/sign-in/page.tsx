@@ -4,6 +4,7 @@ import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
 import { DEMO_USERS } from "@/lib/auth/demo-users";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { DEMO_PROPOSAL_COURSE } from "@/lib/demo-data";
+import { readSupabasePublicConfig } from "@/lib/supabase/config";
 import { signInDemoUser, signInWithPassword } from "./actions";
 
 type PageProps = {
@@ -26,8 +27,29 @@ const publicQuickAccessUsers = DEMO_USERS.filter((user) =>
   user.roles.includes("PARTICIPANT"),
 );
 
+const signInErrorMessages: Record<string, string> = {
+  "confirmation-required":
+    "Please confirm your email address before signing in. If you need help, contact your programme team.",
+  "demo-unavailable":
+    "Quick learner access is available only in local preview mode. Sign in with your email and password.",
+  "hub-profile-missing":
+    "Your sign-in worked, but your Learning Hub profile is not linked yet. Contact your programme team for help.",
+  "inactive-user":
+    "This account is not active. Contact your programme team if you need access restored.",
+  "invalid-credentials": "Confirm your credentials and try again.",
+  "missing-credentials": "Enter your email and password to continue.",
+  "missing-roles":
+    "Your account is missing a Learning Hub role. Contact your programme team for help.",
+  "too-many-attempts":
+    "Too many sign-in attempts. Wait a few minutes, then try again.",
+};
+
 export default async function SignInPage({ searchParams }: PageProps) {
   const { next, error, notice } = await searchParams;
+  const usesSupabaseSignIn = Boolean(readSupabasePublicConfig());
+  const signInErrorMessage = error
+    ? signInErrorMessages[error] ?? "Confirm your credentials and try again."
+    : null;
 
   return (
     <section className="relative overflow-hidden rounded-[32px] border border-design-border bg-white-surface shadow-card">
@@ -103,9 +125,9 @@ export default async function SignInPage({ searchParams }: PageProps) {
 
               {notice === "supabase-registration-created" ? (
                 <div className="mt-5">
-                  <AlertMessage tone="success" title="Registration created">
-                    Your learner account was created. Supabase sign-in support
-                    is being completed in the next implementation slice.
+                  <AlertMessage tone="success" title="Learner account created">
+                    Your account is ready. Sign in with your email and password to
+                    open your learner dashboard.
                   </AlertMessage>
                 </div>
               ) : null}
@@ -123,54 +145,58 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 <ActionButton type="submit">Sign In</ActionButton>
               </form>
 
-              {error ? (
+              {signInErrorMessage ? (
                 <div className="mt-5">
                   <AlertMessage tone="error" title="Sign-in could not be completed">
-                    Confirm your credentials and try again.
+                    {signInErrorMessage}
                   </AlertMessage>
                 </div>
               ) : null}
 
-              <div className="mt-6">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-text">
-                  Pilot learner access
-                </p>
-              </div>
-              <div className="grid gap-3">
-                {publicQuickAccessUsers.map((user) => {
-                  const roleLabel = user.roles.map((role) => ROLE_LABELS[role]).join(", ");
-                  const details = roleDetails[user.id];
+              {!usesSupabaseSignIn ? (
+                <>
+                  <div className="mt-6">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-text">
+                      Pilot learner access
+                    </p>
+                  </div>
+                  <div className="grid gap-3">
+                    {publicQuickAccessUsers.map((user) => {
+                      const roleLabel = user.roles.map((role) => ROLE_LABELS[role]).join(", ");
+                      const details = roleDetails[user.id];
 
-                  return (
-                    <form
-                      action={signInDemoUser}
-                      className="group rounded-card border border-design-border bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-dec-blue/40 hover:shadow-card"
-                      key={user.id}
-                    >
-                      <input name="userId" type="hidden" value={user.id} />
-                      <input name="next" type="hidden" value={next ?? ""} />
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-semibold text-dark-ink">
-                              {roleLabel}
-                            </h3>
-                            {details ? (
-                              <StatusBadge label={details.access} tone={details.tone} />
-                            ) : null}
+                      return (
+                        <form
+                          action={signInDemoUser}
+                          className="group rounded-card border border-design-border bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-dec-blue/40 hover:shadow-card"
+                          key={user.id}
+                        >
+                          <input name="userId" type="hidden" value={user.id} />
+                          <input name="next" type="hidden" value={next ?? ""} />
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base font-semibold text-dark-ink">
+                                  {roleLabel}
+                                </h3>
+                                {details ? (
+                                  <StatusBadge label={details.access} tone={details.tone} />
+                                ) : null}
+                              </div>
+                              <p className="mt-2 text-sm leading-6 text-muted-text">
+                                {details?.focus ?? user.description}
+                              </p>
+                            </div>
+                            <ActionButton className="w-full sm:w-auto" type="submit">
+                              Continue as learner
+                            </ActionButton>
                           </div>
-                          <p className="mt-2 text-sm leading-6 text-muted-text">
-                            {details?.focus ?? user.description}
-                          </p>
-                        </div>
-                        <ActionButton className="w-full sm:w-auto" type="submit">
-                          Continue as learner
-                        </ActionButton>
-                      </div>
-                    </form>
-                  );
-                })}
-              </div>
+                        </form>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : null}
             </div>
 
             <div className="mt-6 overflow-hidden rounded-card border border-design-border bg-deep-navy text-white shadow-card">

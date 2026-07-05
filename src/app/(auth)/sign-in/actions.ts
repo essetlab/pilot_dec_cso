@@ -3,11 +3,14 @@
 import { UserStatus } from "@/generated/prisma/enums";
 import { redirect } from "next/navigation";
 import { getDemoUserById, toAuthSession } from "@/lib/auth/demo-users";
+import { resolveSupabaseHubSession } from "@/lib/auth/hub-session";
 import { verifyPassword } from "@/lib/auth/passwords";
 import { isRateLimited } from "@/lib/auth/rate-limit";
 import { isRoleKey, type RoleKey } from "@/lib/auth/roles";
-import { setCurrentSession } from "@/lib/auth/server";
+import { clearCurrentSession, setCurrentSession } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
+import { readSupabasePublicConfig } from "@/lib/supabase/config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function safeRedirectPath(value: FormDataEntryValue | null, fallback: string) {
   if (
@@ -42,6 +45,10 @@ function defaultPathForRoles(roles: RoleKey[]) {
 }
 
 export async function signInDemoUser(formData: FormData) {
+  if (readSupabasePublicConfig()) {
+    redirect("/sign-in?error=demo-unavailable");
+  }
+
   const userId = formData.get("userId");
 
   if (typeof userId !== "string") {
@@ -97,6 +104,70 @@ export async function signInDemoUser(formData: FormData) {
   redirect(safeRedirectPath(formData.get("next"), demoUser.defaultPath));
 }
 
+function safeSupabaseSignInErrorCode(message: string | undefined) {
+  const normalizedMessage = message?.toLowerCase() ?? "";
+
+  if (
+    normalizedMessage.includes("email not confirmed") ||
+    normalizedMessage.includes("not confirmed") ||
+    normalizedMessage.includes("confirmation")
+  ) {
+    return "confirmation-required";
+  }
+
+  return "invalid-credentials";
+}
+
+function hubSessionErrorCode(code: "hub-profile-missing" | "inactive-user" | "missing-roles") {
+  if (code === "hub-profile-missing") {
+    return "hub-profile-missing";
+  }
+
+  if (code === "missing-roles") {
+    return "missing-roles";
+  }
+
+  return "inactive-user";
+}
+
+async function signInWithSupabasePassword(input: {
+  email: string;
+  formData: FormData;
+  password: string;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: input.email,
+    password: input.password,
+  });
+
+  if (error || !data.user?.id) {
+    redirect(
+      `/sign-in?error=${safeSupabaseSignInErrorCode(error?.message)}`,
+    );
+  }
+
+  const sessionResult = await resolveSupabaseHubSession({
+    email: data.user.email ?? input.email,
+    issuedAt: data.user.last_sign_in_at ?? new Date().toISOString(),
+    supabaseUserId: data.user.id,
+  });
+
+  if (!sessionResult.success) {
+    await supabase.auth.signOut();
+    await clearCurrentSession();
+    redirect(`/sign-in?error=${hubSessionErrorCode(sessionResult.code)}`);
+  }
+
+  await clearCurrentSession();
+  redirect(
+    safeRedirectPath(
+      input.formData.get("next"),
+      defaultPathForRoles(sessionResult.session.roles),
+    ),
+  );
+}
+
 export async function signInWithPassword(formData: FormData) {
   const email = formData.get("email");
   const password = formData.get("password");
@@ -108,6 +179,14 @@ export async function signInWithPassword(formData: FormData) {
   const normalizedEmail = email.trim().toLowerCase();
   if (isRateLimited(`signin:${normalizedEmail}`, 8, 10 * 60 * 1000)) {
     redirect("/sign-in?error=too-many-attempts");
+  }
+
+  if (readSupabasePublicConfig()) {
+    return signInWithSupabasePassword({
+      email: normalizedEmail,
+      formData,
+      password,
+    });
   }
 
   const dbUser = await prisma.user.findUnique({
