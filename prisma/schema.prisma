@@ -156,7 +156,8 @@ model User {
   fullName                     String
   email                        String               @unique
   passwordHash                 String?
-  authProviderId               String?
+  authProviderId               String?              @unique
+  authProvider                 String               @default("local")
   status                       UserStatus           @default(ACTIVE)
   phone                        String?
   jobTitle                     String?
