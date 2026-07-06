@@ -6,6 +6,7 @@
 - Private environment file checked: `D:\CSO_Learning_Hub_Secrets\s8b-real-pilot.env`
 - Private environment file location: outside the repository
 - Task scope: re-test corrected Supabase database URL parsing and read-only connection only
+- Latest rerun date: 2026-07-06
 - Decision: **Not ready; database URL still invalid**
 
 ## Private Environment Presence
