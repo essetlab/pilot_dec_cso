@@ -284,7 +284,7 @@ export function ExternalCourseFrame({
         </div>
         <div className="relative min-h-[720px] bg-white">
           {!frameReady ? (
-            <div className="absolute inset-0 z-10 grid place-items-center bg-white px-6 text-center">
+            <div className="absolute inset-0 z-10 grid justify-items-center bg-white px-6 pt-14 text-center sm:pt-20">
               <div className="max-w-md">
                 <StatusBadge label="Course app" tone="blue" />
                 <p className="mt-4 text-2xl font-semibold text-strong-text">
