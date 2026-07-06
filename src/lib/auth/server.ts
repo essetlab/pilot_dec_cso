@@ -20,6 +20,17 @@ const cookieOptions = {
   maxAge: 60 * 60 * 8,
 };
 
+async function getCurrentCookieSession() {
+  try {
+    const cookieStore = await cookies();
+    const cookieValue = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+
+    return parseSessionCookieValue(cookieValue, getSessionSecret());
+  } catch {
+    return null;
+  }
+}
+
 export async function getCurrentSession() {
   const globalMock = (globalThis as unknown as { __mockSession?: AuthSession }).__mockSession;
   if (globalMock) {
@@ -34,7 +45,7 @@ export async function getCurrentSession() {
       } = await supabase.auth.getUser();
 
       if (!user?.id || !user.email) {
-        return null;
+        return getCurrentCookieSession();
       }
 
       const sessionResult = await resolveSupabaseHubSession({
@@ -44,20 +55,13 @@ export async function getCurrentSession() {
         supabaseUserId: user.id,
       });
 
-      return sessionResult.success ? sessionResult.session : null;
+      return sessionResult.success ? sessionResult.session : getCurrentCookieSession();
     } catch {
-      return null;
+      return getCurrentCookieSession();
     }
   }
 
-  try {
-    const cookieStore = await cookies();
-    const cookieValue = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-
-    return parseSessionCookieValue(cookieValue, getSessionSecret());
-  } catch {
-    return null;
-  }
+  return getCurrentCookieSession();
 }
 
 export async function setCurrentSession(session: AuthSession) {

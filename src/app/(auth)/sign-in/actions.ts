@@ -159,7 +159,7 @@ async function signInWithSupabasePassword(input: {
     redirect(`/sign-in?error=${hubSessionErrorCode(sessionResult.code)}`);
   }
 
-  await clearCurrentSession();
+  await setCurrentSession(sessionResult.session);
   redirect(
     safeRedirectPath(
       input.formData.get("next"),
