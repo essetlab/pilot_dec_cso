@@ -69,7 +69,11 @@ export function ExternalCourseFrame({
   const [progressPercent, setProgressPercent] = useState(0);
   const [status, setStatus] = useState<"ready" | "saving" | "completed" | "error">("ready");
   const [message, setMessage] = useState("Waiting for course progress...");
+  const [frameKey, setFrameKey] = useState(0);
+  const [frameStatus, setFrameStatus] = useState<"loading" | "stabilizing" | "ready">("loading");
   const hasSubmittedCompletion = useRef(false);
+  const hasStabilizedFrame = useRef(false);
+  const frameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     async function persistProgress(progressMessage: ExternalCourseProgressMessage) {
@@ -157,8 +161,46 @@ export function ExternalCourseFrame({
     };
   }, [launchData]);
 
+  useEffect(() => {
+    return () => {
+      if (frameTimer.current) {
+        clearTimeout(frameTimer.current);
+        frameTimer.current = null;
+      }
+    };
+  }, []);
+
   const completed = status === "completed";
   const error = status === "error";
+  const frameReady = frameStatus === "ready";
+
+  function handleFrameLoad() {
+    if (!hasStabilizedFrame.current) {
+      hasStabilizedFrame.current = true;
+      setFrameStatus("stabilizing");
+
+      frameTimer.current = setTimeout(() => {
+        frameTimer.current = null;
+        setFrameStatus("loading");
+        setFrameKey((currentKey) => currentKey + 1);
+      }, 500);
+
+      return;
+    }
+
+    setFrameStatus("ready");
+  }
+
+  function handleReloadCourse() {
+    if (frameTimer.current) {
+      clearTimeout(frameTimer.current);
+      frameTimer.current = null;
+    }
+
+    hasStabilizedFrame.current = true;
+    setFrameStatus("loading");
+    setFrameKey((currentKey) => currentKey + 1);
+  }
 
   return (
     <div className="space-y-6">
@@ -206,20 +248,54 @@ export function ExternalCourseFrame({
             title="Interactive HRBA learning experience"
             description="The course opens in a secure embedded frame and reports completion back to the portal."
             action={
-              <ActionButton href="/learn/my-courses" variant="secondary">
-                Back to My Courses
-              </ActionButton>
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <ActionButton type="button" variant="secondary" onClick={handleReloadCourse}>
+                  Reload course
+                </ActionButton>
+                <ActionButton
+                  forceDocumentNavigation
+                  href={launchData.iframeSrc}
+                  rel="noreferrer"
+                  target="_blank"
+                  variant="outline"
+                >
+                  Open course in new tab
+                </ActionButton>
+                <ActionButton href="/learn/my-courses" variant="secondary">
+                  Back to My Courses
+                </ActionButton>
+              </div>
             }
           />
         </div>
-        <iframe
-          allow="clipboard-read; clipboard-write"
-          className="h-[78vh] min-h-[720px] w-full bg-white"
-          referrerPolicy="strict-origin-when-cross-origin"
-          sandbox="allow-downloads allow-forms allow-popups allow-same-origin allow-scripts"
-          src={launchData.iframeSrc}
-          title={launchData.courseTitle}
-        />
+        <div className="relative min-h-[720px] bg-white">
+          {!frameReady ? (
+            <div className="absolute inset-0 z-10 grid place-items-center bg-white px-6 text-center">
+              <div className="max-w-md">
+                <StatusBadge label="Course app" tone="blue" />
+                <p className="mt-4 text-2xl font-semibold text-strong-text">
+                  Preparing your course...
+                </p>
+                <p className="mt-3 text-sm leading-6 text-muted-text">
+                  We are stabilizing the embedded lesson view so the course opens cleanly.
+                </p>
+              </div>
+            </div>
+          ) : null}
+          <iframe
+            key={`${launchData.iframeSrc}:${frameKey}`}
+            allow="clipboard-read; clipboard-write"
+            aria-hidden={!frameReady}
+            className={`h-[78vh] min-h-[720px] w-full bg-white transition-opacity duration-200 ${
+              frameReady ? "opacity-100" : "opacity-0"
+            }`}
+            onLoad={handleFrameLoad}
+            referrerPolicy="strict-origin-when-cross-origin"
+            sandbox="allow-downloads allow-forms allow-popups allow-same-origin allow-scripts"
+            src={launchData.iframeSrc}
+            title={launchData.courseTitle}
+          />
+        </div>
       </section>
     </div>
   );
