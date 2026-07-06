@@ -33,7 +33,7 @@ export function AdminShell({ children, session = null }: AdminShellProps) {
           <div className="flex items-center justify-between gap-3">
             <BrandMark compact />
             {session ? (
-              <ActionButton href="/sign-out" size="sm" variant="secondary">
+              <ActionButton href="/sign-out" prefetch={false} size="sm" variant="secondary">
                 Sign out
               </ActionButton>
             ) : null}
@@ -77,7 +77,7 @@ export function AdminShell({ children, session = null }: AdminShellProps) {
                   <p className="text-sm font-medium text-muted-text">
                     {cleanPresentationText(session.name)}
                   </p>
-                  <ActionButton href="/sign-out" size="sm" variant="secondary">
+                  <ActionButton href="/sign-out" prefetch={false} size="sm" variant="secondary">
                     Sign out
                   </ActionButton>
                 </>

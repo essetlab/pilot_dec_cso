@@ -155,6 +155,7 @@ function MobileNav({ session, onClose }: { session?: AuthSession | null; onClose
               href="/sign-out"
               className="block rounded-control px-3 py-2.5 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 hover:text-white"
               onClick={onClose}
+              prefetch={false}
             >
               SIGN OUT
             </Link>
@@ -296,6 +297,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
                 "flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px] font-extrabold uppercase tracking-[0.12em] transition-colors",
                 isOverlay ? "text-white hover:bg-white/10" : "text-slate-700 hover:text-deep-navy",
               )}
+              prefetch={false}
               style={authLinkStyle}
             >
               SIGN OUT

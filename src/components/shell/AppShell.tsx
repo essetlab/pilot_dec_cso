@@ -66,6 +66,7 @@ export function AppShell({
                   <Link
                     className="inline-flex rounded-control border border-design-border bg-soft-bg px-3 py-2 text-sm font-medium text-dark-ink shadow-soft transition hover:border-dec-blue hover:text-dec-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue focus-visible:ring-4 focus-visible:ring-dec-blue/25"
                     href="/sign-out"
+                    prefetch={false}
                   >
                     Sign out
                   </Link>

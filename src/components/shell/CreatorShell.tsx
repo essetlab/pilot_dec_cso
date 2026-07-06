@@ -33,7 +33,7 @@ export function CreatorShell({ children, session = null }: CreatorShellProps) {
                   <span className="text-sm font-medium text-muted-text">
                     {cleanPresentationText(session.name)}
                   </span>
-                  <ActionButton href="/sign-out" size="sm" variant="secondary">
+                  <ActionButton href="/sign-out" prefetch={false} size="sm" variant="secondary">
                     Sign out
                   </ActionButton>
                 </>
