@@ -170,6 +170,20 @@ export function ExternalCourseFrame({
     };
   }, []);
 
+  useEffect(() => {
+    if (frameStatus === "ready") {
+      return;
+    }
+
+    const fallbackTimer = setTimeout(() => {
+      setFrameStatus("ready");
+    }, 4500);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+    };
+  }, [frameKey, frameStatus]);
+
   const completed = status === "completed";
   const error = status === "error";
   const frameReady = frameStatus === "ready";
