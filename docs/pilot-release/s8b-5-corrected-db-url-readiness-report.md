@@ -43,19 +43,20 @@ Only `SELECT 1` read-only tests were attempted. No database records were created
 | Test | Result | Non-secret error summary |
 | --- | --- | --- |
 | `DATABASE_URL` with Prisma `SELECT 1` | Fail | `TypeError`: `Cannot read properties of undefined (reading 'sep')` |
-| `DATABASE_URL` with raw `pg` `SELECT 1` | Fail | `error`: `password authentication failed for user "postgres"` |
+| `DATABASE_URL` with raw `pg` `SELECT 1` | Pass | None |
 | `DIRECT_URL` as runtime `DATABASE_URL` with Prisma `SELECT 1` | Fail | `TypeError`: `Cannot read properties of undefined (reading 'sep')` |
 | `DIRECT_URL` with raw `pg` `SELECT 1` | Fail | `Error`: `getaddrinfo ENOTFOUND db.bhzyrthinbyqgsetnoph.supabase.co` |
 
 ## URL Parsing Status
 
-URL parsing appears improved compared with the previous diagnostic because the raw `pg` tests no longer failed with `Invalid URL`.
+URL parsing is fixed for `DATABASE_URL` raw `pg` because the read-only `SELECT 1` test passed.
 
 The database connection is still not ready:
 
-- `DATABASE_URL` parsed but failed authentication.
+- `DATABASE_URL` parsed and connected successfully through raw `pg`.
+- `DATABASE_URL` still failed through the local Prisma helper with `TypeError`: `Cannot read properties of undefined (reading 'sep')`.
 - `DIRECT_URL` parsed but failed DNS resolution for the configured host.
-- Prisma tests still failed before completing `SELECT 1`.
+- `DIRECT_URL` also failed through the local Prisma helper before completing `SELECT 1`.
 
 ## Supporting Checks
 
@@ -87,6 +88,6 @@ git status --short
 
 Correct the real Supabase database connection strings before requesting migration approval:
 
-- Verify the `DATABASE_URL` username/password values match the Supabase database credentials.
+- Investigate the local Prisma adapter/runtime `TypeError` before migration approval.
 - Verify the `DIRECT_URL` host is the correct Supabase direct database host and resolves from the local network.
 - Re-run this read-only readiness check after correction.
