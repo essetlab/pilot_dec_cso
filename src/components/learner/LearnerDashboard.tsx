@@ -66,7 +66,8 @@ function ProgressBar({
   );
 }
 
-function shouldDisableLaunchPrefetch(href?: string) {
+// Protected external launches use document navigation to avoid stale client auth state after Supabase sign-in.
+function shouldUseDocumentLaunch(href?: string) {
   return href?.startsWith("/learn/courses/") && href.endsWith("/external");
 }
 
@@ -122,8 +123,9 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
         </div>
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
           <ActionButton
+            forceDocumentNavigation={shouldUseDocumentLaunch(course.primaryActionHref)}
             href={course.primaryActionHref}
-            prefetch={shouldDisableLaunchPrefetch(course.primaryActionHref) ? false : undefined}
+            prefetch={shouldUseDocumentLaunch(course.primaryActionHref) ? false : undefined}
             size="lg"
           >
             {course.primaryAction}
@@ -134,8 +136,9 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
             </ActionButton>
           ) : (
             <ActionButton
+              forceDocumentNavigation={shouldUseDocumentLaunch(course.secondaryActionHref)}
               href={course.secondaryActionHref}
-              prefetch={shouldDisableLaunchPrefetch(course.secondaryActionHref) ? false : undefined}
+              prefetch={shouldUseDocumentLaunch(course.secondaryActionHref) ? false : undefined}
               size="lg"
               variant="secondary"
             >
@@ -185,8 +188,9 @@ function CourseCard({
         </div>
         <ActionButton
           className="sm:mt-1"
+          forceDocumentNavigation={shouldUseDocumentLaunch(primaryActionHref ?? learnerHref)}
           href={primaryActionHref ?? learnerHref}
-          prefetch={shouldDisableLaunchPrefetch(primaryActionHref ?? learnerHref) ? false : undefined}
+          prefetch={shouldUseDocumentLaunch(primaryActionHref ?? learnerHref) ? false : undefined}
           variant={isStarted ? "primary" : "secondary"}
         >
           {primaryAction}
@@ -343,8 +347,9 @@ export function LearnerDashboard({
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <ActionButton
+              forceDocumentNavigation={shouldUseDocumentLaunch(primaryCourse?.primaryActionHref)}
               href={primaryCourse?.primaryActionHref ?? "/learn/my-courses"}
-              prefetch={shouldDisableLaunchPrefetch(primaryCourse?.primaryActionHref) ? false : undefined}
+              prefetch={shouldUseDocumentLaunch(primaryCourse?.primaryActionHref) ? false : undefined}
             >
               {primaryCourse?.primaryAction ?? "Review course progress"}
             </ActionButton>

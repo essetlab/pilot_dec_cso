@@ -61,7 +61,8 @@ function ProgressBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-function shouldDisableLaunchPrefetch(href?: string) {
+// Protected external launches use document navigation to avoid stale client auth state after Supabase sign-in.
+function shouldUseDocumentLaunch(href?: string) {
   return href?.startsWith("/learn/courses/") && href.endsWith("/external");
 }
 
@@ -236,8 +237,9 @@ function LearnerCourseCard({
         </div>
         <div className="flex flex-col gap-3 rounded-[20px] border border-design-border bg-soft-bg p-4">
           <ActionButton
+            forceDocumentNavigation={shouldUseDocumentLaunch(primaryActionHref ?? learnerHref)}
             href={primaryActionHref ?? learnerHref}
-            prefetch={shouldDisableLaunchPrefetch(primaryActionHref ?? learnerHref) ? false : undefined}
+            prefetch={shouldUseDocumentLaunch(primaryActionHref ?? learnerHref) ? false : undefined}
           >
             {primaryAction}
           </ActionButton>
@@ -257,9 +259,10 @@ function LearnerCourseCard({
             </ActionButton>
           ) : null}
           <ActionButton
+            forceDocumentNavigation={shouldUseDocumentLaunch(secondaryActionHref ?? (isInProgress ? finalTestHref : href))}
             href={secondaryActionHref ?? (isInProgress ? finalTestHref : href)}
             prefetch={
-              shouldDisableLaunchPrefetch(secondaryActionHref ?? (isInProgress ? finalTestHref : href))
+              shouldUseDocumentLaunch(secondaryActionHref ?? (isInProgress ? finalTestHref : href))
                 ? false
                 : undefined
             }

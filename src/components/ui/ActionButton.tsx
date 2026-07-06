@@ -13,6 +13,7 @@ type ActionButtonBaseProps = {
 type ActionButtonLinkProps = ActionButtonBaseProps &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "className" | "href"> & {
     disabled?: boolean;
+    forceDocumentNavigation?: boolean;
     href: string;
     prefetch?: LinkProps["prefetch"];
   };
@@ -70,25 +71,35 @@ function ActionButtonLink({
   children,
   className,
   disabled = false,
+  forceDocumentNavigation = false,
   href,
   loading = false,
+  prefetch,
   size = "md",
   variant = "primary",
   ...anchorProps
 }: ActionButtonLinkProps) {
   const classes = getActionButtonClasses({ className, loading, size, variant });
+  const commonProps = {
+    ...anchorProps,
+    "aria-disabled": disabled || loading,
+    className: cx(
+      classes,
+      (disabled || loading) &&
+        "pointer-events-none border-design-border bg-soft-bg text-muted-text shadow-none",
+    ),
+    href,
+    tabIndex: disabled || loading ? -1 : anchorProps.tabIndex,
+  };
+
+  if (forceDocumentNavigation) {
+    return <a {...commonProps}>{loading ? "Working..." : children}</a>;
+  }
 
   return (
     <Link
-      {...anchorProps}
-      aria-disabled={disabled || loading}
-      className={cx(
-        classes,
-        (disabled || loading) &&
-          "pointer-events-none border-design-border bg-soft-bg text-muted-text shadow-none",
-      )}
-      href={href}
-      tabIndex={disabled || loading ? -1 : anchorProps.tabIndex}
+      {...commonProps}
+      prefetch={prefetch}
     >
       {loading ? "Working..." : children}
     </Link>
