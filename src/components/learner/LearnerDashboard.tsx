@@ -66,6 +66,10 @@ function ProgressBar({
   );
 }
 
+function shouldDisableLaunchPrefetch(href?: string) {
+  return href?.startsWith("/learn/courses/") && href.endsWith("/external");
+}
+
 function LearningPreview({ course }: { course: LearnerCourseSummary }) {
   return (
     <div className="rounded-[24px] border border-white/15 bg-white/10 p-5 text-white shadow-soft backdrop-blur">
@@ -117,7 +121,11 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
-          <ActionButton href={course.primaryActionHref} size="lg">
+          <ActionButton
+            href={course.primaryActionHref}
+            prefetch={shouldDisableLaunchPrefetch(course.primaryActionHref) ? false : undefined}
+            size="lg"
+          >
             {course.primaryAction}
           </ActionButton>
           {course.certificateDownloadHref ? (
@@ -125,7 +133,12 @@ function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
               Download certificate
             </ActionButton>
           ) : (
-            <ActionButton href={course.secondaryActionHref} size="lg" variant="secondary">
+            <ActionButton
+              href={course.secondaryActionHref}
+              prefetch={shouldDisableLaunchPrefetch(course.secondaryActionHref) ? false : undefined}
+              size="lg"
+              variant="secondary"
+            >
               {course.secondaryAction}
             </ActionButton>
           )}
@@ -173,6 +186,7 @@ function CourseCard({
         <ActionButton
           className="sm:mt-1"
           href={primaryActionHref ?? learnerHref}
+          prefetch={shouldDisableLaunchPrefetch(primaryActionHref ?? learnerHref) ? false : undefined}
           variant={isStarted ? "primary" : "secondary"}
         >
           {primaryAction}
@@ -328,7 +342,10 @@ export function LearnerDashboard({
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <ActionButton href={primaryCourse?.primaryActionHref ?? "/learn/my-courses"}>
+            <ActionButton
+              href={primaryCourse?.primaryActionHref ?? "/learn/my-courses"}
+              prefetch={shouldDisableLaunchPrefetch(primaryCourse?.primaryActionHref) ? false : undefined}
+            >
               {primaryCourse?.primaryAction ?? "Review course progress"}
             </ActionButton>
             <ActionButton href="/courses" variant="secondary">

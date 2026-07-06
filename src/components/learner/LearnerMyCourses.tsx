@@ -61,6 +61,10 @@ function ProgressBar({ label, value }: { label: string; value: number }) {
   );
 }
 
+function shouldDisableLaunchPrefetch(href?: string) {
+  return href?.startsWith("/learn/courses/") && href.endsWith("/external");
+}
+
 function PageHero({ course }: { course?: LearnerCourseSummary }) {
   return (
     <section className="overflow-hidden rounded-[28px] bg-deep-navy p-6 text-white shadow-hero lg:p-8">
@@ -231,7 +235,12 @@ function LearnerCourseCard({
           </div>
         </div>
         <div className="flex flex-col gap-3 rounded-[20px] border border-design-border bg-soft-bg p-4">
-          <ActionButton href={primaryActionHref ?? learnerHref}>{primaryAction}</ActionButton>
+          <ActionButton
+            href={primaryActionHref ?? learnerHref}
+            prefetch={shouldDisableLaunchPrefetch(primaryActionHref ?? learnerHref) ? false : undefined}
+          >
+            {primaryAction}
+          </ActionButton>
           {certificateDownloadHref ? (
             <ActionButton href={certificateDownloadHref} variant="success">
               Download certificate
@@ -249,6 +258,11 @@ function LearnerCourseCard({
           ) : null}
           <ActionButton
             href={secondaryActionHref ?? (isInProgress ? finalTestHref : href)}
+            prefetch={
+              shouldDisableLaunchPrefetch(secondaryActionHref ?? (isInProgress ? finalTestHref : href))
+                ? false
+                : undefined
+            }
             variant="secondary"
           >
             {secondaryAction}

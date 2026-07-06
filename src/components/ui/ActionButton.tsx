@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link, { type LinkProps } from "next/link";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "./utils";
 
@@ -14,6 +14,7 @@ type ActionButtonLinkProps = ActionButtonBaseProps &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "className" | "href"> & {
     disabled?: boolean;
     href: string;
+    prefetch?: LinkProps["prefetch"];
   };
 
 type ActionButtonElementProps = ActionButtonBaseProps &
