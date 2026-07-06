@@ -5,7 +5,7 @@ import { DEMO_USERS } from "@/lib/auth/demo-users";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { DEMO_PROPOSAL_COURSE } from "@/lib/demo-data";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
-import { signInDemoUser, signInWithPassword } from "./actions";
+import { signInDemoUser } from "./actions";
 
 type PageProps = {
   searchParams: Promise<{
@@ -132,7 +132,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 </div>
               ) : null}
 
-              <form action={signInWithPassword} className="mt-6 grid gap-3 rounded-card border border-design-border bg-soft-bg p-4">
+              <form action="/api/sign-in" className="mt-6 grid gap-3 rounded-card border border-design-border bg-soft-bg p-4" method="post">
                 <input name="next" type="hidden" value={next ?? ""} />
                 <label className="text-sm font-semibold text-dark-ink">
                   Email
