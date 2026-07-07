@@ -166,9 +166,10 @@ export function CertificateVerificationPage({
             private organization details.
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-text">
-            A certificate confirms completion and final assessment performance.
-            It does not replace organizational due diligence, safeguarding
-            review, legal compliance checks, or partnership assessment.
+            This certificate confirms that the named learner completed the
+            course requirements and passed the final assessment. It does not
+            replace organizational due diligence, safeguarding review, legal
+            compliance checks, or partnership assessment.
           </p>
         </aside>
       </section>
