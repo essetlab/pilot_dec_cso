@@ -2,10 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { isRateLimited } from "@/lib/auth/rate-limit";
-import {
-  registerPilotLearner,
-  type PilotLearnerType,
-} from "@/lib/pilot-registration-workflow";
+import { registerPilotLearner } from "@/lib/pilot-registration-workflow";
 
 function formText(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -18,22 +15,13 @@ function safeNextPath(value: FormDataEntryValue | null) {
     : "";
 }
 
-function isPilotLearnerType(value: string): value is PilotLearnerType {
-  return value === "participant" || value === "cso-focal-person";
-}
-
 export async function registerPilotLearnerAction(formData: FormData) {
   const email = formText(formData, "email").toLowerCase();
-  const learnerTypeValue = formText(formData, "learnerType");
   const next = safeNextPath(formData.get("next"));
 
   if (email && isRateLimited(`pilot-register:${email}`, 8, 10 * 60 * 1000)) {
     redirect("/register?error=rate-limited");
   }
-
-  const learnerType = isPilotLearnerType(learnerTypeValue)
-    ? learnerTypeValue
-    : "participant";
 
   const result = await registerPilotLearner({
     accessCode: formText(formData, "accessCode"),
@@ -42,7 +30,7 @@ export async function registerPilotLearnerAction(formData: FormData) {
     email,
     fullName: formText(formData, "fullName"),
     jobTitle: formText(formData, "jobTitle"),
-    learnerType,
+    learnerType: "participant",
     organizationName: formText(formData, "organization"),
     password: formText(formData, "password"),
     region: formText(formData, "region"),

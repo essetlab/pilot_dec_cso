@@ -116,18 +116,18 @@ const checkPills = [
 
 const experienceItems = [
   {
-    title: "Structured journeys",
+    title: "Structured learning",
     description: "Clear paths from orientation to application.",
     icon: ListIcon,
   },
   {
-    title: "Interactive blocks",
+    title: "Interactive learning",
     description: "Case studies, prompts, and practice activities.",
     icon: PeopleIcon,
   },
   {
     title: "Knowledge checks",
-    description: "Low-stakes checks before final tests.",
+    description: "Checks before final tests.",
     icon: CheckIcon,
   },
   {
@@ -141,7 +141,7 @@ const experienceItems = [
     icon: ResourceIcon,
   },
   {
-    title: "Official certificates",
+    title: "Certificates",
     description: "Recognition after completion and final assessment requirements are met.",
     icon: BadgeIcon,
   },
@@ -158,7 +158,7 @@ const pathwayItems = [
     title: "Exchange",
     status: "Future vision",
     description:
-      "The Hub can grow toward safe peer exchange among local and grassroots CSOs after the pilot learning journey is stable.",
+      "The Hub can grow toward safe peer exchange among local and grassroots CSOs after the learning journey is stable.",
   },
   {
     title: "Co-create",
@@ -272,7 +272,7 @@ function AboutPlatformSection() {
             A practical learning space for stronger CSOs
           </h2>
           <p className="mt-5 text-base leading-relaxed text-slate-600">
-            The CSO Learning Hub starts with practical courses for the current pilot learning journey. It supports learners to build skills, track progress, complete final assessments, and use private tools for their own CSO practice.
+            The CSO Learning Hub starts with practical courses for the current learning journey. It supports learners to build skills, track progress, complete final assessments, and use private tools for their own CSO practice.
           </p>
           
           <ul className="mt-8 grid gap-3 sm:grid-cols-2" aria-label="Platform details">
@@ -315,7 +315,7 @@ function PathwaySection() {
             Learn → Exchange → Co-create
           </h2>
           <p className="mt-4 text-base leading-7 text-slate-600">
-            The current pilot focuses on learning. Peer exchange and co-created practice are future-aware directions, not active public modules in this release.
+            The current release focuses on learning. Peer exchange and co-created practice are future-aware directions, not active public modules in this release.
           </p>
         </div>
 
@@ -510,7 +510,7 @@ function PracticalToolsSection() {
             Downloadable tools and resources inside courses
           </h2>
           <p className="mt-4 text-base leading-7 text-slate-600">
-            Courses can include worksheets, prompts, and resources that learners use privately for their own CSO practice. The pilot does not open public resource uploads or public proof galleries.
+            Courses can include worksheets, prompts, and resources that learners use privately for their own CSO practice. This release does not open public resource uploads or public proof galleries.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -548,12 +548,12 @@ function CommunityVisionSection() {
               A future path for safe peer learning
             </h2>
             <p className="mt-4 text-base leading-7 text-slate-600">
-              The Hub is designed to grow from practical courses toward safe exchange among local and grassroots CSOs. Community spaces, forums, and co-creation workflows are future-stage features and are not active in this pilot.
+              The Hub is designed to grow from practical courses toward safe exchange among local and grassroots CSOs. Community spaces, forums, and co-creation workflows are future-stage features and are not active in this release.
             </p>
           </div>
           <div className="rounded-panel border border-slate-200 bg-white p-6 shadow-card">
             <h3 className="text-xl font-bold text-slate-900">
-              Current pilot focus
+              Current focus
             </h3>
             <ul className="mt-5 grid gap-3">
               {[

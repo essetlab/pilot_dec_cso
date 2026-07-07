@@ -139,7 +139,7 @@ export function CertificateVerificationPage({
         </p>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+      <section>
         <div className="space-y-6">
           <VerificationForm code={code} />
           {certificate ? (
@@ -150,28 +150,6 @@ export function CertificateVerificationPage({
             <InitialState />
           )}
         </div>
-
-        <aside className="rounded-[24px] border border-design-border bg-white-surface p-6 shadow-soft">
-          <h2 className="text-xl font-semibold text-dark-ink">
-            Public information only
-          </h2>
-          <p className="mt-3 text-sm leading-7 text-muted-text">
-            Verification results are limited to certificate status, recipient
-            display name, course title, issue date, certificate code, and issuing
-            platform.
-          </p>
-          <p className="mt-3 text-sm leading-7 text-muted-text">
-            Verification does not show learner email, assessment answers,
-            private progress details, portfolio content, internal IDs, or
-            private organization details.
-          </p>
-          <p className="mt-3 text-sm leading-7 text-muted-text">
-            This certificate confirms that the named learner completed the
-            course requirements and passed the final assessment. It does not
-            replace organizational due diligence, safeguarding review, legal
-            compliance checks, or partnership assessment.
-          </p>
-        </aside>
       </section>
     </div>
   );

@@ -88,7 +88,7 @@ function usesStrictInvitedEmailMode() {
 }
 
 export function getPilotRegistrationModeLabel() {
-  return usesStrictInvitedEmailMode() ? "Strict invited-email mode" : "Simple access-code mode";
+  return usesStrictInvitedEmailMode() ? "Invited-email mode" : "Simple access-code mode";
 }
 
 export function getDefaultPilotAccessCodeForLocalDev() {

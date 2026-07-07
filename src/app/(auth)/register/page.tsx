@@ -29,7 +29,7 @@ const errorMessage: Record<string, string> = {
 };
 
 const preparationSteps = [
-  "Use the email address invited for the pilot.",
+  "Use the email address invited.",
   "Enter the pilot access code shared by the programme team.",
   "Create your password, then sign in to access your learner dashboard.",
 ] as const;
@@ -79,17 +79,12 @@ function RegisterForm({
         <div>
           <p className="text-sm font-semibold text-dec-blue">Pilot registration</p>
           <h2 className="mt-2 text-2xl font-semibold text-deep-navy">
-            Create your learner account
+            Create your account
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted-text">
-            Register with the email address invited for the pilot. Your account
-            lets you access courses, save progress, and receive certificates for
-            eligible courses.
-          </p>
-          <p className="mt-2 text-sm leading-6 text-muted-text">
-            Please do not enter sensitive case details, complaints, survivor
-            stories, exact locations, political details, or confidential
-            organization information in this form.
+            Register with the email address invited. Your account lets you access
+            courses, save progress, and receive certificates for eligible
+            courses.
           </p>
         </div>
         <StatusBadge label="Learner only" tone="green" />
@@ -158,18 +153,6 @@ function RegisterForm({
             placeholder="Example: Amhara"
           />
         </div>
-        <label className="block text-sm font-semibold text-dark-ink" htmlFor="learnerType">
-          Learner type
-          <select
-            className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
-            defaultValue="participant"
-            id="learnerType"
-            name="learnerType"
-          >
-            <option value="participant">Participant</option>
-            <option value="cso-focal-person">CSO focal person</option>
-          </select>
-        </label>
         <TextInput
           autoComplete="off"
           label="Pilot access code"
@@ -282,12 +265,12 @@ export default async function RegisterPage({ searchParams }: PageProps) {
                 CSO Learning Hub
               </p>
               <h1 className="mt-4 font-display text-4xl font-semibold leading-tight text-deep-navy sm:text-5xl">
-                Create your learner account
+                Create your account
               </h1>
               <p className="mt-5 text-base leading-8 text-muted-text sm:text-lg">
-                Register with the email address invited for the pilot. Your
-                account lets you access courses, save progress, and receive
-                certificates for eligible courses.
+                Register with the email address invited. Your account lets you
+                access courses, save progress, and receive certificates for
+                eligible courses.
               </p>
             </div>
           </div>
