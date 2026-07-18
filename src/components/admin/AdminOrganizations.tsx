@@ -455,9 +455,6 @@ export function AdminOrganizationDetail({
           <ActionButton href="/admin/organizations" size="lg" variant="secondary">
             Back to Organizations
           </ActionButton>
-          <ActionButton href="/admin/cohorts" size="lg" variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
-            Cohorts
-          </ActionButton>
         </div>
       </section>
 

@@ -1,6 +1,8 @@
 import {
   adminNav,
   creatorNav,
+  isPhaseOneAdminSurfaceRoute,
+  isPhaseOneLearnerRoute,
   learnerNav,
   publicNav,
   type NavItem,
@@ -8,8 +10,6 @@ import {
 import {
   canAccessAdmin,
   canAccessCreator,
-  canAccessMonitoring,
-  canAccessReview,
 } from "./permissions";
 import type { AuthSession } from "./session-codec";
 
@@ -18,7 +18,9 @@ export function getPublicNav() {
 }
 
 export function getLearnerNav() {
-  return learnerNav;
+  return learnerNav.filter(
+    (item) => item.href === "/support" || isPhaseOneLearnerRoute(item.href),
+  );
 }
 
 export function getCreatorNav(session: AuthSession | null) {
@@ -26,19 +28,13 @@ export function getCreatorNav(session: AuthSession | null) {
 }
 
 export function getAdminNav(session: AuthSession | null): NavItem[] {
+  const phaseOneAdminNav = adminNav.filter((item) =>
+    isPhaseOneAdminSurfaceRoute(item.href),
+  );
+
   if (canAccessAdmin(session)) {
-    return adminNav;
+    return phaseOneAdminNav;
   }
 
-  return adminNav.filter((item) => {
-    if (item.href === "/admin/monitoring" || item.href === "/admin/pilot-monitoring") {
-      return canAccessMonitoring(session);
-    }
-
-    if (item.href === "/admin/review") {
-      return canAccessReview(session);
-    }
-
-    return false;
-  });
+  return [];
 }

@@ -44,8 +44,8 @@ export function AdminShell({ children, session = null }: AdminShellProps) {
               <StatusBadge label={`${visibleSectionCount} sections`} tone="gray" />
             </div>
             <p className="mt-3 text-sm leading-6 text-muted-text">
-              Manage Phase 1 learning operations, review, certificates, and
-              platform records.
+              Manage Phase One learners, organizations, course assignments,
+              certificates, and platform records.
             </p>
           </div>
           <ShellNavigation
@@ -66,8 +66,8 @@ export function AdminShell({ children, session = null }: AdminShellProps) {
                 <StatusBadge label={`${visibleSectionCount} sections`} tone="gray" />
               </div>
               <p className="mt-3 text-sm leading-6 text-muted-text">
-                Phase 1 platform controls for users, courses, review, and
-                learning operations.
+                Phase One controls for learners, organizations, course
+                assignments, and certificates.
               </p>
             </div>
             <AdminNavigation session={session} />

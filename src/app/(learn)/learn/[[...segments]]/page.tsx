@@ -24,7 +24,12 @@ import {
 import { getExternalCourseLaunchData } from "@/lib/external-course-workflow";
 import { getCourseFeedbackState } from "@/lib/feedback-workflow";
 import { getLearnerProfileData } from "@/lib/learner-profile-workflow";
-import { learnerRoutes, matchRoute, routeFromSegments } from "@/lib/routes";
+import {
+  isPhaseOneLearnerRoute,
+  learnerRoutes,
+  matchRoute,
+  routeFromSegments,
+} from "@/lib/routes";
 import { notFound, redirect } from "next/navigation";
 
 type PageProps = {
@@ -51,6 +56,10 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
 
   if (!canAccessPath(session, actualRoute)) {
     redirect(`/unauthorized?from=${encodeURIComponent(actualRoute)}`);
+  }
+
+  if (!isPhaseOneLearnerRoute(actualRoute)) {
+    notFound();
   }
 
   if (!definition) {

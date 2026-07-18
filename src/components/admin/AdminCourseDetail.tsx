@@ -2,17 +2,11 @@ import {
   deactivateAdminCourseAssignmentAction,
   assignAdminCourseAction,
 } from "@/lib/admin-course-actions";
-import {
-  archiveCourseAction,
-  publishCourseAction,
-  unpublishCourseAction,
-} from "@/lib/review-actions";
 import type {
   AdminCourseAssignmentOptions,
   AdminCourseDetail as AdminCourseDetailData,
 } from "@/lib/admin-course-workflow";
 import { ActionButton, AlertMessage, EmptyState, StatusBadge } from "@/components/ui";
-import { CourseStatus } from "@/generated/prisma/enums";
 import type { ReactNode } from "react";
 
 type AdminCourseDetailProps = {
@@ -43,57 +37,6 @@ function Panel({
   );
 }
 
-function HiddenActionFields({ detail }: { detail: AdminCourseDetailData }) {
-  return (
-    <>
-      <input name="courseId" type="hidden" value={detail.course.id} />
-      <input name="returnPath" type="hidden" value={`/admin/courses/${detail.course.id}`} />
-    </>
-  );
-}
-
-function CourseActions({ detail }: { detail: AdminCourseDetailData }) {
-  const hasBlockers = detail.course.readinessErrors > 0;
-
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-      <ActionButton href={`/creator/courses/${detail.course.id}/preview`} variant="secondary">
-        Preview Course
-      </ActionButton>
-      <ActionButton href={`/creator/courses/${detail.course.id}/setup`} variant="secondary">
-        Open Setup
-      </ActionButton>
-      <ActionButton href={`/admin/review/${detail.course.id}`} variant="ghost">
-        Review Detail
-      </ActionButton>
-      {detail.course.status === CourseStatus.APPROVED || detail.course.status === CourseStatus.UNPUBLISHED ? (
-        <form action={publishCourseAction}>
-          <HiddenActionFields detail={detail} />
-          <ActionButton disabled={hasBlockers} type="submit">
-            Publish
-          </ActionButton>
-        </form>
-      ) : null}
-      {detail.course.status === CourseStatus.PUBLISHED ? (
-        <form action={unpublishCourseAction}>
-          <HiddenActionFields detail={detail} />
-          <ActionButton type="submit" variant="ghost">
-            Unpublish
-          </ActionButton>
-        </form>
-      ) : null}
-      {detail.course.status !== CourseStatus.PUBLISHED ? (
-        <form action={archiveCourseAction}>
-          <HiddenActionFields detail={detail} />
-          <ActionButton type="submit" variant="danger">
-            Archive
-          </ActionButton>
-        </form>
-      ) : null}
-    </div>
-  );
-}
-
 function DetailHeader({ detail }: { detail: AdminCourseDetailData }) {
   return (
     <section className="overflow-hidden rounded-[28px] border border-design-border bg-deep-navy p-6 text-white shadow-hero lg:p-8">
@@ -107,15 +50,12 @@ function DetailHeader({ detail }: { detail: AdminCourseDetailData }) {
             Course Detail
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-white/75">
-            Review course setup, ownership, version structure, readiness, and
-            publication controls without entering Build Studio.
+            Review course setup, ownership, learning access, and assignment
+            context without entering preserved authoring workspaces.
           </p>
           <p className="mt-5 max-w-3xl text-sm font-semibold leading-6 text-white">
             {detail.course.title}
           </p>
-          <div className="mt-7">
-            <CourseActions detail={detail} />
-          </div>
         </div>
 
         <article className="rounded-[24px] border border-white/15 bg-white/10 p-5">

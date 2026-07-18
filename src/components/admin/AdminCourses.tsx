@@ -57,24 +57,13 @@ function CoursesHeader({ data }: { data: AdminCourseListData }) {
             readiness, and learning access context.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <ActionButton href="/admin/review" size="lg">
-              Review Courses
-            </ActionButton>
             <ActionButton
               className="bg-white text-deep-navy hover:text-dec-blue"
-              href="/admin/cohorts"
+              href="/admin"
               size="lg"
               variant="secondary"
             >
-              <span className="text-deep-navy">View Cohorts</span>
-            </ActionButton>
-            <ActionButton
-              className="text-white hover:bg-white/10 hover:text-white"
-              href="/admin"
-              size="lg"
-              variant="ghost"
-            >
-              Back to Dashboard
+              <span className="text-deep-navy">Back to Dashboard</span>
             </ActionButton>
           </div>
         </div>
@@ -298,14 +287,9 @@ function CourseTable({ courses }: { courses: AdminCourseListItem[] }) {
                     <td className="px-4 py-4 text-muted-text">{course.publishedAt}</td>
                     <td className="px-4 py-4 text-muted-text">{course.lastUpdated}</td>
                     <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        <ActionButton href={course.href} size="sm" variant="secondary">
-                          View
-                        </ActionButton>
-                        <ActionButton href="/admin/review" size="sm" variant="ghost">
-                          Review
-                        </ActionButton>
-                      </div>
+                      <ActionButton href={course.href} size="sm" variant="secondary">
+                        View
+                      </ActionButton>
                     </td>
                   </tr>
                 ))}
@@ -347,9 +331,6 @@ function CourseTable({ courses }: { courses: AdminCourseListItem[] }) {
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                   <ActionButton className="w-full" href={course.href} variant="secondary">
                     View
-                  </ActionButton>
-                  <ActionButton className="w-full" href="/admin/review" variant="ghost">
-                    Review
                   </ActionButton>
                 </div>
               </article>

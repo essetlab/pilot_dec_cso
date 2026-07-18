@@ -28,7 +28,7 @@ export const learnerNav: NavItem[] = [
   { href: "/learn/my-courses", label: "My Courses" },
   { href: "/learn/certificates", label: "Certificates" },
   { href: "/learn/profile", label: "Profile" },
-  { href: "/learn/settings", label: "Settings" },
+  { href: "/support", label: "Support" },
 ];
 
 export const creatorNav: NavItem[] = [
@@ -57,16 +57,50 @@ export const adminNav: NavItem[] = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/organizations", label: "Organizations" },
-  { href: "/admin/cohorts", label: "Cohorts" },
   { href: "/admin/courses", label: "Courses" },
-  { href: "/admin/review", label: "Review / Publish" },
   { href: "/admin/certificates", label: "Certificates" },
-  { href: "/admin/reference-data", label: "Reference Data" },
-  { href: "/admin/monitoring", label: "Monitoring" },
-  { href: "/admin/pilot-monitoring", label: "Pilot Monitoring" },
-  { href: "/admin/audit-log", label: "Audit Log" },
-  { href: "/admin/settings", label: "Settings" },
 ];
+
+const phaseOneLearnerRoutePatterns = [
+  "/learn",
+  "/learn/my-courses",
+  "/learn/courses/[courseSlug]",
+  "/learn/courses/[courseSlug]/external",
+  "/learn/courses/[courseSlug]/final-test",
+  "/learn/courses/[courseSlug]/feedback",
+  "/learn/certificates",
+  "/learn/certificates/[certificateId]",
+  "/learn/profile",
+] as const;
+
+const phaseOneAdminRoutePrefixes = [
+  "/admin/users",
+  "/admin/organizations",
+  "/admin/courses",
+  "/admin/certificates",
+] as const;
+
+export function isPhaseOneLearnerRoute(route: string) {
+  return phaseOneLearnerRoutePatterns.some((pattern) =>
+    routeMatchesPattern(route, pattern),
+  );
+}
+
+export function isPhaseOneAdminSurfaceRoute(route: string) {
+  if (
+    route === "/admin/certificates/settings" ||
+    route.startsWith("/admin/certificates/settings/")
+  ) {
+    return false;
+  }
+
+  return (
+    route === "/admin" ||
+    phaseOneAdminRoutePrefixes.some(
+      (prefix) => route === prefix || route.startsWith(`${prefix}/`),
+    )
+  );
+}
 
 export const publicRoutes: Record<string, RouteDefinition> = {
   "/": {
@@ -390,16 +424,22 @@ export function matchRoute(
 
   const routeParts = route.split("/").filter(Boolean);
   const match = Object.entries(definitions).find(([pattern]) => {
-    const patternParts = pattern.split("/").filter(Boolean);
-    return (
-      patternParts.length === routeParts.length &&
-      patternParts.every(
-        (part, index) =>
-          part.startsWith("[") ||
-          part === routeParts[index],
-      )
-    );
+    return routeMatchesPattern(route, pattern, routeParts);
   });
 
   return match?.[1];
+}
+
+function routeMatchesPattern(
+  route: string,
+  pattern: string,
+  routeParts = route.split("/").filter(Boolean),
+) {
+  const patternParts = pattern.split("/").filter(Boolean);
+  return (
+    patternParts.length === routeParts.length &&
+    patternParts.every(
+      (part, index) => part.startsWith("[") || part === routeParts[index],
+    )
+  );
 }

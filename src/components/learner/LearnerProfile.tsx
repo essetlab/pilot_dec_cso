@@ -201,9 +201,6 @@ function ProfileEditForm({
         </label>
         <div className="flex flex-col gap-3 pt-2 sm:col-span-2 sm:flex-row">
           <ActionButton type="submit">Save Profile</ActionButton>
-          <ActionButton href="/learn/settings" variant="secondary">
-            Account Settings
-          </ActionButton>
         </div>
       </form>
     </article>

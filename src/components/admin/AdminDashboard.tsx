@@ -5,16 +5,14 @@ import type {
   AdminDashboardCertificate,
   AdminDashboardData,
 } from "@/lib/admin-dashboard-workflow";
+import { isPhaseOneAdminSurfaceRoute } from "@/lib/routes";
 import type { ReactNode } from "react";
 
 const quickActions = [
   ["Manage users", "/admin/users"],
   ["Add organization", "/admin/organizations/new"],
-  ["Create cohort", "/admin/cohorts/new"],
   ["Manage courses", "/admin/courses"],
-  ["Review courses", "/admin/review"],
-  ["View monitoring", "/admin/monitoring"],
-  ["Pilot monitoring", "/admin/pilot-monitoring"],
+  ["View certificates", "/admin/certificates"],
 ] as const;
 
 function Panel({
@@ -70,8 +68,8 @@ function DashboardHeader({ data }: { data: AdminDashboardData }) {
             Admin Dashboard
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-white/75">
-            Manage platform operations, course readiness, users, organizations,
-            and learning activity from one clear starting point.
+            Manage learners, organizations, course assignments, certificates,
+            and learning records from one clear starting point.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <ActionButton href="/admin/users" size="lg">
@@ -79,19 +77,11 @@ function DashboardHeader({ data }: { data: AdminDashboardData }) {
             </ActionButton>
             <ActionButton
               className="bg-white text-deep-navy hover:text-dec-blue"
-              href="/admin/review"
+              href="/admin/courses"
               size="lg"
               variant="secondary"
             >
-              <span className="text-deep-navy">Review Courses</span>
-            </ActionButton>
-            <ActionButton
-              className="text-white hover:bg-white/10 hover:text-white"
-              href="/admin/pilot-monitoring"
-              size="lg"
-              variant="ghost"
-            >
-              Pilot Monitoring
+              <span className="text-deep-navy">Manage Courses</span>
             </ActionButton>
           </div>
         </div>
@@ -99,10 +89,10 @@ function DashboardHeader({ data }: { data: AdminDashboardData }) {
         <article className="rounded-[24px] border border-white/15 bg-white/10 p-5">
           <p className="text-sm font-semibold text-dec-green">Today&apos;s focus</p>
           <h2 className="mt-3 text-2xl font-semibold leading-tight">
-            Keep review, certificates, and learning operations moving.
+            Keep assignments, certificates, and learner records moving.
           </h2>
           <p className="mt-3 text-sm leading-6 text-white/70">
-            Follow up on course review items, certificate activity, and recent
+            Follow up on course assignments, certificate activity, and recent
             platform events that need administrator awareness.
           </p>
           <dl className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3 xl:grid-cols-1">
@@ -188,9 +178,11 @@ function CoursesNeedingAttentionCard({
                   <StatusBadge label={course.status} tone={course.tone} />
                 </div>
               </div>
-              <ActionButton href={course.href} size="sm" variant="secondary">
-                {course.action}
-              </ActionButton>
+              {isPhaseOneAdminSurfaceRoute(course.href) ? (
+                <ActionButton href={course.href} size="sm" variant="secondary">
+                  {course.action}
+                </ActionButton>
+              ) : null}
             </li>
           ))}
         </ol>
@@ -243,7 +235,7 @@ function RecentActivityCard({
                   <p className="mt-1 text-xs font-medium text-muted-text">
                     Recorded by {item.actor}
                   </p>
-                  {item.href ? (
+                  {item.href && isPhaseOneAdminSurfaceRoute(item.href) ? (
                     <ActionButton
                       className="mt-3"
                       href={item.href}
@@ -363,8 +355,8 @@ function GuidanceNote() {
     <aside className="rounded-[24px] border border-dec-blue/25 bg-dec-blue/10 p-6 shadow-soft">
       <StatusBadge label="Admin guidance" tone="blue" />
       <p className="mt-4 text-sm leading-7 text-[#26536c]">
-        Use this dashboard to monitor daily platform operations and identify
-        courses, cohorts, and users that need attention.
+        Use this dashboard to manage daily Phase One learning operations and
+        identify courses, organizations, and learners that need attention.
       </p>
     </aside>
   );

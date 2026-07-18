@@ -280,9 +280,6 @@ export function AdminCertificateDetail({
           <ActionButton href="/admin/certificates" variant="secondary">
             Back to Certificates
           </ActionButton>
-          <ActionButton href="/admin/monitoring" variant="ghost">
-            View Monitoring
-          </ActionButton>
         </div>
       </Panel>
     </div>
