@@ -132,6 +132,31 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 </div>
               ) : null}
 
+              {notice === "confirmation-email-sent" ? (
+                <div className="mt-5">
+                  <AlertMessage tone="success" title="Check your email">
+                    Follow the confirmation link sent to your email address, then
+                    return here to sign in. The link may take a few minutes to arrive.
+                  </AlertMessage>
+                </div>
+              ) : null}
+
+              {notice === "email-confirmed" ? (
+                <div className="mt-5">
+                  <AlertMessage tone="success" title="Email confirmed">
+                    Your email is confirmed. Sign in to continue.
+                  </AlertMessage>
+                </div>
+              ) : null}
+
+              {notice === "password-reset" ? (
+                <div className="mt-5">
+                  <AlertMessage tone="success" title="Password updated">
+                    Sign in with your new password.
+                  </AlertMessage>
+                </div>
+              ) : null}
+
               <form action="/api/sign-in" className="mt-6 grid gap-3 rounded-card border border-design-border bg-soft-bg p-4" method="post">
                 <input name="next" type="hidden" value={next ?? ""} />
                 <label className="text-sm font-semibold text-dark-ink">
@@ -143,6 +168,14 @@ export default async function SignInPage({ searchParams }: PageProps) {
                   <input className="mt-2 min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink" name="password" required type="password" />
                 </label>
                 <ActionButton type="submit">Sign In</ActionButton>
+                {usesSupabaseSignIn ? (
+                  <Link
+                    className="text-sm font-semibold text-dec-blue underline-offset-4 hover:underline"
+                    href="/forgot-password"
+                  >
+                    Forgot your password?
+                  </Link>
+                ) : null}
               </form>
 
               {signInErrorMessage ? (

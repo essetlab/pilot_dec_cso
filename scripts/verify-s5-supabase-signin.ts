@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { UserStatus } from "../src/generated/prisma/enums";
+import { OrganizationStatus, UserStatus } from "../src/generated/prisma/enums";
 import { buildAuthSessionFromHubUser } from "../src/lib/auth/hub-session";
 import { readSupabasePublicConfig } from "../src/lib/supabase/config";
 
@@ -51,8 +51,10 @@ try {
       email: "learner@example.org",
       fullName: "Pilot Learner",
       id: "hub-user-id",
+      organization: { status: OrganizationStatus.ACTIVE },
       roleAssignments: [
         {
+          expiresAt: null,
           isActive: true,
           role: { key: "PARTICIPANT" },
         },
@@ -81,6 +83,7 @@ try {
       email: "learner@example.org",
       fullName: "Pilot Learner",
       id: "hub-user-id",
+      organization: { status: OrganizationStatus.ACTIVE },
       roleAssignments: [],
       status: UserStatus.ACTIVE,
     },
@@ -98,8 +101,10 @@ try {
       email: "learner@example.org",
       fullName: "Pilot Learner",
       id: "hub-user-id",
+      organization: { status: OrganizationStatus.ACTIVE },
       roleAssignments: [
         {
+          expiresAt: null,
           isActive: true,
           role: { key: "PARTICIPANT" },
         },

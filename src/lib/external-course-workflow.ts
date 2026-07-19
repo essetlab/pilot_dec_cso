@@ -7,6 +7,7 @@ import {
   CourseVisibility,
   EnrollmentStatus,
   LessonProgressStatus,
+  OrganizationStatus,
   QuizAttemptStatus,
   QuizQuestionType,
   RoleKey,
@@ -587,7 +588,21 @@ export async function getExternalCourseLaunchData(
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
   });
-  if (!user) {
+  const requiresActiveOrganization = session.roles.some(
+    (role) => role === "PARTICIPANT" || role === "CSO_FOCAL_PERSON",
+  );
+  const organization = user?.organizationId
+    ? await prisma.organization.findUnique({
+        select: { status: true },
+        where: { id: user.organizationId },
+      })
+    : null;
+
+  if (
+    !user ||
+    user.status !== UserStatus.ACTIVE ||
+    (requiresActiveOrganization && organization?.status !== OrganizationStatus.ACTIVE)
+  ) {
     return null;
   }
 
@@ -754,7 +769,21 @@ export async function recordExternalCourseProgress({
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
   });
-  if (!user) {
+  const requiresActiveOrganization = session.roles.some(
+    (role) => role === "PARTICIPANT" || role === "CSO_FOCAL_PERSON",
+  );
+  const organization = user?.organizationId
+    ? await prisma.organization.findUnique({
+        select: { status: true },
+        where: { id: user.organizationId },
+      })
+    : null;
+
+  if (
+    !user ||
+    user.status !== UserStatus.ACTIVE ||
+    (requiresActiveOrganization && organization?.status !== OrganizationStatus.ACTIVE)
+  ) {
     return { success: false, error: "Unauthorized" };
   }
 

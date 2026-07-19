@@ -51,6 +51,10 @@ async function main() {
   const localOrg = `S4 Local Verification ${Date.now()}`;
 
   try {
+    await prisma.organization.create({
+      data: { name: localOrg, region: "Verification", status: "ACTIVE" },
+    });
+
     const localResult = await registerPilotLearner({
       accessCode: "S4-VERIFY-CODE",
       confirmPassword: "StrongPass123",

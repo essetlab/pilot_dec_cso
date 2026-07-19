@@ -45,7 +45,7 @@ export async function getCurrentSession() {
       } = await supabase.auth.getUser();
 
       if (!user?.id || !user.email) {
-        return getCurrentCookieSession();
+        return null;
       }
 
       const sessionResult = await resolveSupabaseHubSession({
@@ -55,9 +55,9 @@ export async function getCurrentSession() {
         supabaseUserId: user.id,
       });
 
-      return sessionResult.success ? sessionResult.session : getCurrentCookieSession();
+      return sessionResult.success ? sessionResult.session : null;
     } catch {
-      return getCurrentCookieSession();
+      return null;
     }
   }
 

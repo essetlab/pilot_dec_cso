@@ -1192,6 +1192,14 @@ async function resolveActorUser(session: AuthSession | null) {
     select: { id: true },
     where: {
       OR: [{ id: session?.userId }, { email: session?.email }],
+      roleAssignments: {
+        some: {
+          isActive: true,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          role: { key: { in: [RoleKey.SUPER_ADMIN, RoleKey.PLATFORM_ADMIN] } },
+        },
+      },
+      status: UserStatus.ACTIVE,
     },
   });
 }

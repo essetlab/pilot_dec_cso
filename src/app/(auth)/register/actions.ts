@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { isRateLimited } from "@/lib/auth/rate-limit";
 import { registerPilotLearner } from "@/lib/pilot-registration-workflow";
+import { readSupabasePublicConfig } from "@/lib/supabase/config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function formText(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -23,6 +25,9 @@ export async function registerPilotLearnerAction(formData: FormData) {
     redirect("/register?error=rate-limited");
   }
 
+  const supabaseClient = readSupabasePublicConfig()
+    ? await createSupabaseServerClient()
+    : undefined;
   const result = await registerPilotLearner({
     accessCode: formText(formData, "accessCode"),
     confirmPassword: formText(formData, "confirmPassword"),
@@ -34,7 +39,7 @@ export async function registerPilotLearnerAction(formData: FormData) {
     organizationName: formText(formData, "organization"),
     password: formText(formData, "password"),
     region: formText(formData, "region"),
-  });
+  }, supabaseClient);
 
   if (!result.success) {
     const params = new URLSearchParams({ error: result.code });
@@ -48,7 +53,9 @@ export async function registerPilotLearnerAction(formData: FormData) {
   const params = new URLSearchParams({
     notice:
       result.authProvider === "supabase"
-        ? "supabase-registration-created"
+        ? result.emailConfirmationRequired
+          ? "confirmation-email-sent"
+          : "supabase-registration-created"
         : "pilot-registration-complete",
   });
 

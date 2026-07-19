@@ -14,12 +14,15 @@ type PageProps = {
 };
 
 const errorMessage: Record<string, string> = {
-  "duplicate-email": "This email is already registered. Please sign in.",
   "email-not-invited": "We could not confirm this email for the current pilot. Check the invitation details shared by the programme team.",
   "invalid-access-code": "The pilot access code is not valid. Check the code shared by the programme team and try again.",
   "missing-fields": "Please complete all required fields.",
+  "organization-not-approved":
+    "We could not match these details to an approved pilot invitation. Check the information shared by the programme team or contact support.",
   "password-mismatch": "Passwords do not match.",
   "profile-link-failed": "Registration was started, but the learner profile could not be completed. Please contact support before trying again.",
+  "registration-not-completed":
+    "Registration could not be completed with these details. Check the invitation information or contact support.",
   "rate-limited": "Too many registration attempts. Please wait and try again.",
   "supabase-account-exists": "This email may already be registered in the pilot sign-in system. Please sign in when Supabase access is available or contact support.",
   "supabase-registration-failed": "Registration could not be completed with the pilot sign-in system. Please contact support and try again later.",
