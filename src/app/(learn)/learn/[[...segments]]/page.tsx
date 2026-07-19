@@ -24,6 +24,7 @@ import {
 import { getExternalCourseLaunchData } from "@/lib/external-course-workflow";
 import { getCourseFeedbackState } from "@/lib/feedback-workflow";
 import { getLearnerProfileData } from "@/lib/learner-profile-workflow";
+import { isComingSoonCatalogueSlug } from "@/lib/public-course-catalogue";
 import {
   isPhaseOneLearnerRoute,
   learnerRoutes,
@@ -49,6 +50,14 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
   const actualRoute = routeFromSegments("learn", segments);
   const definition = matchRoute(actualRoute, learnerRoutes);
   const session = await getCurrentSession();
+
+  if (
+    segments[0] === "courses" &&
+    typeof segments[1] === "string" &&
+    isComingSoonCatalogueSlug(segments[1])
+  ) {
+    notFound();
+  }
 
   if (!session) {
     redirect(`/sign-in?next=${encodeURIComponent(actualRoute)}`);

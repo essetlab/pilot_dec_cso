@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { CourseCoverVisual } from "@/components/course/CourseCoverVisual";
 import { ActionButton, StatusBadge } from "@/components/ui";
-import type { PublicCourseSummary } from "@/lib/course-types";
+import type { PublicCatalogueCourseSummary } from "@/lib/course-types";
 
 type IconProps = { className?: string };
 
@@ -337,39 +337,51 @@ function PathwaySection() {
   );
 }
 
-function FeaturedCourseCard({ course }: { course: PublicCourseSummary }) {
+function FeaturedCourseCard({ course }: { course: PublicCatalogueCourseSummary }) {
+  const isAvailable = course.availability === "available";
+
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-card border border-design-border bg-white shadow-soft transition hover:-translate-y-1 hover:shadow-card">
       <div className="relative">
-        <CourseCoverVisual {...course} compact />
+        <CourseCoverVisual
+          capacityArea={course.primaryCapacityArea.name}
+          compact
+          imageAlt={course.imageAlt}
+          imageUrl={course.imageUrl}
+          title={course.title}
+          tone={course.tone}
+        />
         <div className="absolute left-4 top-4">
-          <StatusBadge label="Available now" tone="blue" />
+          <StatusBadge
+            label={isAvailable ? "Available now" : "Coming soon"}
+            tone={isAvailable ? "green" : "gray"}
+          />
         </div>
       </div>
       <div className="flex flex-1 flex-col p-6">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#176b58]">
-          {course.capacityArea}
+          {course.primaryCapacityArea.name}
         </p>
         <h3 className="mt-3 text-xl font-bold leading-snug text-deep-navy">{course.title}</h3>
-        <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">{course.description}</p>
+        <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">{course.shortDescription}</p>
         <div className="mt-6 flex flex-wrap gap-2 border-t border-design-border pt-5 text-xs font-semibold text-slate-700">
           <span className="rounded-full bg-soft-bg px-3 py-1.5">{course.duration}</span>
-          <span className="rounded-full bg-soft-bg px-3 py-1.5">{course.level}</span>
-          {course.certificateEligible === "Yes" ? (
+          <span className="rounded-full bg-soft-bg px-3 py-1.5">{course.deliveryFormat}</span>
+          {isAvailable ? (
             <span className="rounded-full bg-[#edf7df] px-3 py-1.5 text-[#426f1c]">
               Certificate eligible
             </span>
           ) : null}
         </div>
         <ActionButton className="mt-6 w-full" href={course.href} variant="secondary">
-          View course
+          {isAvailable ? "View course" : "View course structure"}
         </ActionButton>
       </div>
     </article>
   );
 }
 
-function FeaturedLearningSection({ courses }: { courses: PublicCourseSummary[] }) {
+function FeaturedLearningSection({ courses }: { courses: PublicCatalogueCourseSummary[] }) {
   const featuredCourses = courses.slice(0, 3);
 
   return (
@@ -377,9 +389,9 @@ function FeaturedLearningSection({ courses }: { courses: PublicCourseSummary[] }
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading
-            description="Explore the courses currently published in the Hub. Course availability and certificate eligibility come directly from the course catalogue."
+            description="Begin with the available HRBA course and explore the confirmed courses being prepared for future release."
             eyebrow="Featured learning"
-            title="Start with available courses"
+            title="Available now and coming next"
           />
           <ActionButton className="self-start sm:mb-1 sm:shrink-0" href="/courses" variant="secondary">
             View all courses
@@ -388,7 +400,7 @@ function FeaturedLearningSection({ courses }: { courses: PublicCourseSummary[] }
         {featuredCourses.length > 0 ? (
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {featuredCourses.map((course) => (
-              <FeaturedCourseCard course={course} key={course.id} />
+              <FeaturedCourseCard course={course} key={course.slug} />
             ))}
           </div>
         ) : (
@@ -471,7 +483,7 @@ function ClosingCtaSection() {
 export function LandingPage({
   courses = [],
 }: {
-  courses?: PublicCourseSummary[];
+  courses?: PublicCatalogueCourseSummary[];
 }) {
   return (
     <div className="flex flex-col overflow-x-clip">

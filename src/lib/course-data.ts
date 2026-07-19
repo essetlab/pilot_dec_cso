@@ -21,10 +21,21 @@ import {
   defaultLearnerTemplateSelection,
   resolveLearnerTemplateSelection,
 } from "./learner-template";
-import { isExternalHrbaCourseMetadata } from "./external-course-config";
+import {
+  HRBA_EXTERNAL_COURSE_SLUG,
+  isExternalHrbaCourseMetadata,
+} from "./external-course-config";
 import { prisma } from "./prisma";
 import { getCurrentSession } from "./auth/server";
 import { cleanPresentationText } from "./presentation-text";
+import {
+  getCatalogueCourseDefinition,
+  getPublicCatalogueSummaries,
+  HRBA_COURSE_OVERVIEW,
+  HRBA_COURSE_PROMISE,
+  HRBA_LEARNING_OUTCOMES,
+  toPublicCatalogueDetail,
+} from "./public-course-catalogue";
 
 let mockSession: { email: string; userId: string } | null = null;
 export function setMockSession(session: { email: string; userId: string } | null) {
@@ -41,6 +52,8 @@ import type {
   PublicCourseDetail,
   PublicCourseModule,
   PublicCourseSummary,
+  PublicCatalogueCourseDetail,
+  PublicCatalogueCourseSummary,
 } from "./course-types";
 
 type DatabaseCourseRecord = Awaited<
@@ -75,25 +88,8 @@ const statusLabels: Record<CourseStatus, string> = {
 
 const HRBA_PUBLIC_SLUGS = new Set([
   "human-rights-based-approach-practice",
-  "applying-human-rights-based-approach-in-cso-practice",
+  HRBA_EXTERNAL_COURSE_SLUG,
 ]);
-
-const HRBA_COURSE_PROMISE =
-  "Apply human rights-based thinking to everyday CSO programme work by strengthening participation, inclusion, accountability, dignity, and safe evidence use.";
-
-const HRBA_COURSE_OVERVIEW = [
-  HRBA_COURSE_PROMISE,
-  "This course helps local and grassroots CSO programme teams apply HRBA in practical decisions across everyday work. It focuses on rights-holders, duty-bearers, participation, inclusion, accountability, non-discrimination, power and barriers, safe evidence, and project-cycle decisions.",
-  "Learners complete the required learning activities and final assessment through the Hub-supported course flow. Certificate eligibility requires course completion and a final assessment score of 80% or above.",
-].join("\n\n");
-
-const HRBA_LEARNING_OUTCOMES = [
-  "Identify rights-holders, duty-bearers, and supporting actors in practical CSO situations.",
-  "Recognize barriers to participation, access, information, and accountability.",
-  "Apply HRBA principles to project design and implementation choices.",
-  "Use safe, practical analysis without exposing people or sensitive information.",
-  "Prepare for a final assessment linked to HRBA practice.",
-];
 
 const blockTypeLabels: Record<string, string> = {
   ACCORDION: "Accordion",
@@ -690,103 +686,113 @@ function normalizeFilterValue(value: string | undefined) {
   return trimmed.length > 0 ? trimmed : "";
 }
 
-function filterPublicCourseSummaries(
-  courses: PublicCourseSummary[],
+function filterPublicCatalogueSummaries(
+  courses: PublicCatalogueCourseSummary[],
   filters: PublicCourseFilters = {},
 ) {
   const search = normalizeFilterValue(filters.search).toLowerCase();
   const capacityArea = normalizeFilterValue(filters.capacityArea);
   const access = normalizeFilterValue(filters.access);
-  const normalizedAccess =
-    access === "Public"
-      ? "Available now"
-      : access === "Assigned"
-        ? "Assigned access"
-        : access;
   const certificate = normalizeFilterValue(filters.certificate);
-  const level = normalizeFilterValue(filters.level);
 
   return courses.filter((course) => {
+    const definition = getCatalogueCourseDefinition(course.slug);
     const matchesSearch =
       !search ||
       [
         course.title,
-        course.shortTitle,
-        course.description,
-        course.capacityArea,
-        course.level,
-        course.creator,
+        course.shortDescription,
+        ...course.capacityAreas.flatMap((area) => [area.id, area.name]),
+        ...(definition?.legacyAliases ?? []),
       ].some((value) => value.toLowerCase().includes(search));
-    const matchesCapacity = !capacityArea || course.capacityArea === capacityArea;
-    const courseAccess =
-      course.access === "Public"
-        ? "Available now"
-        : course.access === "Assigned"
-          ? "Assigned access"
-          : course.access;
-    const matchesAccess = !normalizedAccess || courseAccess === normalizedAccess;
+    const matchesCapacity =
+      !capacityArea ||
+      course.capacityAreas.some(
+        (area) => area.id === capacityArea || area.name === capacityArea,
+      );
+    const accessLabel =
+      course.availability === "available" ? "Available now" : "Coming soon";
+    const matchesAccess = !access || access === accessLabel;
     const matchesCertificate =
       !certificate ||
-      (certificate === "Certificate included" || certificate === "Certificate eligible") &&
-      course.certificateEligible === "Yes";
-    const matchesLevel = !level || course.level === level;
+      (certificate === "Certificate eligible" &&
+        course.availability === "available");
 
-    return matchesSearch && matchesCapacity && matchesAccess && matchesCertificate && matchesLevel;
+    return matchesSearch && matchesCapacity && matchesAccess && matchesCertificate;
   });
 }
 
 export async function getPublicCourseSummaries(
   filters: PublicCourseFilters = {},
-): Promise<PublicCourseSummary[]> {
+): Promise<PublicCatalogueCourseSummary[]> {
+  let existingHrba: PublicCourseSummary | null = null;
+
   try {
     const records = await queryPublicCourseRecords();
-
-    if (records.length > 0) {
-      return filterPublicCourseSummaries(records.map(mapDatabaseCourseToSummary), filters);
-    }
+    const record = records.find((course) => HRBA_PUBLIC_SLUGS.has(course.slug));
+    existingHrba = record ? mapDatabaseCourseToSummary(record) : null;
   } catch (error) {
     logCourseDataFallback("getPublicCourseSummaries", error);
   }
 
-  return filterPublicCourseSummaries(
-    getDemoSummaries().filter(
-      (c) => c.status === "Published" && c.access === "Public",
-    ),
+  if (!existingHrba) {
+    const fallbackHrba = DEMO_COURSES.find(
+      (course) =>
+        HRBA_PUBLIC_SLUGS.has(course.slug) &&
+        course.status === "Published" &&
+        course.access === "Public",
+    );
+    existingHrba = fallbackHrba ? toDemoSummary(fallbackHrba) : null;
+  }
+
+  return filterPublicCatalogueSummaries(
+    getPublicCatalogueSummaries(existingHrba),
     filters,
   );
 }
 
 export async function getPublicCourseBySlug(
   slug: string,
-): Promise<PublicCourseDetail | null> {
+): Promise<PublicCatalogueCourseDetail | null> {
+  const definition = getCatalogueCourseDefinition(slug);
+
+  if (!definition) {
+    return null;
+  }
+
+  if (definition.availability === "coming_soon") {
+    return toPublicCatalogueDetail(definition);
+  }
+
   try {
     const records = await queryPublicCourseRecords();
-    const record = records.find((course) => course.slug === slug);
+    const record = records.find((course) => HRBA_PUBLIC_SLUGS.has(course.slug));
 
     if (record) {
-      return mapDatabaseCourseToDetail(record);
-    }
-
-    const dbCourseExists = await prisma.course.findFirst({
-      where: { slug, archivedAt: null },
-      select: { id: true },
-    });
-
-    if (dbCourseExists) {
-      return null;
+      return toPublicCatalogueDetail(
+        definition,
+        mapDatabaseCourseToDetail(record),
+      );
     }
   } catch (error) {
     logCourseDataFallback("getPublicCourseBySlug", error);
   }
 
   const demoCourse = DEMO_COURSES.find(
-    (c) => c.slug === slug && c.status === "Published" && c.access === "Public"
+    (course) =>
+      HRBA_PUBLIC_SLUGS.has(course.slug) &&
+      course.status === "Published" &&
+      course.access === "Public",
   );
+
   if (demoCourse) {
-    return getDemoDetail(slug);
+    return toPublicCatalogueDetail(
+      definition,
+      getDemoDetail(demoCourse.slug),
+    );
   }
 
-  return null;
+  return toPublicCatalogueDetail(definition);
 }
 
 function getLessonPlayerStatus(

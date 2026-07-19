@@ -1,5 +1,69 @@
 export type CourseTone = "blue" | "green" | "gold" | "navy";
 
+export type CatalogueAvailability = "available" | "coming_soon";
+
+export type CatalogueIntegrationStatus =
+  | "integrated"
+  | "integration_pending"
+  | "content_preparation";
+
+export type CatalogueLaunchMode =
+  | "embedded"
+  | "external_link"
+  | "hub_tracked"
+  | "unconfigured";
+
+export type CatalogueCapacityArea = {
+  id: string;
+  name: string;
+};
+
+export type PublicCatalogueCourseSummary = {
+  availability: CatalogueAvailability;
+  capacityAreas: CatalogueCapacityArea[];
+  certificateLabel: string;
+  deliveryFormat: string;
+  displayOrder: number;
+  duration: string;
+  featured: boolean;
+  href: string;
+  imageAlt: string;
+  imageUrl: string | null;
+  integrationStatus: CatalogueIntegrationStatus;
+  language: string;
+  launchMode: CatalogueLaunchMode;
+  primaryCapacityArea: CatalogueCapacityArea;
+  secondaryCapacityAreas: CatalogueCapacityArea[];
+  shortDescription: string;
+  slug: string;
+  title: string;
+  tone: CourseTone;
+};
+
+export type PublicCatalogueModule = {
+  summary?: string;
+  title: string;
+  topics: string[];
+};
+
+export type PublicCatalogueCourseDetail = PublicCatalogueCourseSummary & {
+  assessmentStatus: string;
+  certificateStatus: string;
+  completionRule: string | null;
+  fullDescription: string;
+  intendedLearners: string;
+  learningApproach: string[];
+  learningOutcomes: string[];
+  longDescription: string;
+  modules: PublicCatalogueModule[];
+  outcomes: string[];
+  practicalOutputs: string[];
+  progressTrackingCapability: string;
+  proposedStructureSummary: string;
+  resourcesAndSupport: string;
+  shortDescription: string;
+};
+
 export type LearnerTemplateSelection = {
   navigationStyleId: "SIDEBAR_OUTLINE";
   templateId: string;
