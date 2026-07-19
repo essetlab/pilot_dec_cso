@@ -29,11 +29,20 @@ Copy-Item .env.example .env
 npm run prisma:generate
 ```
 
-4. Create a local PostgreSQL database, set `DATABASE_URL` in `.env`, then apply migrations.
+4. Create a local PostgreSQL database, set `DATABASE_URL` for the application
+   runtime and `DIRECT_URL` for Prisma migrations in `.env`, then apply
+   migrations.
 
 ```powershell
 npm run db:migrate:deploy
 ```
+
+`prisma/migrations-postgres` is the only PostgreSQL deployment history for
+Supabase staging and future Production environments. The older
+`prisma/migrations` directory is retained as legacy SQLite evidence and must
+not be applied to PostgreSQL. Prisma migration commands use `DIRECT_URL`; the
+configuration falls back to `DATABASE_URL` only when it points to a loopback
+host for local development.
 
 5. Optional: seed demo data.
 
