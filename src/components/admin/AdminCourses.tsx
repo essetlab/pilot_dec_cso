@@ -58,6 +58,13 @@ function CoursesHeader({ data }: { data: AdminCourseListData }) {
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <ActionButton
+              className="bg-dec-green text-deep-navy hover:border-white hover:bg-white"
+              href="/admin/courses/external/new"
+              size="lg"
+            >
+              Add external course
+            </ActionButton>
+            <ActionButton
               className="bg-white text-deep-navy hover:text-dec-blue"
               href="/admin"
               size="lg"
@@ -287,9 +294,16 @@ function CourseTable({ courses }: { courses: AdminCourseListItem[] }) {
                     <td className="px-4 py-4 text-muted-text">{course.publishedAt}</td>
                     <td className="px-4 py-4 text-muted-text">{course.lastUpdated}</td>
                     <td className="px-4 py-4">
-                      <ActionButton href={course.href} size="sm" variant="secondary">
-                        View
-                      </ActionButton>
+                      <div className="flex flex-wrap gap-2">
+                        <ActionButton href={course.href} size="sm" variant="secondary">
+                          View
+                        </ActionButton>
+                        {course.integrationHref ? (
+                          <ActionButton href={course.integrationHref} size="sm" variant="outline">
+                            Edit integration
+                          </ActionButton>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -332,6 +346,11 @@ function CourseTable({ courses }: { courses: AdminCourseListItem[] }) {
                   <ActionButton className="w-full" href={course.href} variant="secondary">
                     View
                   </ActionButton>
+                  {course.integrationHref ? (
+                    <ActionButton className="w-full" href={course.integrationHref} variant="outline">
+                      Edit integration
+                    </ActionButton>
+                  ) : null}
                 </div>
               </article>
             ))}

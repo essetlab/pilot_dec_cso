@@ -369,7 +369,7 @@ function FeaturedCourseCard({ course }: { course: PublicCatalogueCourseSummary }
           <span className="rounded-full bg-soft-bg px-3 py-1.5">{course.deliveryFormat}</span>
           {isAvailable ? (
             <span className="rounded-full bg-[#edf7df] px-3 py-1.5 text-[#426f1c]">
-              Certificate eligible
+              {course.certificateLabel}
             </span>
           ) : null}
         </div>

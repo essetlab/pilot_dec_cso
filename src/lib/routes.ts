@@ -347,10 +347,20 @@ export const adminRoutes: Record<string, RouteDefinition> = {
     purpose:
       "View and manage all courses without duplicating the creator Build Studio.",
   },
+  "/admin/courses/external/new": {
+    title: "Add External Course",
+    purpose:
+      "Create a draft external course and configure its safe catalogue and launch settings.",
+  },
   "/admin/courses/[courseId]": {
     title: "Course Detail",
     purpose:
       "View admin course summary, status, creator, readiness, and publication state.",
+  },
+  "/admin/courses/[courseId]/integration": {
+    title: "External Course Integration",
+    purpose:
+      "Edit, preview, publish, or unpublish an externally delivered course.",
   },
   "/admin/review": {
     title: "Review / Publish",

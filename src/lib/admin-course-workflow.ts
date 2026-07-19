@@ -11,12 +11,14 @@ import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
 import { cleanPresentationEmail, cleanPresentationText } from "./presentation-text";
 import { getReviewCourseDetail, type ReviewCourseSummary } from "./review-workflow";
+import { getManagedExternalCourseMetadata } from "./external-course-manager";
 
 export type AdminCourseListItem = {
   capacityArea: string;
   certificateEligible: string;
   creator: string;
   href: string;
+  integrationHref: string | null;
   lastUpdated: string;
   level: string;
   lessons: string;
@@ -163,6 +165,7 @@ async function queryAdminCourses() {
   return prisma.course.findMany({
     orderBy: { updatedAt: "desc" },
     select: {
+      analysisMetadataJson: true,
       assignedCreator: {
         select: {
           fullName: true,
@@ -238,6 +241,9 @@ function mapCourseRecord(record: AdminCourseRecord): AdminCourseListItem {
     certificateEligible: record.certificateEligible ? "Yes" : "No",
     creator: cleanPresentationText(record.assignedCreator.fullName),
     href: `/admin/courses/${record.id}`,
+    integrationHref: getManagedExternalCourseMetadata(record.analysisMetadataJson)
+      ? `/admin/courses/${record.id}/integration`
+      : null,
     lastUpdated: formatDate(record.updatedAt),
     level: levelLabels[record.level],
     lessons: String(lessonCount(record)),

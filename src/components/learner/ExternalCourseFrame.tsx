@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { ActionButton, AlertMessage, SectionHeader, StatusBadge } from "@/components/ui";
 import {
   type ExternalCourseAssessmentResult,
+  type ExternalCourseEventMessage,
+  isExternalCourseEventMessage,
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
   type ExternalCourseLaunchData,
   type ExternalCourseProgressMessage,
@@ -143,11 +145,44 @@ export function ExternalCourseFrame({
         return;
       }
 
-      if (!isProgressMessage(event.data)) {
+      if (isExternalCourseEventMessage(event.data)) {
+        if (event.data.courseSlug !== launchData.courseSlug) {
+          return;
+        }
+
+        if (event.data.event === "course_ready") {
+          setMessage("Course ready.");
+          return;
+        }
+
+        if (event.data.event === "course_started") {
+          setMessage("Course started.");
+          return;
+        }
+
+        if (event.data.event === "integration_error") {
+          setStatus("error");
+          setMessage(event.data.error?.message ?? "The external course reported an integration error.");
+          return;
+        }
+
+        const progressEvent = event.data as ExternalCourseEventMessage;
+        void persistProgress({
+          assessment: progressEvent.assessment,
+          completed: progressEvent.event === "course_completed",
+          completedModuleIds: progressEvent.completedModuleIds ?? [],
+          courseSlug: progressEvent.courseSlug,
+          currentModuleId: progressEvent.currentModuleId ?? null,
+          currentScreenId: progressEvent.currentScreenId ?? null,
+          progressPercent: progressEvent.progressPercent ?? 0,
+          sentAt: progressEvent.sentAt,
+          type: EXTERNAL_COURSE_PROGRESS_MESSAGE,
+          version: 1,
+        });
         return;
       }
 
-      if (event.data.courseSlug !== launchData.courseSlug) {
+      if (!isProgressMessage(event.data) || event.data.courseSlug !== launchData.courseSlug) {
         return;
       }
 

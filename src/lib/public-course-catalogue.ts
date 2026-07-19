@@ -505,6 +505,7 @@ export function toPublicCatalogueDetail(
     assessmentStatus: definition.assessmentStatus,
     certificateStatus: definition.certificateStatus,
     completionRule: definition.externalCourse.completionRule,
+    externalUrl: definition.externalCourse.externalUrl,
     fullDescription,
     intendedLearners: isAvailable
       ? existingHrba?.audience ?? definition.intendedLearners
@@ -519,6 +520,12 @@ export function toPublicCatalogueDetail(
         }))
       : definition.modules,
     outcomes: learningOutcomes,
+    openBehavior:
+      definition.externalCourse.launchMode === "external_link"
+        ? "new_tab"
+        : definition.externalCourse.launchMode === "unconfigured"
+          ? null
+          : "inside_hub",
     practicalOutputs: definition.practicalOutputs,
     progressTrackingCapability:
       definition.externalCourse.progressTrackingCapability === "hub_tracked"

@@ -34,8 +34,13 @@ import {
   HRBA_COURSE_OVERVIEW,
   HRBA_COURSE_PROMISE,
   HRBA_LEARNING_OUTCOMES,
+  PUBLIC_CATALOGUE_CAPACITY_AREAS,
   toPublicCatalogueDetail,
 } from "./public-course-catalogue";
+import {
+  getManagedExternalCourseMetadata,
+  type ManagedExternalCourseMetadata,
+} from "./external-course-manager";
 
 let mockSession: { email: string; userId: string } | null = null;
 export function setMockSession(session: { email: string; userId: string } | null) {
@@ -57,7 +62,7 @@ import type {
 } from "./course-types";
 
 type DatabaseCourseRecord = Awaited<
-  ReturnType<typeof queryPublicCourseRecords>
+  ReturnType<typeof queryCatalogueCourseRecords>
 >[number];
 
 export type PublicCourseFilters = {
@@ -255,6 +260,7 @@ const courseSelectFields = {
     select: {
       capacityArea: {
         select: {
+          id: true,
           name: true,
         },
       },
@@ -348,18 +354,6 @@ const courseSelectFields = {
   },
   visibility: true,
 } as const;
-
-async function queryPublicCourseRecords() {
-  return prisma.course.findMany({
-    orderBy: { title: "asc" },
-    select: courseSelectFields,
-    where: {
-      archivedAt: null,
-      status: CourseStatus.PUBLISHED,
-      visibility: CourseVisibility.PUBLIC,
-    },
-  });
-}
 
 async function queryLearnerCourseRecords() {
   return prisma.course.findMany({
@@ -680,6 +674,159 @@ function mapDatabaseCourseToDetail(
   };
 }
 
+function getManagedCapacityAreas(metadata: ManagedExternalCourseMetadata) {
+  const byId = new Map(PUBLIC_CATALOGUE_CAPACITY_AREAS.map((area) => [area.id, area]));
+  const primaryCapacityArea = byId.get(metadata.primaryCapacityAreaId);
+  if (!primaryCapacityArea) {
+    return null;
+  }
+
+  const secondaryCapacityAreas = metadata.secondaryCapacityAreaIds
+    .map((id) => byId.get(id))
+    .filter((area): area is NonNullable<typeof area> => Boolean(area));
+
+  return {
+    capacityAreas: [primaryCapacityArea, ...secondaryCapacityAreas],
+    primaryCapacityArea,
+    secondaryCapacityAreas,
+  };
+}
+
+function managedDeliveryFormat(metadata: ManagedExternalCourseMetadata) {
+  if (metadata.integrationMode === "external_link") {
+    return "External course link";
+  }
+
+  if (metadata.integrationMode === "embedded") {
+    return "Embedded external course";
+  }
+
+  return "Hub-tracked external course";
+}
+
+function mapManagedExternalCourseToSummary(
+  record: DatabaseCourseRecord,
+  metadata: ManagedExternalCourseMetadata,
+): PublicCatalogueCourseSummary | null {
+  if (
+    record.status !== CourseStatus.PUBLISHED ||
+    record.visibility !== CourseVisibility.PUBLIC ||
+    (metadata.availability !== "available" && metadata.availability !== "coming_soon")
+  ) {
+    return null;
+  }
+
+  const areas = getManagedCapacityAreas(metadata);
+  if (!areas) {
+    return null;
+  }
+
+  const availability = metadata.availability;
+  const tones: CourseTone[] = ["blue", "green", "gold", "navy"];
+
+  return {
+    availability,
+    ...areas,
+    certificateLabel: record.certificateEligible
+      ? "Certificate eligible"
+      : "No automatic Hub certificate",
+    deliveryFormat: managedDeliveryFormat(metadata),
+    displayOrder: metadata.displayOrder,
+    duration: formatDuration(record.estimatedDurationMinutes, "Duration to be confirmed"),
+    featured: metadata.featured,
+    href: `/courses/${record.slug}`,
+    imageAlt: `Course cover for ${record.title}`,
+    imageUrl: record.coverImageUrl,
+    integrationStatus: availability === "available" ? "integrated" : "integration_pending",
+    language: record.language,
+    launchMode: metadata.integrationMode,
+    shortDescription: record.shortDescription,
+    slug: record.slug,
+    title: record.title,
+    tone: tones[(metadata.displayOrder - 1) % tones.length] ?? "blue",
+  };
+}
+
+function mapManagedExternalCourseToDetail(
+  record: DatabaseCourseRecord,
+  metadata: ManagedExternalCourseMetadata,
+): PublicCatalogueCourseDetail | null {
+  const summary = mapManagedExternalCourseToSummary(record, metadata);
+  if (!summary) {
+    return null;
+  }
+
+  const outcomes = record.learningOutcomes.map((outcome) => outcome.statement);
+  const trackingAvailable =
+    metadata.integrationMode === "hub_tracked" && metadata.progressTrackingSupported;
+
+  return {
+    ...summary,
+    assessmentStatus: metadata.assessmentSupported
+      ? "Assessment events supported by the configured integration"
+      : "No automatic Hub assessment",
+    certificateStatus: record.certificateEligible
+      ? "Certificate eligibility requires trusted completion and assessment"
+      : "No automatic Hub certificate",
+    completionRule: metadata.completionRule,
+    externalUrl: metadata.externalUrl,
+    fullDescription: record.longDescription ?? record.shortDescription,
+    intendedLearners: record.targetAudience ?? "Local and grassroots CSO practitioners",
+    learningApproach: [
+      metadata.integrationMode === "external_link"
+        ? "Learning takes place on the approved external course site."
+        : "Learning opens inside a restricted Hub frame when the provider permits embedding.",
+      trackingAvailable
+        ? "Trusted progress events are validated by the Hub integration."
+        : "The Hub does not claim reliable progress or completion for this integration.",
+    ],
+    learningOutcomes: outcomes,
+    longDescription: record.longDescription ?? record.shortDescription,
+    modules: [],
+    openBehavior: metadata.openBehavior,
+    outcomes,
+    practicalOutputs: [],
+    progressTrackingCapability: trackingAvailable
+      ? "Hub-tracked progress supported"
+      : "Progress tracking not available",
+    proposedStructureSummary:
+      "The detailed course structure is delivered and maintained by the approved external provider.",
+    resourcesAndSupport:
+      "Use the Hub Support page for access help. Course-content support remains with the external provider.",
+  };
+}
+
+function mergeManagedExternalCatalogueRecords(
+  records: DatabaseCourseRecord[],
+  existingHrba: PublicCourseSummary | null,
+) {
+  const managedRecords = records
+    .map((record) => ({
+      metadata: getManagedExternalCourseMetadata(record.analysisMetadataJson),
+      record,
+    }))
+    .filter(
+      (item): item is { metadata: ManagedExternalCourseMetadata; record: DatabaseCourseRecord } =>
+        Boolean(item.metadata),
+    );
+  const managedSlugs = new Set(managedRecords.map((item) => item.record.slug));
+  const catalogue = getPublicCatalogueSummaries(existingHrba).filter(
+    (course) => !managedSlugs.has(course.slug),
+  );
+
+  for (const item of managedRecords) {
+    const course = mapManagedExternalCourseToSummary(item.record, item.metadata);
+    if (course) {
+      catalogue.push(course);
+    }
+  }
+
+  return catalogue.sort(
+    (left, right) =>
+      left.displayOrder - right.displayOrder || left.title.localeCompare(right.title),
+  );
+}
+
 
 function normalizeFilterValue(value: string | undefined) {
   const trimmed = value?.trim() ?? "";
@@ -722,14 +869,28 @@ function filterPublicCatalogueSummaries(
   });
 }
 
+async function queryCatalogueCourseRecords() {
+  return prisma.course.findMany({
+    orderBy: { title: "asc" },
+    select: courseSelectFields,
+    where: { archivedAt: null },
+  });
+}
+
 export async function getPublicCourseSummaries(
   filters: PublicCourseFilters = {},
 ): Promise<PublicCatalogueCourseSummary[]> {
   let existingHrba: PublicCourseSummary | null = null;
+  let catalogueRecords: DatabaseCourseRecord[] | null = null;
 
   try {
-    const records = await queryPublicCourseRecords();
-    const record = records.find((course) => HRBA_PUBLIC_SLUGS.has(course.slug));
+    catalogueRecords = await queryCatalogueCourseRecords();
+    const record = catalogueRecords.find(
+      (course) =>
+        HRBA_PUBLIC_SLUGS.has(course.slug) &&
+        course.status === CourseStatus.PUBLISHED &&
+        course.visibility === CourseVisibility.PUBLIC,
+    );
     existingHrba = record ? mapDatabaseCourseToSummary(record) : null;
   } catch (error) {
     logCourseDataFallback("getPublicCourseSummaries", error);
@@ -745,8 +906,12 @@ export async function getPublicCourseSummaries(
     existingHrba = fallbackHrba ? toDemoSummary(fallbackHrba) : null;
   }
 
+  const courses = catalogueRecords
+    ? mergeManagedExternalCatalogueRecords(catalogueRecords, existingHrba)
+    : getPublicCatalogueSummaries(existingHrba);
+
   return filterPublicCatalogueSummaries(
-    getPublicCatalogueSummaries(existingHrba),
+    courses,
     filters,
   );
 }
@@ -755,6 +920,25 @@ export async function getPublicCourseBySlug(
   slug: string,
 ): Promise<PublicCatalogueCourseDetail | null> {
   const definition = getCatalogueCourseDefinition(slug);
+  let catalogueRecords: DatabaseCourseRecord[] | null = null;
+
+  try {
+    catalogueRecords = await queryCatalogueCourseRecords();
+    const managedRecord = catalogueRecords.find(
+      (course) =>
+        course.slug === slug &&
+        Boolean(getManagedExternalCourseMetadata(course.analysisMetadataJson)),
+    );
+
+    if (managedRecord) {
+      const metadata = getManagedExternalCourseMetadata(managedRecord.analysisMetadataJson);
+      return metadata
+        ? mapManagedExternalCourseToDetail(managedRecord, metadata)
+        : null;
+    }
+  } catch (error) {
+    logCourseDataFallback("getPublicCourseBySlug", error);
+  }
 
   if (!definition) {
     return null;
@@ -764,18 +948,18 @@ export async function getPublicCourseBySlug(
     return toPublicCatalogueDetail(definition);
   }
 
-  try {
-    const records = await queryPublicCourseRecords();
-    const record = records.find((course) => HRBA_PUBLIC_SLUGS.has(course.slug));
+  const record = catalogueRecords?.find(
+    (course) =>
+      HRBA_PUBLIC_SLUGS.has(course.slug) &&
+      course.status === CourseStatus.PUBLISHED &&
+      course.visibility === CourseVisibility.PUBLIC,
+  );
 
-    if (record) {
-      return toPublicCatalogueDetail(
-        definition,
-        mapDatabaseCourseToDetail(record),
-      );
-    }
-  } catch (error) {
-    logCourseDataFallback("getPublicCourseBySlug", error);
+  if (record) {
+    return toPublicCatalogueDetail(
+      definition,
+      mapDatabaseCourseToDetail(record),
+    );
   }
 
   const demoCourse = DEMO_COURSES.find(

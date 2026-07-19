@@ -7,6 +7,7 @@ import { LearnerDashboard } from "@/components/learner/LearnerDashboard";
 import { LearnerFinalTest } from "@/components/learner/LearnerFinalTest";
 import { LearnerCourseFeedback } from "@/components/learner/LearnerCourseFeedback";
 import { ExternalCourseFrame } from "@/components/learner/ExternalCourseFrame";
+import { ManagedExternalCourseFrame } from "@/components/learner/ManagedExternalCourseFrame";
 import { LearnerMyCourses } from "@/components/learner/LearnerMyCourses";
 import { LearnerProfile, LearnerSettings } from "@/components/learner/LearnerProfile";
 import { EmptyState, PlaceholderPage } from "@/components/shell/PlaceholderPage";
@@ -25,6 +26,11 @@ import { getExternalCourseLaunchData } from "@/lib/external-course-workflow";
 import { getCourseFeedbackState } from "@/lib/feedback-workflow";
 import { getLearnerProfileData } from "@/lib/learner-profile-workflow";
 import { isComingSoonCatalogueSlug } from "@/lib/public-course-catalogue";
+import {
+  getManagedEmbeddedCourseLaunchData,
+  getManagedExternalCoursePublicState,
+} from "@/lib/managed-external-course-workflow";
+import { parseSafeExternalUrl } from "@/lib/external-course-manager";
 import {
   isPhaseOneLearnerRoute,
   learnerRoutes,
@@ -50,11 +56,16 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
   const actualRoute = routeFromSegments("learn", segments);
   const definition = matchRoute(actualRoute, learnerRoutes);
   const session = await getCurrentSession();
+  const managedExternalState =
+    segments[0] === "courses" && typeof segments[1] === "string"
+      ? await getManagedExternalCoursePublicState(segments[1])
+      : null;
 
   if (
     segments[0] === "courses" &&
     typeof segments[1] === "string" &&
-    isComingSoonCatalogueSlug(segments[1])
+    (isComingSoonCatalogueSlug(segments[1]) ||
+      (managedExternalState && managedExternalState.availability !== "available"))
   ) {
     notFound();
   }
@@ -73,6 +84,39 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
 
   if (!definition) {
     notFound();
+  }
+
+  if (
+    managedExternalState &&
+    managedExternalState.availability === "available" &&
+    segments[0] === "courses" &&
+    typeof segments[1] === "string"
+  ) {
+    if (managedExternalState.integrationMode === "external_link") {
+      const url = parseSafeExternalUrl(managedExternalState.externalUrl ?? "");
+      if (!url.url) {
+        notFound();
+      }
+      redirect(url.url);
+    }
+
+    if (managedExternalState.integrationMode === "embedded") {
+      if (segments.length === 2) {
+        redirect(`/learn/courses/${segments[1]}/external`);
+      }
+
+      if (segments.length === 3 && segments[2] === "external") {
+        const launchData = await getManagedEmbeddedCourseLaunchData(segments[1], session);
+        if (!launchData) {
+          notFound();
+        }
+        return <ManagedExternalCourseFrame launchData={launchData} />;
+      }
+    }
+
+    if (managedExternalState.integrationMode === "hub_tracked") {
+      notFound();
+    }
   }
 
   if (actualRoute === "/learn") {

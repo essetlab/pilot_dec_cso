@@ -11,6 +11,7 @@ import {
   type PublicCourseFilters,
 } from "@/lib/course-data";
 import { notFound } from "next/navigation";
+import { getCatalogueCourseDefinition } from "@/lib/public-course-catalogue";
 
 type PageProps = {
   params: Promise<{
@@ -26,6 +27,15 @@ async function getPublicCourseAction(
     return null;
   }
 
+  if (course.launchMode === "external_link" && course.externalUrl) {
+    return {
+      href: course.externalUrl,
+      label: "Open course",
+      rel: "noreferrer",
+      target: "_blank",
+    };
+  }
+
   const learnerPath = course.launchMode === "embedded"
     ? `/learn/courses/${course.slug}/external`
     : `/learn/courses/${course.slug}`;
@@ -34,6 +44,13 @@ async function getPublicCourseAction(
   if (!session) {
     return {
       href: `/sign-in?next=${encodeURIComponent(learnerPath)}`,
+      label: "Start learning",
+    };
+  }
+
+  if (course.launchMode === "embedded" && !getCatalogueCourseDefinition(course.slug)) {
+    return {
+      href: learnerPath,
       label: "Start learning",
     };
   }

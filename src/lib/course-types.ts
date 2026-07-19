@@ -50,6 +50,7 @@ export type PublicCatalogueCourseDetail = PublicCatalogueCourseSummary & {
   assessmentStatus: string;
   certificateStatus: string;
   completionRule: string | null;
+  externalUrl: string | null;
   fullDescription: string;
   intendedLearners: string;
   learningApproach: string[];
@@ -57,6 +58,7 @@ export type PublicCatalogueCourseDetail = PublicCatalogueCourseSummary & {
   longDescription: string;
   modules: PublicCatalogueModule[];
   outcomes: string[];
+  openBehavior: "inside_hub" | "new_tab" | null;
   practicalOutputs: string[];
   progressTrackingCapability: string;
   proposedStructureSummary: string;

@@ -4,7 +4,9 @@ import type { PublicCatalogueCourseDetail } from "@/lib/course-types";
 
 export type PublicCourseAction = {
   href: string;
-  label: "Start learning" | "Continue learning" | "Go to My Courses";
+  label: "Start learning" | "Continue learning" | "Go to My Courses" | "Open course";
+  rel?: "noreferrer";
+  target?: "_blank";
 };
 
 function CourseMetaItem({ label, value }: { label: string; value: string }) {
@@ -52,7 +54,7 @@ function CourseHero({
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             {action ? (
-              <ActionButton href={action.href} size="lg">
+              <ActionButton href={action.href} rel={action.rel} size="lg" target={action.target}>
                 {action.label}
               </ActionButton>
             ) : (
@@ -317,6 +319,12 @@ function ClosingAction({
   course: PublicCatalogueCourseDetail;
 }) {
   const isAvailable = course.availability === "available";
+  const availableDescription =
+    course.launchMode === "external_link"
+      ? "Open the approved external course site in a new tab. The Hub does not claim automatic progress, completion, assessment, or certificate tracking for this mode."
+      : course.progressTrackingCapability === "Hub-tracked progress available"
+        ? "Use the Hub to start or continue this course through its existing learning, progress, assessment, and certificate flow."
+        : "Open the approved external course inside the Hub. Progress, completion, assessment, and certificates are not automatically tracked for this mode.";
 
   return (
     <section className="py-16">
@@ -326,7 +334,7 @@ function ClosingAction({
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-sky-50">
           {isAvailable
-            ? "Use the Hub to start or continue this course through its existing learning, progress, assessment, and certificate flow."
+            ? availableDescription
             : "You can review the confirmed course position now. Enrollment and launch will be enabled only after the course is integrated and approved."}
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
@@ -334,7 +342,9 @@ function ClosingAction({
             <ActionButton
               className="border-white bg-white text-[#0e4a6e] hover:border-white hover:bg-sky-50 hover:text-[#0e4a6e]"
               href={action.href}
+              rel={action.rel}
               size="lg"
+              target={action.target}
               variant="secondary"
             >
               {action.label}

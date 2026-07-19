@@ -188,7 +188,7 @@ function CourseCatalogueCard({ course }: { course: PublicCatalogueCourseSummary 
           <CourseMetaPill label={course.duration} />
           <CourseMetaPill label={course.deliveryFormat} />
           {isAvailable ? (
-            <CourseMetaPill label="Certificate eligible" />
+            <CourseMetaPill label={course.certificateLabel} />
           ) : null}
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">

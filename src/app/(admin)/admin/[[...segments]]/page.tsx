@@ -4,6 +4,7 @@ import { AdminCourseDetail } from "@/components/admin/AdminCourseDetail";
 import { AdminCertificateDetail, AdminCertificates } from "@/components/admin/AdminCertificates";
 import { AdminCohortDetail, AdminCohorts } from "@/components/admin/AdminCohorts";
 import { AdminCourses } from "@/components/admin/AdminCourses";
+import { AdminExternalCourseManager } from "@/components/admin/AdminExternalCourseManager";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminMonitoring } from "@/components/admin/AdminMonitoring";
 import { AdminOrganizationDetail, AdminOrganizations } from "@/components/admin/AdminOrganizations";
@@ -25,6 +26,7 @@ import {
   getAdminCourseDetail,
   getAdminCourseListData,
 } from "@/lib/admin-course-workflow";
+import { getAdminExternalCourseEditorData } from "@/lib/admin-external-course-workflow";
 import {
   getAdminCohortDetail,
   getAdminCohortOperationOptions,
@@ -251,6 +253,30 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
     });
 
     return <AdminCourses data={courses} />;
+  }
+
+  if (actualRoute === "/admin/courses/external/new") {
+    const data = await getAdminExternalCourseEditorData(null, session);
+
+    if (!data) {
+      notFound();
+    }
+
+    return <AdminExternalCourseManager adminNotice={adminNotice} data={data} />;
+  }
+
+  if (
+    segments.length === 3 &&
+    segments[0] === "courses" &&
+    segments[2] === "integration"
+  ) {
+    const data = await getAdminExternalCourseEditorData(segments[1], session);
+
+    if (!data) {
+      notFound();
+    }
+
+    return <AdminExternalCourseManager adminNotice={adminNotice} data={data} />;
   }
 
   if (segments.length === 2 && segments[0] === "courses") {
