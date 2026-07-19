@@ -42,7 +42,7 @@ function CourseHero({
             ) : null}
           </div>
           <p className="mt-7 text-xs font-bold uppercase tracking-[0.18em] text-sky-200">
-            Course {course.displayOrder} of 9
+            Course overview
           </p>
           <h1 className="mt-3 max-w-4xl font-display text-5xl leading-[0.98] text-white sm:text-6xl lg:text-7xl">
             {course.title}

@@ -22,19 +22,18 @@ function CataloguePageHeader() {
           </p>
         </div>
         <h1 className="mt-5 font-display text-5xl leading-[0.92] text-deep-navy sm:text-6xl lg:text-7xl">
-          Courses for stronger CSO practice
+          Practical courses for CSOs
         </h1>
       </div>
       <div className="max-w-2xl lg:pb-2">
         <p className="text-base leading-8 text-muted-text">
-          Explore nine confirmed learning areas for local and grassroots CSOs.
-          HRBA is available now; the other course overviews show what is being
-          prepared next.
+          Browse available and upcoming courses across key CSO capacity areas.
+          HRBA is available now, with more learning opportunities being prepared.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <StatusBadge label="1 available" tone="green" />
-          <StatusBadge label="8 coming soon" tone="gray" />
-          <StatusBadge label="9 course overviews" tone="blue" />
+          <StatusBadge label="Available now" tone="green" />
+          <StatusBadge label="Coming soon" tone="gray" />
+          <StatusBadge label="Course overviews" tone="blue" />
         </div>
       </div>
     </section>
@@ -176,7 +175,7 @@ function CourseCatalogueCard({ course }: { course: PublicCatalogueCourseSummary 
       </div>
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-dec-blue">
-          Course {course.displayOrder} of 9
+          Course overview
         </p>
         <h2 className="mt-3 text-xl font-semibold leading-tight text-dark-ink">
           {course.title}
@@ -214,7 +213,7 @@ function CourseGrid({ courses }: { courses: PublicCatalogueCourseSummary[] }) {
             Confirmed catalogue
           </p>
           <h2 className="mt-3 font-display text-4xl text-deep-navy sm:text-5xl" id="catalogue-results-title">
-            Nine areas for practical learning
+            Courses across key CSO capacity areas
           </h2>
         </div>
         <p className="text-sm font-semibold text-muted-text">
@@ -235,7 +234,7 @@ function CourseGrid({ courses }: { courses: PublicCatalogueCourseSummary[] }) {
                 Reset filters
               </ActionButton>
             }
-            description="Try a broader search or clear the selected filters to review the full nine-course catalogue."
+            description="Try a broader search or clear the selected filters to review the full course catalogue."
             title="No courses match the selected filters"
           />
         </div>
