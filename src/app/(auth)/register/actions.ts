@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { isRateLimited } from "@/lib/auth/rate-limit";
-import { registerPilotLearner } from "@/lib/pilot-registration-workflow";
+import { registerOpenLearner } from "@/lib/open-registration-workflow";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -17,25 +17,23 @@ function safeNextPath(value: FormDataEntryValue | null) {
     : "";
 }
 
-export async function registerPilotLearnerAction(formData: FormData) {
+export async function registerOpenLearnerAction(formData: FormData) {
   const email = formText(formData, "email").toLowerCase();
   const next = safeNextPath(formData.get("next"));
 
-  if (email && isRateLimited(`pilot-register:${email}`, 8, 10 * 60 * 1000)) {
+  if (email && isRateLimited(`open-register:${email}`, 8, 10 * 60 * 1000)) {
     redirect("/register?error=rate-limited");
   }
 
   const supabaseClient = readSupabasePublicConfig()
     ? await createSupabaseServerClient()
     : undefined;
-  const result = await registerPilotLearner({
-    accessCode: formText(formData, "accessCode"),
+  const result = await registerOpenLearner({
     confirmPassword: formText(formData, "confirmPassword"),
     consentAccepted: formData.get("consentAccepted") === "on",
     email,
     fullName: formText(formData, "fullName"),
     jobTitle: formText(formData, "jobTitle"),
-    learnerType: "participant",
     organizationName: formText(formData, "organization"),
     password: formText(formData, "password"),
     region: formText(formData, "region"),
@@ -56,7 +54,7 @@ export async function registerPilotLearnerAction(formData: FormData) {
         ? result.emailConfirmationRequired
           ? "confirmation-email-sent"
           : "supabase-registration-created"
-        : "pilot-registration-complete",
+        : "registration-complete",
   });
 
   if (next) {

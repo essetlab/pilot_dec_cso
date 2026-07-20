@@ -1,12 +1,12 @@
 import {
   CourseStatus,
-  CourseVisibility,
   FeedbackType,
   LessonProgressStatus,
 } from "../generated/prisma/enums";
 import { canAccessAdmin, canAccessLearner, canAccessMonitoring } from "./auth/permissions";
 import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
+import { hasLearnerCourseEntitlement } from "./course-entitlement";
 
 export type CourseFeedbackState = {
   attemptsCount: number;
@@ -228,6 +228,7 @@ async function resolveCourseFeedbackContext(
     select: {
       archivedAt: true,
       id: true,
+      slug: true,
       status: true,
       visibility: true,
       versions: {
@@ -245,27 +246,15 @@ async function resolveCourseFeedbackContext(
     return { code: "invalid-course", message: "Course is not available for feedback." };
   }
 
-  if (course.visibility === CourseVisibility.PRIVATE) {
-    return { code: "unauthorized", message: "This course is not available to your account." };
-  }
-
-  if (course.visibility === CourseVisibility.ASSIGNED_ONLY) {
-    const assignment = await prisma.courseAssignment.findFirst({
-      select: { id: true },
-      where: {
-        courseId: course.id,
-        isActive: true,
-        OR: [
-          { targetUserId: dbUser.id },
-          ...(dbUser.primaryCohortId ? [{ targetCohortId: dbUser.primaryCohortId }] : []),
-          ...(dbUser.organizationId ? [{ targetOrganizationId: dbUser.organizationId }] : []),
-        ],
-      },
-    });
-
-    if (!assignment) {
-      return { code: "unauthorized", message: "This course is not assigned to your account." };
-    }
+  if (!(await hasLearnerCourseEntitlement({
+    courseId: course.id,
+    courseSlug: course.slug,
+    organizationId: dbUser.organizationId,
+    primaryCohortId: dbUser.primaryCohortId,
+    userId: dbUser.id,
+    visibility: course.visibility,
+  }))) {
+    return { code: "unauthorized", message: "This course is not assigned to your account." };
   }
 
   const enrollment = await prisma.enrollment.findUnique({

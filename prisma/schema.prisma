@@ -165,6 +165,7 @@ model User {
   preferredLanguage            String?
   region                       String?
   profilePhotoUrl              String?
+  selfReportedOrganizationName String?
   organizationId               String?
   primaryCohortId              String?
   createdAt                    DateTime             @default(now())

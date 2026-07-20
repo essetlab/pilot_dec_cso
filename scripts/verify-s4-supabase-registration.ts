@@ -1,233 +1,103 @@
-import "dotenv/config";
-
+import assert from "node:assert/strict";
 import { prisma } from "../src/lib/prisma";
-import {
-  buildPilotLearnerUserCreateData,
-  registerPilotLearner,
-} from "../src/lib/pilot-registration-workflow";
+import { registerOpenLearner } from "../src/lib/open-registration-workflow";
 
-function assert(condition: unknown, message: string): asserts condition {
-  if (!condition) {
-    throw new Error(message);
-  }
+const email = `open-registration-${Date.now()}@example.test`;
+const normalizedEmail = email.toLowerCase();
+const selfReportedOrganizationName = `Self-reported CSO ${Date.now()}`;
+const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const originalSupabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const originalPilotValues = {
+  accessCode: process.env.PILOT_ACCESS_CODE,
+  invitedEmails: process.env.PILOT_INVITED_EMAILS,
+  mode: process.env.PILOT_REGISTRATION_MODE,
+};
+
+function restore(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
 }
 
-function uniqueEmail(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.local`;
+async function cleanup() {
+  const user = await prisma.user.findUnique({ select: { id: true }, where: { email: normalizedEmail } });
+  if (!user) return;
+  await prisma.$transaction([
+    prisma.auditLog.deleteMany({ where: { OR: [{ actorUserId: user.id }, { entityId: user.id }] } }),
+    prisma.userRoleAssignment.deleteMany({ where: { userId: user.id } }),
+    prisma.courseAssignment.deleteMany({ where: { targetUserId: user.id } }),
+    prisma.enrollment.deleteMany({ where: { userId: user.id } }),
+    prisma.user.delete({ where: { id: user.id } }),
+  ]);
 }
 
-async function cleanupUserAndOrg(email: string, organizationName: string) {
-  const user = await prisma.user.findUnique({
-    select: { id: true },
-    where: { email },
-  });
-
-  if (user) {
-    await prisma.auditLog.deleteMany({ where: { actorUserId: user.id } });
-    await prisma.userRoleAssignment.deleteMany({ where: { userId: user.id } });
-    await prisma.user.delete({ where: { id: user.id } });
-  }
-
-  await prisma.organization.deleteMany({ where: { name: organizationName } });
-}
-
-async function main() {
-  const participantRoleBefore = await prisma.role.findUnique({
-    select: { id: true },
-    where: { key: "PARTICIPANT" },
-  });
-  const originalEnv = {
-    invitedEmails: process.env.PILOT_INVITED_EMAILS,
-    mode: process.env.PILOT_REGISTRATION_MODE,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    accessCode: process.env.PILOT_ACCESS_CODE,
-    accessCodes: process.env.PILOT_ACCESS_CODES,
-  };
-
+try {
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  delete process.env.PILOT_ACCESS_CODES;
-  delete process.env.PILOT_REGISTRATION_MODE;
-  delete process.env.PILOT_INVITED_EMAILS;
-  process.env.PILOT_ACCESS_CODE = "S4-VERIFY-CODE";
+  process.env.PILOT_ACCESS_CODE = "must-not-be-read";
+  process.env.PILOT_INVITED_EMAILS = "somebody-else@example.test";
+  process.env.PILOT_REGISTRATION_MODE = "unavailable";
 
-  const localEmail = uniqueEmail("s4-local");
-  const localOrg = `S4 Local Verification ${Date.now()}`;
+  await cleanup();
+  const organizationCountBefore = await prisma.organization.count({
+    where: { name: selfReportedOrganizationName },
+  });
 
-  try {
-    await prisma.organization.create({
-      data: { name: localOrg, region: "Verification", status: "ACTIVE" },
-    });
+  const result = await registerOpenLearner({
+    confirmPassword: "StrongPass123",
+    consentAccepted: true,
+    email: `  ${email.toUpperCase()}  `,
+    fullName: "  Fictional Open Learner  ",
+    jobTitle: "  Programme officer  ",
+    organizationName: `  ${selfReportedOrganizationName}  `,
+    password: "StrongPass123",
+    region: "  Oromia  ",
+  });
+  assert(result.success, "Expected arbitrary valid unused email registration to succeed.");
 
-    const localResult = await registerPilotLearner({
-      accessCode: "S4-VERIFY-CODE",
-      confirmPassword: "StrongPass123",
-      consentAccepted: true,
-      email: localEmail,
-      fullName: "S4 Local Learner",
-      jobTitle: "Programme officer",
-      learnerType: "participant",
-      organizationName: localOrg,
-      password: "StrongPass123",
-      region: "Verification",
-    });
+  const user = await prisma.user.findUnique({
+    include: { roleAssignments: { include: { role: true } } },
+    where: { email: normalizedEmail },
+  });
+  assert(user, "Expected a Hub user to be created.");
+  assert.equal(user.organizationId, null);
+  assert.equal(user.selfReportedOrganizationName, selfReportedOrganizationName);
+  assert.equal(user.passwordHash?.startsWith("scrypt$"), true);
+  assert.equal(user.roleAssignments.some((assignment) => assignment.role.key === "PARTICIPANT"), true);
+  assert.equal(await prisma.organization.count({ where: { name: selfReportedOrganizationName } }), organizationCountBefore);
+  assert.equal(await prisma.courseAssignment.count({ where: { targetUserId: user.id } }), 0);
+  assert.equal(await prisma.enrollment.count({ where: { userId: user.id } }), 0);
 
-    assert(localResult.success, "Expected local fallback registration to succeed.");
-    assert(localResult.authProvider === "local", "Expected local auth provider.");
+  const duplicate = await registerOpenLearner({
+    confirmPassword: "StrongPass123",
+    consentAccepted: true,
+    email,
+    fullName: "Fictional Open Learner",
+    jobTitle: "Programme officer",
+    organizationName: selfReportedOrganizationName,
+    password: "StrongPass123",
+    region: "Oromia",
+  });
+  assert.deepEqual(duplicate, { code: "registration-not-completed", success: false });
 
-    const localUser = await prisma.user.findUnique({
-      select: {
-        authProvider: true,
-        authProviderId: true,
-        passwordHash: true,
-      },
-      where: { email: localEmail },
-    });
+  const noConsent = await registerOpenLearner({
+    confirmPassword: "StrongPass123",
+    consentAccepted: false,
+    email: "another-open-learner@example.test",
+    fullName: "Another Learner",
+    jobTitle: "Coordinator",
+    organizationName: "Another CSO",
+    password: "StrongPass123",
+    region: "Somali",
+  });
+  assert.deepEqual(noConsent, { code: "terms-required", success: false });
 
-    assert(localUser, "Expected local user to be created.");
-    assert(localUser.authProvider === "local", "Expected local user authProvider=local.");
-    assert(localUser.authProviderId === null, "Expected local user authProviderId to be null.");
-    assert(localUser.passwordHash, "Expected local user passwordHash to be set.");
-
-    const invalidCodeEmail = uniqueEmail("s4-invalid-code");
-    const invalidCodeResult = await registerPilotLearner({
-      accessCode: "WRONG-CODE",
-      confirmPassword: "StrongPass123",
-      consentAccepted: true,
-      email: invalidCodeEmail,
-      fullName: "S4 Invalid Code",
-      jobTitle: "Programme officer",
-      learnerType: "participant",
-      organizationName: "S4 Invalid Code Org",
-      password: "StrongPass123",
-      region: "Verification",
-    });
-
-    assert(!invalidCodeResult.success, "Expected invalid access code to fail.");
-    assert(invalidCodeResult.code === "invalid-access-code", "Expected invalid access-code result.");
-    assert(
-      !(await prisma.user.findUnique({ where: { email: invalidCodeEmail } })),
-      "Expected invalid access-code check to avoid user creation.",
-    );
-
-    process.env.PILOT_REGISTRATION_MODE = "strict";
-    process.env.PILOT_INVITED_EMAILS = "invited-s4@example.local";
-    const strictEmail = uniqueEmail("s4-strict");
-    const strictResult = await registerPilotLearner({
-      accessCode: "S4-VERIFY-CODE",
-      confirmPassword: "StrongPass123",
-      consentAccepted: true,
-      email: strictEmail,
-      fullName: "S4 Strict Learner",
-      jobTitle: "Programme officer",
-      learnerType: "participant",
-      organizationName: "S4 Strict Org",
-      password: "StrongPass123",
-      region: "Verification",
-    });
-
-    assert(!strictResult.success, "Expected strict uninvited email to fail.");
-    assert(strictResult.code === "email-not-invited", "Expected strict invited-email result.");
-    assert(
-      !(await prisma.user.findUnique({ where: { email: strictEmail } })),
-      "Expected strict invited-email check to avoid user creation.",
-    );
-
-    const invitedResult = await registerPilotLearner({
-      accessCode: " s4-verify-code ",
-      confirmPassword: "StrongPass123",
-      consentAccepted: true,
-      email: "  INVITED-S4@example.local ",
-      fullName: "S4 Invited Learner",
-      jobTitle: "Programme officer",
-      learnerType: "participant",
-      organizationName: "S4 Missing Organization",
-      password: "StrongPass123",
-      region: "Verification",
-    });
-
-    assert(!invitedResult.success, "Expected the nonexistent organization to stop registration.");
-    assert(
-      invitedResult.code === "organization-not-approved",
-      "Expected normalized invited email and access code to pass strict access checks.",
-    );
-
-    delete process.env.PILOT_INVITED_EMAILS;
-    const unavailableResult = await registerPilotLearner({
-      accessCode: "S4-VERIFY-CODE",
-      confirmPassword: "StrongPass123",
-      consentAccepted: true,
-      email: "invited-s4@example.local",
-      fullName: "S4 Unavailable Learner",
-      jobTitle: "Programme officer",
-      learnerType: "participant",
-      organizationName: "S4 Missing Organization",
-      password: "StrongPass123",
-      region: "Verification",
-    });
-    assert(!unavailableResult.success, "Expected incomplete strict configuration to fail.");
-    assert(
-      unavailableResult.code === "registration-unavailable",
-      "Expected incomplete strict configuration to fail closed.",
-    );
-
-    const supabaseUserData = buildPilotLearnerUserCreateData({
-      authProvider: "supabase",
-      authProviderId: "00000000-0000-4000-8000-000000000000",
-      email: "s4-supabase@example.local",
-      fullName: "S4 Supabase Learner",
-      jobTitle: "Programme officer",
-      learnerType: "participant",
-      organizationId: "org-s4",
-      passwordHash: null,
-      region: "Verification",
-    });
-
-    assert(supabaseUserData.authProvider === "supabase", "Expected Supabase auth provider.");
-    assert(
-      supabaseUserData.authProviderId === "00000000-0000-4000-8000-000000000000",
-      "Expected Supabase authProviderId to be persisted.",
-    );
-    assert(supabaseUserData.passwordHash === null, "Expected Supabase user passwordHash to be null.");
-
-    console.log("S4 registration verification passed.");
-  } finally {
-    await cleanupUserAndOrg(localEmail, localOrg);
-
-    if (!participantRoleBefore) {
-      const participantRole = await prisma.role.findUnique({
-        select: { id: true },
-        where: { key: "PARTICIPANT" },
-      });
-      if (participantRole) {
-        const assignmentCount = await prisma.userRoleAssignment.count({
-          where: { roleId: participantRole.id },
-        });
-        if (assignmentCount === 0) {
-          await prisma.role.delete({ where: { id: participantRole.id } });
-        }
-      }
-    }
-
-    const restoreEnvironment = (key: string, value: string | undefined) => {
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    };
-
-    restoreEnvironment("NEXT_PUBLIC_SUPABASE_URL", originalEnv.supabaseUrl);
-    restoreEnvironment(
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      originalEnv.supabaseKey,
-    );
-    restoreEnvironment("PILOT_ACCESS_CODE", originalEnv.accessCode);
-    restoreEnvironment("PILOT_ACCESS_CODES", originalEnv.accessCodes);
-    restoreEnvironment("PILOT_REGISTRATION_MODE", originalEnv.mode);
-    restoreEnvironment("PILOT_INVITED_EMAILS", originalEnv.invitedEmails);
-  }
+  console.log("Open registration persistence verification passed.");
+} finally {
+  await cleanup();
+  restore("NEXT_PUBLIC_SUPABASE_URL", originalSupabaseUrl);
+  restore("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", originalSupabaseKey);
+  restore("PILOT_ACCESS_CODE", originalPilotValues.accessCode);
+  restore("PILOT_INVITED_EMAILS", originalPilotValues.invitedEmails);
+  restore("PILOT_REGISTRATION_MODE", originalPilotValues.mode);
+  await prisma.$disconnect();
 }
-
-await main();

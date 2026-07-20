@@ -9,11 +9,11 @@ export default function SupportPage() {
       sections={[
         {
           title: "Account and access help",
-          body: "Use the email address and pilot access code shared by the programme team. If either detail is unclear, contact your CSO focal person or the support channel shared by the programme team.",
+          body: "Create an individual Hub account with an email address you can confirm. Registration does not require an invitation or access code. Contact the programme support channel if account confirmation or sign-in does not work.",
         },
         {
           title: "Course launch help",
-          body: "Start HRBA and other available courses from the CSO Learning Hub. The Hub is the official entry point for tracking progress, final assessment results, certificates, and verification.",
+          body: "Start courses assigned or available to your account from the CSO Learning Hub. HRBA requires an individual assignment during the pilot. The Hub is the official entry point for progress, assessments, certificates, and verification.",
         },
         {
           title: "Certificate verification help",

@@ -429,3 +429,146 @@ restart P2D.1 from focal-person onboarding and the two invited learner inboxes.
 Readiness decision:
 
 `BLOCKED — non-production SMTP configuration required`
+
+## Stage A — open registration and immediate HRBA assignment boundary
+
+### Decision and verified baseline
+
+Stage A separates general Hub account creation from restricted-course access.
+The verified starting point was clean commit
+`2d78da19c0277293f1f180c9bf0d570c71109dc5` on
+`feature/pilot-cso-onboarding-access`, with the branch synchronized to its
+upstream. `origin/main` remained
+`4ba0233b5c8e391e37629e982240d44e21961c8d`. The approved starting Vercel
+deployment was Ready, classified as Preview, and sourced from the starting
+feature commit. Production was not changed.
+
+### Open registration and profile boundary
+
+- `/register` now uses the dedicated open-registration workflow. Any new,
+  syntactically valid email can register without an invited-email allowlist,
+  pilot code, pre-existing approved organization, or course assignment.
+- The workflow retains normalization, bounded input, password policy,
+  Terms/Privacy consent, per-email rate limiting, safe internal redirects,
+  generic duplicate-account handling, Supabase confirmation, null local
+  password hashes for Supabase identities, transactional Hub profile creation,
+  and non-sensitive audit evidence.
+- Full name, email, password, self-reported organization name, role/position,
+  and region/location are collected. The organization value is stored only in
+  `User.selfReportedOrganizationName`.
+- Registration explicitly writes `organizationId = null`. It does not match,
+  create, update, or reactivate an `Organization`; it creates no
+  `CourseAssignment` and no `Enrollment`.
+- General registration no longer consumes `PILOT_REGISTRATION_MODE`,
+  `PILOT_INVITED_EMAILS`, `PILOT_ACCESS_CODE`, or
+  `PILOT_ACCESS_CODES`. The variables remain transitional Preview
+  configuration only. Historical pilot workflow code remains preserved but is
+  no longer referenced by the active registration route.
+- The learner-facing copy explains that registration is open and that a typed
+  organization is profile information, not access to an invitation-only course.
+
+### Migration and staging result
+
+Migration
+`20260720070000_open_registration_self_reported_organization` contains one
+statement: add nullable text column `selfReportedOrganizationName` to
+`User`. Inspection confirmed no table replacement, drop, truncate, delete,
+foreign key, data rewrite, legacy SQLite change, or Supabase-managed schema
+access.
+
+The migration was applied only to the approved non-production PostgreSQL
+database through the privately loaded `DIRECT_URL`. Prisma reports all six
+approved PostgreSQL migrations applied and the schema up to date. No broad
+seed ran. Existing users, organizations, roles, enrollments, progress,
+assessments, feedback, and certificates were retained.
+
+### Session eligibility
+
+An active Hub user with an active, unexpired participant role can now resolve a
+session with `organizationId = null`. Global resolution still fails closed
+for suspended or deactivated users, missing/inactive/expired roles, and stale
+Supabase-cookie conditions. Organization lifecycle is no longer a global
+sign-in gate; any organization requirement belongs to a restricted-course
+entitlement.
+
+### HRBA visibility and entitlement
+
+The canonical active HRBA record remains bound to its existing slug and external
+integration, but its database visibility is now `ASSIGNED_ONLY`. The public
+catalogue and overview remain visible through catalogue metadata.
+
+One centralized server-side entitlement function makes HRBA fail closed unless
+the current learner has an active `USER` assignment for that exact course.
+The check is applied to learner course listing/detail and enrollment
+initialization, external launch, external progress ingestion, lesson progress,
+final assessment, course feedback, certificate listing/detail/PDF/eligibility,
+and public action-state resolution. Organization-wide and cohort-wide
+assignments do not satisfy the HRBA rule.
+
+| State or entry point | Unassigned result | Assigned result |
+|---|---|---|
+| Public overview | Visible; `Invitation required` after sign-in | `Start course` or `Continue course` |
+| Learner course detail/enrollment | Denied; no enrollment created | Allowed |
+| Direct internal/external launch | Denied | Allowed with existing launch contract |
+| Progress callback/save | Denied | Existing ownership/token rules preserved |
+| Final assessment | Denied | Existing attempt behavior preserved |
+| Course feedback | Denied | Allowed under existing rules |
+| Certificate list/detail/PDF | Denied | Existing eligibility rules preserved |
+
+The catalogue state model now represents open availability,
+`invitation_required`, `assigned`, and `coming_soon`. No activation page,
+dead activation control, invitation table, focal-person workflow, admin
+invitation interface, or bulk invitation function was added.
+
+### Connected staging evidence
+
+The connected open-registration verifier created a temporary fictional learner
+and proved that the self-reported organization was stored while
+`organizationId`, organization creation, assignment, and enrollment remained
+absent. The generic duplicate path and consent boundary also passed. Temporary
+records were removed.
+
+The staging application data did not contain an approved persistent fictional
+learner at this checkpoint. The connected HRBA regression therefore created
+test-scoped fictional learners and explicit individual assignments, verified
+assigned launch/progress/assessment/certificate behavior plus unassigned
+launch denial and absence of enrollment, then cleaned those records. Existing
+administrator and organization fixtures were retained. The canonical HRBA
+record was prepared with controlled `CAP-ADV` and `CAP-HRSAFE` mappings;
+no legacy `CAP-HRBA` capacity-area record was created.
+
+### Automated validation
+
+| Check | Result |
+|---|---|
+| `npx prisma validate` | Pass |
+| `npm run prisma:validate` | Pass |
+| `npm run typecheck` | Pass |
+| `npm run build` | Pass with process-only standard production `NODE_ENV` |
+| `npm run lint` | Pass |
+| `git diff --check` | Pass |
+| `npm run verify:p2d-onboarding-access` | Pass |
+| `npm run verify:open-registration` | Pass |
+| `npm run verify:stage-a-session` | Pass |
+| `npm run verify:hrba-assignment-boundary` | Pass |
+| `npm run verify:s4-supabase-registration` | Pass against staging; temporary data cleaned |
+| `npm run verify:s5-signin` | Pass |
+| `npm run verify:s6-route-roles` | Pass |
+| `npm run verify:s7-hrba-supabase-compat` | Pass against staging; assigned and unassigned cases covered and cleaned |
+
+The first build attempt inherited a non-standard `NODE_ENV` from the private
+staging file and failed during prerendering. Re-running with
+`NODE_ENV=production` for that process only passed. Neither the private file
+nor Vercel configuration was changed.
+
+### Preview acceptance and remaining work
+
+The Git-connected Preview acceptance result will be appended after the Stage A
+commit is deployed and verified at 1440 × 900 and 390 × 844. Vercel Deployment
+Protection interception of external email callbacks will be recorded separately
+and will not be classified as a Supabase callback defect.
+
+Stage B remains: a DEC-managed course-invitation model and administration flow,
+individual/bulk invitations, invitation delivery and activation, and durable
+assigned-learner acceptance fixtures. Dedicated non-production SMTP and a
+Preview-protection-safe callback path remain environment limitations.

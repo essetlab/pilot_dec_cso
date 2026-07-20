@@ -1,7 +1,6 @@
 import "dotenv/config";
 
 const expectedHrbaOrigin = "https://pilot-hrba-e-learn-v1-wajj.vercel.app";
-const requiredInvitedEmails = ["agiledatawise@gmail.com", "essetlab@gmail.com"];
 
 type Status = "invalid" | "missing" | "ok" | "placeholder" | "warning";
 
@@ -120,22 +119,6 @@ checkRequiredValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
 const hrbaUrl = checkRequiredUrl("HRBA_EXTERNAL_COURSE_URL");
 const hrbaOrigins = checkRequiredValue("HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS");
 
-const pilotAccessCode = valueOf("PILOT_ACCESS_CODE");
-const pilotAccessCodes = valueOf("PILOT_ACCESS_CODES");
-if (!pilotAccessCode && !pilotAccessCodes) {
-  add("PILOT_ACCESS_CODE/PILOT_ACCESS_CODES", "missing", "at least one pilot access code variable is required");
-} else if (
-  (pilotAccessCode && isPlaceholder(pilotAccessCode)) ||
-  (pilotAccessCodes && isPlaceholder(pilotAccessCodes))
-) {
-  add("PILOT_ACCESS_CODE/PILOT_ACCESS_CODES", "placeholder", "pilot access code still looks like a placeholder");
-} else {
-  add("PILOT_ACCESS_CODE/PILOT_ACCESS_CODES", "ok", "at least one pilot access code variable is set");
-}
-
-const registrationMode = checkRequiredValue("PILOT_REGISTRATION_MODE");
-const invitedEmails = checkRequiredValue("PILOT_INVITED_EMAILS");
-
 if (databaseUrl && directUrl && databaseUrl === directUrl && !isPlaceholder(databaseUrl)) {
   add("DATABASE_URL/DIRECT_URL", "warning", "runtime and direct migration URLs are identical");
 }
@@ -159,19 +142,6 @@ if (hrbaOrigins && !isPlaceholder(hrbaOrigins)) {
       add("HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS", "invalid", "allowed origins must contain valid http(s) URLs");
       break;
     }
-  }
-}
-
-if (registrationMode && !isPlaceholder(registrationMode) && registrationMode.toLowerCase() !== "strict") {
-  add("PILOT_REGISTRATION_MODE", "warning", "real pilot should use strict registration mode");
-}
-
-if (invitedEmails && !isPlaceholder(invitedEmails)) {
-  const invitedEmailSet = new Set(splitCsv(invitedEmails).map((email) => email.toLowerCase()));
-  const missingInvites = requiredInvitedEmails.filter((email) => !invitedEmailSet.has(email));
-
-  if (missingInvites.length > 0) {
-    add("PILOT_INVITED_EMAILS", "warning", "required Internal Pilot 0 invited emails are incomplete");
   }
 }
 

@@ -67,21 +67,17 @@ export function activeRoleKeys(
   });
 }
 
-export function canUsePilotAccount(input: {
+export function canUseHubAccount(input: {
   organizationStatus: OrganizationStatus | null;
   roles: RoleKey[];
   status: UserStatus;
 }) {
-  if (input.status !== UserStatus.ACTIVE) {
-    return false;
-  }
-
-  const isOrganizationLearner = input.roles.some(
-    (role) => role === "PARTICIPANT" || role === "CSO_FOCAL_PERSON",
-  );
-
-  return !isOrganizationLearner || input.organizationStatus === OrganizationStatus.ACTIVE;
+  return input.status === UserStatus.ACTIVE;
 }
+
+// Transitional export for older verification helpers. Organization eligibility
+// now belongs to restricted-course entitlement, not global account sign-in.
+export const canUsePilotAccount = canUseHubAccount;
 
 export function buildAuthSessionFromHubUser(
   user: HubAuthUser,
@@ -92,7 +88,7 @@ export function buildAuthSessionFromHubUser(
     return { code: "missing-roles", success: false };
   }
 
-  if (!canUsePilotAccount({
+  if (!canUseHubAccount({
     organizationStatus: user.organization?.status ?? null,
     roles,
     status: user.status,

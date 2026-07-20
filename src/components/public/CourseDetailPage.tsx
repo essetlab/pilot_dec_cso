@@ -3,8 +3,13 @@ import { ActionButton, SectionHeader, StatusBadge } from "@/components/ui";
 import type { PublicCatalogueCourseDetail } from "@/lib/course-types";
 
 export type PublicCourseAction = {
-  href: string;
-  label: "Start learning" | "Continue learning" | "Go to My Courses" | "Open course";
+  href?: string;
+  label:
+    | "Start course"
+    | "Continue course"
+    | "Sign in to access"
+    | "Invitation required"
+    | "Open course";
   rel?: "noreferrer";
   target?: "_blank";
 };
@@ -28,6 +33,17 @@ function CourseHero({
   course: PublicCatalogueCourseDetail;
 }) {
   const isAvailable = course.availability === "available";
+  const isAssigned =
+    course.accessState === "invitation_required" &&
+    Boolean(action?.href) &&
+    (action?.label === "Start course" || action?.label === "Continue course");
+  const statusLabel = !isAvailable
+    ? "Coming soon"
+    : isAssigned
+      ? "Assigned"
+    : course.accessState === "invitation_required"
+      ? "Invitation required"
+      : "Available now";
 
   return (
     <section className="overflow-hidden rounded-panel bg-deep-navy text-white shadow-hero">
@@ -35,8 +51,8 @@ function CourseHero({
         <div>
           <div className="flex flex-wrap gap-2">
             <StatusBadge
-              label={isAvailable ? "Available now" : "Coming soon"}
-              tone={isAvailable ? "green" : "gray"}
+              label={statusLabel}
+              tone={isAssigned ? "green" : isAvailable ? (course.accessState === "invitation_required" ? "gold" : "green") : "gray"}
             />
             <StatusBadge label={course.primaryCapacityArea.name} tone="blue" />
             {course.integrationStatus === "integration_pending" ? (
@@ -53,10 +69,14 @@ function CourseHero({
             {course.shortDescription}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            {action ? (
+            {action?.href ? (
               <ActionButton href={action.href} rel={action.rel} size="lg" target={action.target}>
                 {action.label}
               </ActionButton>
+            ) : action ? (
+              <span className="inline-flex min-h-12 items-center justify-center rounded-control border border-white/25 bg-white/10 px-5 py-3 text-base font-semibold text-white">
+                {action.label}
+              </span>
             ) : (
               <span className="inline-flex min-h-12 items-center justify-center rounded-control border border-white/25 bg-white/10 px-5 py-3 text-base font-semibold text-white">
                 Coming soon
@@ -92,9 +112,29 @@ function CourseHero({
   );
 }
 
-function CourseInformation({ course }: { course: PublicCatalogueCourseDetail }) {
+function CourseInformation({
+  action,
+  course,
+}: {
+  action: PublicCourseAction | null;
+  course: PublicCatalogueCourseDetail;
+}) {
+  const isAssigned =
+    course.accessState === "invitation_required" &&
+    Boolean(action?.href) &&
+    (action?.label === "Start course" || action?.label === "Continue course");
   const informationItems = [
-    { label: "Availability", value: course.availability === "available" ? "Available now" : "Coming soon" },
+    {
+      label: "Access",
+      value:
+        course.availability === "coming_soon"
+          ? "Coming soon"
+          : isAssigned
+            ? "Assigned"
+          : course.accessState === "invitation_required"
+            ? "Invitation required"
+            : "Available to registered learners",
+    },
     { label: "Estimated duration", value: course.duration },
     { label: "Delivery format", value: course.deliveryFormat },
     { label: "Language", value: course.language },
@@ -383,7 +423,7 @@ export function CourseDetailPage({
           <PracticalOutputs course={course} />
           <AssessmentAndSupport course={course} />
         </div>
-        <CourseInformation course={course} />
+        <CourseInformation action={action} course={course} />
       </div>
       <ClosingAction action={action} course={course} />
     </div>

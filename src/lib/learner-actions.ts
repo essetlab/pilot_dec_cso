@@ -6,13 +6,13 @@ import {
   LessonProgressStatus,
   EnrollmentStatus,
   CourseStatus,
-  CourseVisibility,
   QuizAttemptStatus,
   CertificateStatus,
 } from "../generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { submitCourseFeedback } from "./feedback-workflow";
+import { hasLearnerCourseEntitlement } from "./course-entitlement";
 
 export type ActionState = {
   success: boolean;
@@ -112,26 +112,15 @@ export async function markLessonCompleteAction(
     }
 
     // 5. Learner still has access to the course (visibility constraints)
-    if (course.visibility === CourseVisibility.ASSIGNED_ONLY) {
-      const orConditions = [
-        { targetUserId: dbUser.id },
-        ...(dbUser.primaryCohortId ? [{ targetCohortId: dbUser.primaryCohortId }] : []),
-        ...(dbUser.organizationId ? [{ targetOrganizationId: dbUser.organizationId }] : []),
-      ];
-
-      const assignment = await prisma.courseAssignment.findFirst({
-        where: {
-          courseId: course.id,
-          isActive: true,
-          OR: orConditions,
-        },
-      });
-
-      if (!assignment) {
-        return { success: false, error: "Access denied: No active assignment" };
-      }
-    } else if (course.visibility === CourseVisibility.PRIVATE) {
-      return { success: false, error: "Access denied: Course is private" };
+    if (!(await hasLearnerCourseEntitlement({
+      courseId: course.id,
+      courseSlug: course.slug,
+      organizationId: dbUser.organizationId,
+      primaryCohortId: dbUser.primaryCohortId,
+      userId: dbUser.id,
+      visibility: course.visibility,
+    }))) {
+      return { success: false, error: "Access denied: No active assignment" };
     }
 
     // 6. Enrollment exists, belongs to the current user, and is for the latest published course version
@@ -299,26 +288,15 @@ export async function submitFinalTestAttemptAction(
     }
 
     // 5. Learner still has access to the course (visibility constraints)
-    if (course.visibility === CourseVisibility.ASSIGNED_ONLY) {
-      const orConditions = [
-        { targetUserId: dbUser.id },
-        ...(dbUser.primaryCohortId ? [{ targetCohortId: dbUser.primaryCohortId }] : []),
-        ...(dbUser.organizationId ? [{ targetOrganizationId: dbUser.organizationId }] : []),
-      ];
-
-      const assignment = await prisma.courseAssignment.findFirst({
-        where: {
-          courseId: course.id,
-          isActive: true,
-          OR: orConditions,
-        },
-      });
-
-      if (!assignment) {
-        return { success: false, error: "Access denied: No active assignment" };
-      }
-    } else if (course.visibility === CourseVisibility.PRIVATE) {
-      return { success: false, error: "Access denied: Course is private" };
+    if (!(await hasLearnerCourseEntitlement({
+      courseId: course.id,
+      courseSlug: course.slug,
+      organizationId: dbUser.organizationId,
+      primaryCohortId: dbUser.primaryCohortId,
+      userId: dbUser.id,
+      visibility: course.visibility,
+    }))) {
+      return { success: false, error: "Access denied: No active assignment" };
     }
 
     // 6. Enrollment exists and belongs to the current user
