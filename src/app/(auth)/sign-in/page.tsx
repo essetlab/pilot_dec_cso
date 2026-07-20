@@ -46,6 +46,7 @@ const signInErrorMessages: Record<string, string> = {
 
 export default async function SignInPage({ searchParams }: PageProps) {
   const { next, error, notice } = await searchParams;
+  const isAdministratorSignIn = next === "/admin" || next?.startsWith("/admin/");
   const usesSupabaseSignIn = Boolean(readSupabasePublicConfig());
   const signInErrorMessage = error
     ? signInErrorMessages[error] ?? "Confirm your credentials and try again."
@@ -62,13 +63,17 @@ export default async function SignInPage({ searchParams }: PageProps) {
             <BrandMark />
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-dec-blue">
-                CSO Learning Hub
+                {isAdministratorSignIn ? "DEC administrator access" : "CSO Learning Hub"}
               </p>
               <h1 className="mt-4 font-display text-4xl font-semibold leading-tight text-deep-navy sm:text-5xl">
-                Sign in to continue learning
+                {isAdministratorSignIn
+                  ? "Sign in to the DEC Administrator Portal"
+                  : "Sign in to continue learning"}
               </h1>
               <p className="mt-5 text-base leading-8 text-muted-text sm:text-lg">
-                Access your courses, progress, certificates, and learner profile.
+                {isAdministratorSignIn
+                  ? "Use your authorized DEC staff account to manage participant invitations and pilot access."
+                  : "Access your courses, progress, certificates, and learner profile."}
               </p>
             </div>
           </div>
@@ -97,10 +102,14 @@ export default async function SignInPage({ searchParams }: PageProps) {
                     Sign in
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-deep-navy">
-                    Use your learner credentials
+                    {isAdministratorSignIn
+                      ? "Sign in as administrator"
+                      : "Use your learner credentials"}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-muted-text">
-                    Sign in with the email and password created during learner registration.
+                    {isAdministratorSignIn
+                      ? "The shared sign-in system will verify your administrator role and return you to invitation management."
+                      : "Sign in with the email and password created during learner registration."}
                   </p>
                 </div>
                 <StatusBadge label="Secure session" tone="blue" />

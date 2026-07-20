@@ -462,11 +462,14 @@ try {
   assert.deepEqual(await resolveCourseInvitationAcceptance({ plaintextToken: expiredToken, session: null }), { state: "expired", success: false });
   assert.deepEqual(await resolveCourseInvitationAcceptance({ plaintextToken: "fictional-invalid-token", session: null }), { state: "unavailable", success: false });
 
-  const [acceptPage, acceptClient, nextConfig, adminUi] = await Promise.all([
+  const [acceptPage, acceptClient, nextConfig, adminUi, adminDashboard, adminPage, signInPage] = await Promise.all([
     readFile("src/app/(public)/course-invitations/accept/page.tsx", "utf8"),
     readFile("src/components/public/CourseInvitationAcceptance.tsx", "utf8"),
     readFile("next.config.ts", "utf8"),
     readFile("src/components/admin/AdminCourseInvitations.tsx", "utf8"),
+    readFile("src/components/admin/AdminDashboard.tsx", "utf8"),
+    readFile("src/app/(admin)/admin/[[...segments]]/page.tsx", "utf8"),
+    readFile("src/app/(auth)/sign-in/page.tsx", "utf8"),
   ]);
   assert(acceptPage.includes('referrer: "no-referrer"'));
   assert(acceptPage.includes('dynamic = "force-dynamic"'));
@@ -482,6 +485,15 @@ try {
   assert(nextConfig.includes('value: "no-referrer"'));
   assert(!adminUi.includes("tokenHash"));
   assert(adminUi.includes("Manual delivery is the designated staging mode"));
+  assert(adminDashboard.includes("DEC Administrator Portal"));
+  assert(adminDashboard.includes("Sign in as administrator"));
+  assert(adminDashboard.includes("/sign-in?next=%2Fadmin%2Fcourse-invitations"));
+  assert(adminDashboard.includes("Managing a participant invitation"));
+  assert(adminDashboard.includes("Replace or cancel safely"));
+  assert(adminPage.includes('actualRoute === "/admin"'));
+  assert(adminPage.includes("<AdminPortalEntry />"));
+  assert(signInPage.includes("isAdministratorSignIn"));
+  assert(signInPage.includes("Sign in to the DEC Administrator Portal"));
 
   const activationAudits = await prisma.auditLog.count({ where: { actionType: AuditActionType.COURSE_INVITATION_ACTIVATED, entityId: stored.id } });
   assert.equal(activationAudits, 1);

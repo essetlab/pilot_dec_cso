@@ -10,7 +10,7 @@ import { AdminCertificateDetail, AdminCertificates } from "@/components/admin/Ad
 import { AdminCohortDetail, AdminCohorts } from "@/components/admin/AdminCohorts";
 import { AdminCourses } from "@/components/admin/AdminCourses";
 import { AdminExternalCourseManager } from "@/components/admin/AdminExternalCourseManager";
-import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { AdminDashboard, AdminPortalEntry } from "@/components/admin/AdminDashboard";
 import { AdminMonitoring } from "@/components/admin/AdminMonitoring";
 import { AdminOrganizationDetail, AdminOrganizations } from "@/components/admin/AdminOrganizations";
 import { AdminPilotMonitoring } from "@/components/admin/AdminPilotMonitoring";
@@ -117,6 +117,9 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
   const session = await getCurrentSession();
 
   if (!session) {
+    if (actualRoute === "/admin") {
+      return <AdminPortalEntry />;
+    }
     redirect(`/sign-in?next=${encodeURIComponent(actualRoute)}`);
   }
 

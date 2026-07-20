@@ -7,13 +7,112 @@ import type {
 } from "@/lib/admin-dashboard-workflow";
 import { isPhaseOneAdminSurfaceRoute } from "@/lib/routes";
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/shell/BrandMark";
 
 const quickActions = [
+  ["Manage invitations", "/admin/course-invitations"],
   ["Manage users", "/admin/users"],
   ["Add organization", "/admin/organizations/new"],
   ["Manage courses", "/admin/courses"],
   ["View certificates", "/admin/certificates"],
 ] as const;
+
+const invitationSteps = [
+  {
+    description:
+      "Have the active organization, learner name and email, region, role, intended course and version, optional cohort, and expiry date ready.",
+    title: "Prepare the information",
+  },
+  {
+    description:
+      "Open Manage invitations, choose Create invitation, and select each value from the controlled options.",
+    title: "Create the invitation",
+  },
+  {
+    description:
+      "Prepare the secure link, copy it immediately, and deliver it privately to the intended learner. The raw link is not stored for later recovery.",
+    title: "Copy and deliver the link",
+  },
+  {
+    description:
+      "Return to the invitation record and mark delivery only after the link has been sent through the agreed channel.",
+    title: "Mark delivery",
+  },
+  {
+    description:
+      "Use the invitation status and history to confirm whether it is draft, sent, activated, expired, cancelled, or replaced.",
+    title: "Monitor activation",
+  },
+  {
+    description:
+      "Prepare a replacement link when a sent link must be invalidated, or cancel the invitation when access is no longer required.",
+    title: "Replace or cancel safely",
+  },
+] as const;
+
+function InvitationOperationsGuide() {
+  return (
+    <section
+      aria-labelledby="administrator-invitation-guide"
+      className="rounded-[24px] border border-dec-blue/25 bg-dec-blue/10 p-6 shadow-soft"
+    >
+      <div className="max-w-3xl">
+        <StatusBadge label="Administrator guide" tone="blue" />
+        <h2
+          className="mt-4 text-2xl font-semibold leading-tight text-deep-navy"
+          id="administrator-invitation-guide"
+        >
+          Managing a participant invitation
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-[#26536c]">
+          Follow these steps to prepare, deliver, and monitor secure individual pilot access.
+        </p>
+      </div>
+      <ol className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {invitationSteps.map((step, index) => (
+          <li className="rounded-[18px] border border-dec-blue/15 bg-white p-4" key={step.title}>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-dec-blue">
+              Step {index + 1}
+            </p>
+            <h3 className="mt-2 text-base font-semibold text-dark-ink">{step.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-text">{step.description}</p>
+          </li>
+        ))}
+      </ol>
+      <ActionButton className="mt-6" href="/admin/course-invitations">
+        Manage invitations
+      </ActionButton>
+    </section>
+  );
+}
+
+export function AdminPortalEntry() {
+  return (
+    <div className="space-y-6">
+      <section className="overflow-hidden rounded-[28px] border border-design-border bg-deep-navy p-6 text-white shadow-hero lg:p-8">
+        <div className="mb-7 inline-flex rounded-[18px] bg-white p-3">
+          <BrandMark compact />
+        </div>
+        <StatusBadge label="DEC staff access" tone="blue" />
+        <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl">
+          DEC Administrator Portal
+        </h1>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-white/80">
+          This area is for authorized DEC staff managing participant invitations and pilot
+          access. Administrator permissions are checked after sign-in.
+        </p>
+        <ActionButton
+          className="mt-7"
+          href="/sign-in?next=%2Fadmin%2Fcourse-invitations"
+          size="lg"
+        >
+          Sign in as administrator
+        </ActionButton>
+      </section>
+      <InvitationOperationsGuide />
+    </div>
+  );
+}
 
 function Panel({
   children,
@@ -65,15 +164,15 @@ function DashboardHeader({ data }: { data: AdminDashboardData }) {
             <StatusBadge label="Platform overview" tone="green" />
           </div>
           <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl">
-            Admin Dashboard
+            DEC Administrator Portal
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-white/75">
-            Manage learners, organizations, course assignments, certificates,
-            and learning records from one clear starting point.
+            This area is for authorized DEC staff managing participant invitations,
+            pilot access, learners, organizations, assignments, and learning records.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <ActionButton href="/admin/users" size="lg">
-              Manage Users
+            <ActionButton href="/admin/course-invitations" size="lg">
+              Manage Invitations
             </ActionButton>
             <ActionButton
               className="bg-white text-deep-navy hover:text-dec-blue"
@@ -366,6 +465,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardData }) {
   return (
     <div className="space-y-6">
       <DashboardHeader data={data} />
+      <InvitationOperationsGuide />
       <KpiGrid data={data} />
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
