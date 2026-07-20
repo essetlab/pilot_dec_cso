@@ -1,11 +1,14 @@
 import { createHash, randomBytes } from "node:crypto";
 import {
   AuditActionType,
+  CourseStatus,
+  CourseVisibility,
   CourseInvitationStatus,
   OrganizationStatus,
   RoleKey,
   UserStatus,
 } from "../generated/prisma/enums";
+import type { Prisma } from "../generated/prisma/client";
 import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
 
@@ -18,6 +21,7 @@ const ACTIVE_INVITATION_STATUSES = [
   CourseInvitationStatus.SENT,
   CourseInvitationStatus.FAILED,
 ] as const;
+const activationQueues = new Map<string, Promise<void>>();
 
 export const COURSE_INVITATION_ALLOWED_TRANSITIONS = {
   [CourseInvitationStatus.DRAFT]: [
@@ -111,6 +115,21 @@ export type CourseInvitationResolution =
         };
       };
       success: true;
+    };
+
+export type CourseInvitationActivationResult =
+  | {
+      access: {
+        courseId: string;
+        courseSlug: string;
+        courseVersionId: string;
+      };
+      code: "activated" | "already-activated";
+      success: true;
+    }
+  | {
+      code: "integrity-error" | "invalid-or-unavailable" | "unauthorized" | "unavailable";
+      success: false;
     };
 
 class CourseInvitationWorkflowError extends Error {
@@ -626,4 +645,423 @@ export async function resolveCourseInvitationToken(
     },
     success: true,
   };
+}
+
+function activeRoleWhere(now: Date) {
+  return {
+    isActive: true,
+    OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+  };
+}
+
+async function resolveActivationLearner(
+  tx: Prisma.TransactionClient,
+  session: AuthSession | null,
+  now: Date,
+) {
+  if (
+    !session?.userId ||
+    !session.email ||
+    !session.issuedAt ||
+    !Number.isFinite(Date.parse(session.issuedAt))
+  ) {
+    return null;
+  }
+
+  return tx.user.findFirst({
+    select: {
+      email: true,
+      id: true,
+      organizationId: true,
+      primaryCohortId: true,
+    },
+    where: {
+      email: normalizeCourseInvitationEmail(session.email),
+      id: session.userId,
+      status: UserStatus.ACTIVE,
+      AND: [
+        {
+          roleAssignments: {
+            some: {
+              ...activeRoleWhere(now),
+              role: { key: RoleKey.PARTICIPANT },
+            },
+          },
+        },
+        {
+          roleAssignments: {
+            none: {
+              ...activeRoleWhere(now),
+              role: {
+                key: { in: [RoleKey.PLATFORM_ADMIN, RoleKey.SUPER_ADMIN] },
+              },
+            },
+          },
+        },
+      ],
+    },
+  });
+}
+
+async function withCourseInvitationActivationLock<T>(
+  tokenHash: string,
+  operation: () => Promise<T>,
+) {
+  const previous = activationQueues.get(tokenHash) ?? Promise.resolve();
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const queued = previous.then(() => gate);
+  activationQueues.set(tokenHash, queued);
+
+  await previous;
+  try {
+    return await operation();
+  } finally {
+    release();
+    if (activationQueues.get(tokenHash) === queued) {
+      activationQueues.delete(tokenHash);
+    }
+  }
+}
+
+function activationAccess(input: {
+  courseId: string;
+  courseSlug: string;
+  courseVersionId: string | null;
+}) {
+  if (!input.courseVersionId) {
+    throw new CourseInvitationWorkflowError("unavailable");
+  }
+
+  return {
+    courseId: input.courseId,
+    courseSlug: input.courseSlug,
+    courseVersionId: input.courseVersionId,
+  };
+}
+
+function assignmentMatchesActivation(input: {
+  assignment: {
+    assignmentType: string;
+    courseId: string;
+    courseVersionId: string | null;
+    isActive: boolean;
+    targetCohortId: string | null;
+    targetOrganizationId: string | null;
+    targetUserId: string | null;
+  };
+  courseId: string;
+  courseVersionId: string;
+  userId: string;
+}) {
+  return (
+    input.assignment.assignmentType === "USER" &&
+    input.assignment.courseId === input.courseId &&
+    input.assignment.courseVersionId === input.courseVersionId &&
+    input.assignment.targetUserId === input.userId &&
+    input.assignment.targetCohortId === null &&
+    input.assignment.targetOrganizationId === null
+  );
+}
+
+async function transitionCourseInvitationToActivated(input: {
+  assignmentId: string;
+  invitation: {
+    activatedUserId: string | null;
+    courseId: string;
+    courseVersionId: string | null;
+    id: string;
+    organizationId: string;
+    status: CourseInvitationStatus;
+  };
+  now: Date;
+  tx: Prisma.TransactionClient;
+  userId: string;
+}) {
+  requireTransition(input.invitation.status, CourseInvitationStatus.ACTIVATED);
+
+  const activated = await input.tx.courseInvitation.update({
+    data: {
+      activatedAt: input.now,
+      activatedUserId: input.userId,
+      courseAssignmentId: input.assignmentId,
+      status: CourseInvitationStatus.ACTIVATED,
+    },
+    where: {
+      activatedUserId: input.invitation.activatedUserId,
+      id: input.invitation.id,
+      status: input.invitation.status,
+    },
+  });
+
+  await input.tx.auditLog.create({
+    data: {
+      actionType: AuditActionType.COURSE_INVITATION_ACTIVATED,
+      actorUserId: input.userId,
+      description: "Activated an individual course invitation.",
+      entityId: activated.id,
+      entityType: "CourseInvitation",
+      metadataJson: {
+        activatedUserId: input.userId,
+        assignmentId: input.assignmentId,
+        courseId: input.invitation.courseId,
+        courseVersionId: input.invitation.courseVersionId,
+        organizationId: input.invitation.organizationId,
+        status: CourseInvitationStatus.ACTIVATED,
+      },
+    },
+  });
+
+  return activated;
+}
+
+async function activateCourseInvitationTransaction(input: {
+  now: Date;
+  session: AuthSession | null;
+  tokenHash: string;
+}): Promise<CourseInvitationActivationResult> {
+  return prisma.$transaction(
+    async (tx) => {
+      const learner = await resolveActivationLearner(tx, input.session, input.now);
+      if (!learner) {
+        return { code: "unauthorized", success: false };
+      }
+
+      const invitation = await tx.courseInvitation.findUnique({
+        where: { tokenHash: input.tokenHash },
+      });
+
+      if (
+        !invitation ||
+        normalizeCourseInvitationEmail(learner.email) !== invitation.invitedEmail
+      ) {
+        return { code: "invalid-or-unavailable", success: false };
+      }
+
+      const organization = await tx.organization.findUnique({
+        select: { id: true, status: true },
+        where: { id: invitation.organizationId },
+      });
+      const course = await tx.course.findUnique({
+        select: {
+          archivedAt: true,
+          id: true,
+          slug: true,
+          status: true,
+          visibility: true,
+        },
+        where: { id: invitation.courseId },
+      });
+      const courseVersion = invitation.courseVersionId
+        ? await tx.courseVersion.findUnique({
+            select: { archivedAt: true, courseId: true, id: true, status: true },
+            where: { id: invitation.courseVersionId },
+          })
+        : null;
+      const cohort = invitation.cohortId
+        ? await tx.cohort.findUnique({
+            select: { id: true, status: true },
+            where: { id: invitation.cohortId },
+          })
+        : null;
+      const cohortOrganization = invitation.cohortId
+        ? await tx.cohortOrganization.findUnique({
+            select: { id: true },
+            where: {
+              cohortId_organizationId: {
+                cohortId: invitation.cohortId,
+                organizationId: invitation.organizationId,
+              },
+            },
+          })
+        : null;
+
+      if (invitation.status === CourseInvitationStatus.ACTIVATED) {
+        if (invitation.activatedUserId !== learner.id) {
+          return { code: "invalid-or-unavailable", success: false };
+        }
+
+        const activatedAssignment = invitation.courseAssignmentId
+          ? await tx.courseAssignment.findUnique({
+              where: { id: invitation.courseAssignmentId },
+            })
+          : null;
+        if (
+          learner.organizationId !== invitation.organizationId ||
+          (invitation.cohortId && learner.primaryCohortId !== invitation.cohortId) ||
+          organization?.status !== OrganizationStatus.ACTIVE ||
+          course?.status !== CourseStatus.PUBLISHED ||
+          course.visibility !== CourseVisibility.ASSIGNED_ONLY ||
+          course.archivedAt ||
+          !invitation.courseVersionId ||
+          !courseVersion ||
+          courseVersion.courseId !== invitation.courseId ||
+          courseVersion.status !== CourseStatus.PUBLISHED ||
+          courseVersion.archivedAt ||
+          !activatedAssignment ||
+          !assignmentMatchesActivation({
+            assignment: activatedAssignment,
+            courseId: invitation.courseId,
+            courseVersionId: invitation.courseVersionId,
+            userId: learner.id,
+          }) ||
+          !activatedAssignment.isActive ||
+          (invitation.cohortId &&
+            (cohort?.status !== OrganizationStatus.ACTIVE || !cohortOrganization))
+        ) {
+          return { code: "integrity-error", success: false };
+        }
+
+        return {
+          access: activationAccess({
+            courseId: course.id,
+            courseSlug: course.slug,
+            courseVersionId: invitation.courseVersionId,
+          }),
+          code: "already-activated",
+          success: true,
+        };
+      }
+
+      if (
+        invitation.status !== CourseInvitationStatus.SENT ||
+        invitation.expiresAt.getTime() <= input.now.getTime() ||
+        organization?.status !== OrganizationStatus.ACTIVE ||
+        course?.status !== CourseStatus.PUBLISHED ||
+        course.visibility !== CourseVisibility.ASSIGNED_ONLY ||
+        course.archivedAt ||
+        !invitation.courseVersionId ||
+        !courseVersion ||
+        courseVersion.courseId !== invitation.courseId ||
+        courseVersion.status !== CourseStatus.PUBLISHED ||
+        courseVersion.archivedAt ||
+        (invitation.cohortId &&
+          (cohort?.status !== OrganizationStatus.ACTIVE || !cohortOrganization))
+      ) {
+        return { code: "invalid-or-unavailable", success: false };
+      }
+
+      if (
+        (learner.organizationId && learner.organizationId !== invitation.organizationId) ||
+        (invitation.cohortId &&
+          learner.primaryCohortId &&
+          learner.primaryCohortId !== invitation.cohortId)
+      ) {
+        return { code: "integrity-error", success: false };
+      }
+
+      const existingAssignments = await tx.courseAssignment.findMany({
+        where: {
+          courseId: invitation.courseId,
+          targetUserId: learner.id,
+        },
+      });
+      if (existingAssignments.length > 1) {
+        return { code: "integrity-error", success: false };
+      }
+
+      const existingAssignment = existingAssignments[0];
+      if (
+        existingAssignment &&
+        !assignmentMatchesActivation({
+          assignment: existingAssignment,
+          courseId: invitation.courseId,
+          courseVersionId: invitation.courseVersionId,
+          userId: learner.id,
+        })
+      ) {
+        return { code: "integrity-error", success: false };
+      }
+
+      if (
+        learner.organizationId !== invitation.organizationId ||
+        (invitation.cohortId && learner.primaryCohortId !== invitation.cohortId)
+      ) {
+        await tx.user.update({
+          data: {
+            organizationId: invitation.organizationId,
+            ...(invitation.cohortId ? { primaryCohortId: invitation.cohortId } : {}),
+          },
+          where: {
+            id: learner.id,
+            organizationId: learner.organizationId,
+            primaryCohortId: learner.primaryCohortId,
+          },
+        });
+      }
+
+      const assignment = existingAssignment
+        ? await tx.courseAssignment.update({
+            data: {
+              assignedAt: input.now,
+              assignedById: invitation.invitedByUserId,
+              isActive: true,
+            },
+            where: { id: existingAssignment.id },
+          })
+        : await tx.courseAssignment.create({
+            data: {
+              assignedAt: input.now,
+              assignedById: invitation.invitedByUserId,
+              assignmentType: "USER",
+              courseId: invitation.courseId,
+              courseVersionId: invitation.courseVersionId,
+              targetUserId: learner.id,
+            },
+          });
+
+      await transitionCourseInvitationToActivated({
+        assignmentId: assignment.id,
+        invitation,
+        now: input.now,
+        tx,
+        userId: learner.id,
+      });
+
+      return {
+        access: activationAccess({
+          courseId: course.id,
+          courseSlug: course.slug,
+          courseVersionId: invitation.courseVersionId,
+        }),
+        code: "activated",
+        success: true,
+      };
+    },
+    { isolationLevel: "Serializable", maxWait: 10_000, timeout: 30_000 },
+  );
+}
+
+export async function activateCourseInvitation(input: {
+  plaintextToken: string;
+  session: AuthSession | null;
+}): Promise<CourseInvitationActivationResult> {
+  const token = input.plaintextToken.trim();
+  if (!token) {
+    return { code: "invalid-or-unavailable", success: false };
+  }
+
+  const tokenHash = hashCourseInvitationToken(token);
+  return withCourseInvitationActivationLock(tokenHash, async () => {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await activateCourseInvitationTransaction({
+          now: new Date(),
+          session: input.session,
+          tokenHash,
+        });
+      } catch {
+        // The transaction is atomic, so bounded retries safely resolve serialization,
+        // unique-constraint, conditional-update, and indeterminate commit races.
+        if (attempt === 4) {
+          return { code: "unavailable", success: false };
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+      }
+    }
+
+    return { code: "unavailable", success: false };
+  });
 }

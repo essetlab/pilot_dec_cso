@@ -39,6 +39,7 @@
     "verify:stage-a-session": "node --import jiti/register scripts/verify-stage-a-session.ts",
     "verify:hrba-assignment-boundary": "node --import jiti/register scripts/verify-hrba-assignment-boundary.ts",
     "verify:course-invitation-lifecycle": "node --import jiti/register scripts/verify-course-invitation-lifecycle.ts",
+    "verify:course-invitation-activation": "node --import jiti/register scripts/verify-course-invitation-activation.ts",
     "verify:course-alignment": "node --import jiti/register scripts/verify-course-alignment.ts",
     "verify:build-studio-blocks": "node --import jiti/register scripts/verify-build-studio-blocks.ts",
     "verify:build-studio-block-editing": "node --import jiti/register scripts/verify-build-studio-block-editing.ts",

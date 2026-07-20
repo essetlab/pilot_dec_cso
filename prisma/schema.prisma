@@ -493,6 +493,7 @@ model CourseVersion {
   quizAttempts      QuizAttempt[]
   certificates      Certificate[]
   courseInvitations CourseInvitation[]
+  courseAssignments CourseAssignment[]
 
   @@unique([courseId, versionNumber])
   @@index([status])
@@ -672,6 +673,7 @@ model QuizAttempt {
 model CourseAssignment {
   id                   String        @id @default(cuid())
   courseId             String
+  courseVersionId      String?
   assignedById         String
   assignedAt           DateTime      @default(now())
   assignmentType       String
@@ -681,12 +683,16 @@ model CourseAssignment {
   dueDate              DateTime?
   isActive             Boolean       @default(true)
   course               Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseVersion        CourseVersion? @relation(fields: [courseVersionId], references: [id], onDelete: Restrict)
   assignedBy           User          @relation("CourseAssignmentAssignedBy", fields: [assignedById], references: [id], onDelete: Restrict)
   targetUser           User?         @relation("CourseAssignmentTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
   targetCohort         Cohort?       @relation("CourseAssignmentTargetCohort", fields: [targetCohortId], references: [id], onDelete: Cascade)
   targetOrganization   Organization? @relation("CourseAssignmentTargetOrganization", fields: [targetOrganizationId], references: [id], onDelete: Cascade)
+  activatedInvitations CourseInvitation[]
 
+  @@unique([courseId, targetUserId])
   @@index([courseId])
+  @@index([courseVersionId])
   @@index([assignedById])
   @@index([targetUserId])
   @@index([targetCohortId])
@@ -850,6 +856,7 @@ model CourseInvitation {
   expiresAt             DateTime
   invitedByUserId       String
   activatedUserId       String?
+  courseAssignmentId    String?
   sentAt                DateTime?
   activatedAt           DateTime?
   cancelledAt           DateTime?
@@ -862,6 +869,7 @@ model CourseInvitation {
   cohort                Cohort?                @relation(fields: [cohortId], references: [id], onDelete: Restrict)
   invitedBy             User                   @relation("CourseInvitationInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Restrict)
   activatedUser         User?                  @relation("CourseInvitationActivatedUser", fields: [activatedUserId], references: [id], onDelete: SetNull)
+  courseAssignment      CourseAssignment?      @relation(fields: [courseAssignmentId], references: [id], onDelete: Restrict)
 
   @@index([invitedEmail])
   @@index([organizationId])
@@ -870,6 +878,7 @@ model CourseInvitation {
   @@index([cohortId])
   @@index([invitedByUserId])
   @@index([activatedUserId])
+  @@index([courseAssignmentId])
   @@index([status])
   @@index([expiresAt])
   @@index([invitedEmail, courseId, status])

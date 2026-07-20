@@ -718,3 +718,164 @@ existing Hub account, approved-organization linkage, and one individual
 `USER` assignment for exactly the invited course, with replay and duplicate
 entitlement protection; keep delivery and administrator UI as separately
 reviewable follow-on slices.
+
+## Stage B2 — atomic invitation activation
+
+### Baseline and B1 content check
+
+Stage B2 began from clean, synchronized feature commit
+`4c56c8f5236ec9fa47cb37de65f6ab0b6017c08f`; `main` remained
+`4ba0233b5c8e391e37629e982240d44e21961c8d`. The accepted B1 commit contains
+eight files, not ten. The apparent eight-versus-ten discrepancy came from an
+earlier expected-file estimate: the implementation reused the existing token
+and audit-label locations and therefore did not require two additional files.
+Commit inspection confirmed that no temporary count script, `next-env.d.ts`
+change, environment file, generated client, literal test address, or temporary
+verification artifact was committed. No B1 formatting-only rewrite was made.
+
+### Architecture and activation transaction
+
+`activateCourseInvitation` is the single authoritative domain operation. A
+same-origin JSON POST adapter obtains the authenticated server session and
+passes only the raw token and server-derived session to the workflow. The API
+does not accept user, organization, course, version, cohort, role, or assignment
+scope identifiers. It returns generic unavailable responses and never returns
+Prisma errors, stack traces, token hashes, or personal organization data.
+
+The workflow hashes the presented token using the B1 SHA-256 primitive and
+performs all eligibility checks again inside one serializable transaction. It
+requires an active authenticated user with an active, unexpired participant
+role and rejects accounts with active platform- or super-administrator roles,
+preventing administrator impersonation. Session role claims are not trusted.
+The normalized database and session email must exactly match the invitation.
+
+The transaction revalidates a `SENT`, unexpired invitation; active approved
+organization; published, unarchived `ASSIGNED_ONLY` course; required matching
+published course version; and any active cohort plus its organization linkage. Cancelled,
+expired, failed, draft, pending, already-activated-by-another-user,
+cross-course-version, inactive-organization, inactive-cohort, and unpublished
+course cases fail closed.
+
+### Approved-CSO and cohort linkage
+
+The existing canonical membership fields remain the only membership system:
+`User.organizationId` represents the approved CSO and
+`User.primaryCohortId` represents the optional cohort. Activation uses only the
+organization and cohort stored on the invitation. It never creates or approves
+an organization, never reads self-reported organization text as approval, and
+never accepts learner-selected membership input.
+
+A null membership is linked atomically. An existing exact organization/cohort
+link is preserved. A conflicting organization or cohort fails with a controlled
+integrity result and is not overwritten. No administrator, reviewer, creator,
+focal-person, or other elevated role is granted.
+
+### Individual assignment and duplicate safeguards
+
+The existing `CourseAssignment` remains the entitlement model. Stage B2 adds a
+nullable `courseVersionId` so an invitation-created `USER` assignment is bound
+to the approved version, and `CourseInvitation.courseAssignmentId` records the
+assignment used for activation integrity. The assignment has only
+`targetUserId`; organization and cohort target fields remain null, preventing
+accidental organization-wide or cohort-wide access.
+
+A PostgreSQL unique index on `(courseId, targetUserId)` provides database-level
+duplicate protection while PostgreSQL continues to permit multiple
+organization/cohort assignments with null user targets. Application logic
+resolves one exact, version-matching assignment inside the activation
+transaction, may reactivate that exact assignment, and rejects null-version or
+different-version conflicts. It does not create an enrollment, progress root,
+launch token, assessment, feedback record, or certificate.
+
+Within one process, token-hash-scoped queuing avoids duplicate in-flight work.
+Across processes, serializable isolation, the unique index, conditional writes,
+and one safe retry resolve serialization, uniqueness, conditional-update, and
+indeterminate-commit races without partial state.
+
+### Replay, lifecycle, and audit behavior
+
+The activation transition reuses the centralized B1 transition rules and moves
+only `SENT` to terminal `ACTIVATED`, recording the timestamp, activating user,
+and assignment reference. The same user replay succeeds only when the approved
+organization/cohort link and exact active assignment still exist; it creates no
+new membership, assignment, transition, or audit event. Different-user replay
+returns the same generic unavailable result as other invalid tokens. Missing or
+conflicting replay linkage returns a controlled integrity result and is not
+silently repaired.
+
+The one successful `COURSE_INVITATION_ACTIVATED` audit entry records only
+internal invitation, organization, course, course-version, assignment, and user
+references. Raw tokens, token hashes, email addresses, session material,
+headers, IP addresses, and browser data are excluded. Invalid-token probes and
+idempotent replays do not generate noisy audit entries.
+
+### Migration and staging result
+
+Migration `20260720100000_course_invitation_activation` adds two nullable
+linkage columns, the user/course unique index, supporting indexes, and two
+foreign keys. `CourseAssignment.courseVersionId` and
+`CourseInvitation.courseAssignmentId` both use `ON DELETE RESTRICT` to prevent
+silent removal of version or entitlement evidence from an activated invitation;
+key updates cascade. SQL inspection confirmed no table replacement, drop,
+truncate, data deletion, Supabase-managed schema access, seed, or Production
+reference.
+
+Preflight found zero existing assignment rows and zero duplicate user/course
+groups. The migration was applied through approved staging `DIRECT_URL` only.
+Prisma reports eight migrations applied, the database current, and no schema
+difference. Before and after connected verification, staging retained one
+existing user, two organizations, and zero course assignments, enrollments, or
+course invitations.
+
+### Verification matrix
+
+| Stage B2 case | Result |
+|---|---|
+| Matching active learner, approved CSO, published course/version, active cohort | Pass; membership, one version-bound assignment, terminal activation, and one audit created atomically |
+| Same-user replay | Pass; idempotent result, no duplicate writes or audit |
+| Different-user or email mismatch | Pass; generic denial with no identity disclosure |
+| Expired or cancelled invitation | Pass; denied with no partial state |
+| Inactive learner or administrator impersonation | Pass; denied |
+| Cross-course version, inactive organization/cohort, unpublished course | Pass; denied with no partial state |
+| Existing exact entitlement | Pass; reused and linked to the invitation |
+| Conflicting organization or assignment version | Pass; preserved and rejected without overwrite |
+| Two near-simultaneous activation calls | Pass; one activation, one idempotent replay, one assignment, one audit |
+| Fixture cleanup | Pass; all fictional users, organizations, cohorts, courses, versions, roles, invitations, assignments, and audits removed |
+
+| Automated check | Result |
+|---|---|
+| `npx prisma validate` | Pass |
+| `npm run prisma:validate` | Pass |
+| `npx prisma generate` | Pass |
+| `npm run typecheck` | Pass |
+| `npm run build` | Pass; final run completed without warnings |
+| `npm run lint` | Pass after removing the verifier's unused-variable warning |
+| `git diff --check` | Pass |
+| `npm run verify:p2d-onboarding-access` | Pass |
+| `npm run verify:open-registration` | Pass |
+| `npm run verify:stage-a-session` | Pass |
+| `npm run verify:hrba-assignment-boundary` | Pass |
+| `npm run verify:s5-signin` | Pass |
+| `npm run verify:s6-route-roles` | Pass |
+| `npm run verify:s7-hrba-supabase-compat` | Pass against staging; fixtures cleaned |
+| `npm run verify:course-invitation-lifecycle` | Pass against staging; fixtures cleaned |
+| `npm run verify:course-invitation-activation` | Pass against staging; fixtures cleaned |
+
+An earlier build repeat encountered the already documented fallback-course-data
+`P1001` warning during a transient staging read. The final build connected
+successfully and emitted no warning. No new build warning was introduced.
+
+### Files and remaining boundary
+
+Stage B2 changes are limited to the Prisma model and one forward migration, the
+existing invitation workflow, one same-origin API adapter, one deterministic
+connected verifier and package script, and this evidence report. The containing
+implementation commit and its Git-connected Preview identifiers are recorded in
+the final handoff because both are generated only after this report is committed
+and pushed.
+
+Stage B2 does not add the administrator invitation interface, bulk upload,
+outbound email, a polished learner acceptance page, invitation delivery status,
+or Production configuration. Recommended next stage: Stage B3, a separately
+reviewed administrator invitation-management and delivery workflow, without
+changing the atomic activation contract.
