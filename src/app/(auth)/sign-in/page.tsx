@@ -80,15 +80,21 @@ export default async function SignInPage({ searchParams }: PageProps) {
 
           <div className="rounded-card border border-design-border bg-white p-5 shadow-soft">
             <p className="text-sm font-semibold text-dark-ink">
-              If your organization is part of an active cohort, use the access option
-              provided by your programme team.
+              {isAdministratorSignIn
+                ? "Administrator access is limited to authorized DEC staff accounts."
+                : "If your organization is part of an active cohort, use the access option provided by your programme team."}
             </p>
             <p className="mt-2 text-sm leading-6 text-muted-text">
-              You can return to the course catalog at any time to explore available
-              learning opportunities.
+              {isAdministratorSignIn
+                ? "Learner accounts cannot access administrator pages. Role permissions are checked after sign-in."
+                : "You can return to the course catalog at any time to explore available learning opportunities."}
             </p>
-            <ActionButton className="mt-4" href="/courses" variant="secondary">
-              Back to Courses
+            <ActionButton
+              className="mt-4"
+              href={isAdministratorSignIn ? "/admin" : "/courses"}
+              variant="secondary"
+            >
+              {isAdministratorSignIn ? "Back to Administrator Portal" : "Back to Courses"}
             </ActionButton>
           </div>
         </div>
@@ -195,7 +201,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
                 </div>
               ) : null}
 
-              {!usesSupabaseSignIn ? (
+              {!usesSupabaseSignIn && !isAdministratorSignIn ? (
                 <>
                   <div className="mt-6">
                     <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-text">
@@ -241,7 +247,8 @@ export default async function SignInPage({ searchParams }: PageProps) {
               ) : null}
             </div>
 
-            <div className="mt-6 overflow-hidden rounded-card border border-design-border bg-deep-navy text-white shadow-card">
+            {!isAdministratorSignIn ? (
+              <div className="mt-6 overflow-hidden rounded-card border border-design-border bg-deep-navy text-white shadow-card">
               <div className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div>
                   <p className="text-sm font-semibold text-dec-green">
@@ -272,23 +279,36 @@ export default async function SignInPage({ searchParams }: PageProps) {
                   <StatusBadge label="Step-by-step" tone="blue" />
                 </div>
               </div>
-            </div>
+              </div>
+            ) : (
+              <aside className="mt-6 rounded-card border border-dec-blue/25 bg-dec-blue/10 p-5">
+                <StatusBadge label="Administrator role required" tone="blue" />
+                <p className="mt-3 text-sm leading-6 text-[#26536c]">
+                  Successful authentication returns authorized staff directly to participant
+                  invitation management. Other accounts are denied administrator access.
+                </p>
+              </aside>
+            )}
 
             <p className="mt-6 text-center text-sm text-muted-text">
-              Need help or want to browse first?{" "}
+              {isAdministratorSignIn ? "Need administrator access support? " : "Need help or want to browse first? "}
               <Link
                 className="font-semibold text-dec-blue underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue"
-                href="/courses"
+                href={isAdministratorSignIn ? "/support" : "/courses"}
               >
-                Explore courses
+                {isAdministratorSignIn ? "Open support guidance" : "Explore courses"}
               </Link>
-              {" "}or read the{" "}
-              <Link
-                className="font-semibold text-dec-blue underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue"
-                href="/support"
-              >
-                support guidance
-              </Link>
+              {!isAdministratorSignIn ? (
+                <>
+                  {" "}or read the{" "}
+                  <Link
+                    className="font-semibold text-dec-blue underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue"
+                    href="/support"
+                  >
+                    support guidance
+                  </Link>
+                </>
+              ) : null}
               .
             </p>
           </div>
