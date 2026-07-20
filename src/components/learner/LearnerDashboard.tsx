@@ -207,14 +207,15 @@ function CourseCard({
 
 function CertificatePreview({ course }: { course?: LearnerCourseSummary }) {
   const hasCertificate = Boolean(course?.certificateCode);
+  const certificateEligible = course?.certificateEligible !== "No";
 
   return (
     <article className="rounded-[24px] border border-design-border bg-white-surface p-6 shadow-soft">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <StatusBadge label={hasCertificate ? "Certificate issued" : "Certificate"} tone="gold" />
+          <StatusBadge label={hasCertificate ? "Certificate issued" : certificateEligible ? "Certificate" : "Orientation"} tone="gold" />
           <h2 className="mt-4 text-xl font-semibold text-dark-ink">
-            {hasCertificate ? "Certificate ready" : "Certificate not yet earned"}
+            {hasCertificate ? "Certificate ready" : certificateEligible ? "Certificate not yet earned" : "No certificate required"}
           </h2>
         </div>
         <div
@@ -227,11 +228,13 @@ function CertificatePreview({ course }: { course?: LearnerCourseSummary }) {
       <p className="mt-4 text-sm leading-6 text-muted-text">
         {hasCertificate
           ? "Your certificate is issued. You can verify it publicly or download the PDF."
-          : "Certificates are issued after course completion and a passing final assessment."}
+          : certificateEligible
+            ? "Certificates are issued after course completion and a passing final assessment."
+            : "This short orientation records your progress but does not include a final assessment or certificate."}
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:flex-col">
-        <ActionButton href={course?.certificateHref ?? "/learn/certificates"} variant="secondary">
-          View certificate
+        <ActionButton href={certificateEligible ? course?.certificateHref ?? "/learn/certificates" : course?.learnerHref ?? "/learn"} variant="secondary">
+          {certificateEligible ? "View certificate" : "Continue orientation"}
         </ActionButton>
         {course?.certificateDownloadHref ? (
           <ActionButton href={course.certificateDownloadHref} variant="success">

@@ -236,7 +236,7 @@ export function AdminCourseInvitationList({ data }: { data: ListData }) {
     <div className="space-y-6">
       <Header
         actions={<ActionButton href="/admin/course-invitations/new" size="lg">Create invitation</ActionButton>}
-        description="Create, deliver, resend, cancel, and audit one learner invitation for one approved course version."
+        description="Create, deliver, resend, cancel, and audit one learner invitation for one published course version."
         title="Course invitations"
       />
       <Panel title="Find invitations"><Filters data={data} /></Panel>
@@ -253,7 +253,7 @@ export function AdminCourseInvitationCreate({ options }: { options: InvitationOp
     <div className="space-y-6">
       <Header
         actions={<ActionButton href="/admin/course-invitations" size="lg" variant="secondary">Back to invitations</ActionButton>}
-        description="Validate the learner and exact approved pilot scope before preparing a one-time manual-delivery link."
+        description="Validate the learner and exact invitation details before preparing a one-time manual-delivery link."
         title="Create course invitation"
       />
       <Panel title="Invitation scope"><CourseInvitationCreateForm options={options} /></Panel>
@@ -271,7 +271,7 @@ export function AdminCourseInvitationDetail({
   const fields = [
     ["Learner", `${detail.invitedName} (${detail.email})`],
     ["Organization", detail.organization], ["Course", detail.course],
-    ["Approved version", detail.version], ["Cohort", detail.cohort],
+    ["Course version", detail.version], ["Cohort", detail.cohort],
     ["Created", detail.createdAt], ["Expires", detail.expiresAt],
     ["Last sent", detail.sentAt], ["Activated", detail.activatedAt],
   ];
@@ -299,7 +299,7 @@ export function AdminCourseInvitationDetail({
         </div>
         <aside className="space-y-6">
           <Panel title="Delivery and actions">
-            <p className="text-sm leading-6 text-muted-text">Manual delivery is the approved staging mode. Raw links are never stored and cannot be recovered.</p>
+            <p className="text-sm leading-6 text-muted-text">Manual delivery is the designated staging mode. Raw links are never stored and cannot be recovered.</p>
             {detail.canPrepareLink ? <div className="mt-5"><CourseInvitationPrepareLinkForm invitationId={detail.id} /></div> : <p className="mt-4 rounded-[16px] border border-design-border bg-soft-bg p-4 text-sm text-muted-text">No link preparation action is available for this lifecycle state.</p>}
           </Panel>
           <Panel title="Activation result">

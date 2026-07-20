@@ -33,6 +33,10 @@ assert.match(registrationPage, /LEARNER_ROLE_OPTIONS\.map/);
 const player = source("src/components/learner/LearnerCoursePlayer.tsx");
 assert.match(player, /\{\{learnerName\}\}/);
 assert.match(player, /course\.finalTestQuestions\.length > 0/);
+const courseData = source("src/lib/course-data.ts");
+const learnerDashboard = source("src/components/learner/LearnerDashboard.tsx");
+assert.match(courseData, /record\.finalTestRequired \? "Configured" : "Not required"/);
+assert.match(learnerDashboard, /No certificate required/);
 
 const catalogueRecords = await prisma.course.findMany({
   select: { slug: true, status: true, title: true, visibility: true },

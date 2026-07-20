@@ -474,6 +474,7 @@ function getLearnerSummary(
     !hasCertificate &&
     course.finalTest === "Configured" &&
     (course.progress >= 90 || isCompleted);
+  const hasFinalAssessment = course.finalTest === "Configured";
   const learnerHref = course.isExternalCourse
     ? `/learn/courses/${course.slug}/external`
     : `/learn/courses/${course.slug}`;
@@ -502,15 +503,17 @@ function getLearnerSummary(
     : finalAssessmentAvailable
       ? "Review course progress"
       : isStarted
-        ? "Final assessment"
-        : "View public course";
+        ? hasFinalAssessment ? "Final assessment" : "Review course"
+        : hasFinalAssessment ? "View public course" : "Course details";
   const secondaryActionHref = hasCertificate
     ? certificateDownloadHref
     : finalAssessmentAvailable
       ? learnerHref
       : isStarted
-        ? (course.isExternalCourse ? learnerHref : finalTestHref)
-        : course.href;
+        ? hasFinalAssessment
+          ? (course.isExternalCourse ? learnerHref : finalTestHref)
+          : learnerHref
+        : hasFinalAssessment ? course.href : learnerHref;
 
   return {
     ...course,
@@ -522,7 +525,7 @@ function getLearnerSummary(
       ? "Certificate issued"
       : finalAssessmentAvailable
         ? "Final assessment"
-        : "Certificate path",
+        : course.certificateEligible === "No" ? "No certificate" : "Certificate path",
     feedbackHref,
     feedbackStatus: hasFeedback ? "Feedback submitted" : "Feedback not submitted",
     finalTestHref,
@@ -609,10 +612,12 @@ function mapDatabaseCourseToSummary(
   record: DatabaseCourseRecord,
 ): PublicCourseSummary {
   const fallback = getFallbackForSlug(record.slug);
-  const capacityArea = record.capacityAreas[0]?.capacityArea.name ?? fallback.capacityArea;
+  const firstModule = record.versions[0]?.modules[0];
+  const firstLesson = firstModule?.lessons[0];
+  const capacityArea = record.capacityAreas[0]?.capacityArea.name ?? "General CSO learning";
   const lessonCount = getLessonCount(record, fallback);
-  const resourceCount = record.resources.length || Number(fallback.resources);
-  const finalTest = record.finalTestRequired ? "Configured" : fallback.finalTest;
+  const resourceCount = record.resources.length;
+  const finalTest = record.finalTestRequired ? "Configured" : "Not required";
 
   return {
     access: record.visibility === CourseVisibility.PUBLIC ? "Available now" : fallback.access,
@@ -620,11 +625,11 @@ function mapDatabaseCourseToSummary(
     capacityArea,
     certificate: record.certificateEligible
       ? "Certificate eligible"
-      : fallback.certificate,
+      : "No certificate",
     certificateEligible: record.certificateEligible ? "Yes" : "No",
     creator: cleanPresentationText(record.assignedCreator.fullName),
-    currentLesson: fallback.currentLesson,
-    currentModule: fallback.currentModule,
+    currentLesson: firstLesson?.title ?? "Course introduction",
+    currentModule: firstModule?.title ?? "Course overview",
     description: HRBA_PUBLIC_SLUGS.has(record.slug)
       ? HRBA_COURSE_PROMISE
       : record.shortDescription,
