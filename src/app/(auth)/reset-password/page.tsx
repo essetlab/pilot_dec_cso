@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RecoveryPasswordForm } from "@/components/auth/RecoveryPasswordForm";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type PageProps = {
   searchParams: Promise<{ error?: string; recovery?: string }>;
@@ -7,6 +8,8 @@ type PageProps = {
 
 export default async function ResetPasswordPage({ searchParams }: PageProps) {
   const { error, recovery } = await searchParams;
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   return (
     <section className="mx-auto max-w-xl rounded-card border border-design-border bg-white p-6 shadow-card sm:p-8">
@@ -18,7 +21,11 @@ export default async function ResetPasswordPage({ searchParams }: PageProps) {
         Use at least 10 characters, including uppercase and lowercase letters and a number.
       </p>
 
-      <RecoveryPasswordForm error={error} expectsFragment={recovery === "fragment"} />
+      <RecoveryPasswordForm
+        error={error}
+        expectsFragment={recovery === "fragment"}
+        hasServerSession={Boolean(user)}
+      />
 
       <p className="mt-6 text-sm text-muted-text">
         Need a new link?{" "}

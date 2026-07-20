@@ -20,15 +20,23 @@ const messages: Record<string, string> = {
 export function RecoveryPasswordForm({
   error,
   expectsFragment,
+  hasServerSession,
 }: {
   error?: string;
   expectsFragment: boolean;
+  hasServerSession: boolean;
 }) {
-  const [state, setState] = useState<RecoveryState>(error === "invalid-link" ? "invalid" : "checking");
+  const [state, setState] = useState<RecoveryState>(
+    error === "invalid-link" ? "invalid" : hasServerSession ? "ready" : "checking",
+  );
   const started = useRef(false);
 
   useEffect(() => {
     if (error === "invalid-link") {
+      return;
+    }
+
+    if (hasServerSession && !window.location.hash && !expectsFragment) {
       return;
     }
 
@@ -72,7 +80,7 @@ export function RecoveryPasswordForm({
     return () => {
       active = false;
     };
-  }, [error, expectsFragment]);
+  }, [error, expectsFragment, hasServerSession]);
 
   if (state === "checking") {
     return (

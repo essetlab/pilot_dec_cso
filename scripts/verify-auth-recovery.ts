@@ -24,6 +24,11 @@ assert.match(recoveryForm, /supabase\.auth\.setSession/);
 assert.match(recoveryForm, /supabase\.auth\.getUser/);
 assert.match(recoveryForm, /history\.replaceState/);
 assert.match(recoveryForm, /setState\("invalid"\)/);
+assert.match(recoveryForm, /hasServerSession/);
+
+const resetPage = await source("src/app/(auth)/reset-password/page.tsx");
+assert.match(resetPage, /supabase\.auth\.getUser/);
+assert.match(resetPage, /hasServerSession=\{Boolean\(user\)\}/);
 
 const resetAction = await source("src/app/(auth)/reset-password/actions.ts");
 assert.match(resetAction, /supabase\.auth\.getUser/);
