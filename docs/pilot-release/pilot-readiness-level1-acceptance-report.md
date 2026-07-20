@@ -1,9 +1,13 @@
 # Pilot Readiness — Level 1 Acceptance Report
 
-Date: 21 July 2026  
-Authoritative branch: `feature/pilot-registration-integration-checkpoint`  
-Accepted baseline: `1cb51321cfc5f094a81812fc3f1630941b5aebc6`  
-Application test commit: `d2d0f48f40d935225c6f62fc94369ace15ae2bf0`  
+Date: 21 July 2026
+
+Authoritative branch: `feature/pilot-registration-integration-checkpoint`
+
+Accepted baseline: `1cb51321cfc5f094a81812fc3f1630941b5aebc6`
+
+Application test commit: `d2d0f48f40d935225c6f62fc94369ace15ae2bf0`
+
 Production baseline (`main`): `4ba0233b5c8e391e37629e982240d44e21961c8d`
 
 ## Readiness decision
