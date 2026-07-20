@@ -563,10 +563,47 @@ nor Vercel configuration was changed.
 
 ### Preview acceptance and remaining work
 
-The Git-connected Preview acceptance result will be appended after the Stage A
-commit is deployed and verified at 1440 × 900 and 390 × 844. Vercel Deployment
-Protection interception of external email callbacks will be recorded separately
-and will not be classified as a Supabase callback defect.
+The final application acceptance build was Git-connected deployment
+`dpl_BFrLzUYcqcfRgRHVjWEFvKk6E8FN`, classified Ready/Preview under
+`esset-lab/pilot-dec-cso` and sourced from feature commit
+`7251a6f92bced78d6ed075e604bbf4f5971e7b3c`. It received only the feature
+branch alias and no Production alias.
+
+Authenticated Preview testing initially found that the feature branch's
+encrypted Supabase URL, public key, and runtime database URL did not match the
+approved staging file. Equality was compared without displaying values. Those
+three branch-scoped Preview values were replaced from the approved staging
+file and a Git-connected Preview was rebuilt. Production variables and
+deployments were not changed. The resolver also now accepts the approved
+legacy anon-key name as a fallback while preferring the newer publishable-key
+name. Transitional pilot variables remain configured but unused.
+
+| Preview acceptance | Result |
+|---|---|
+| Registration at 1440 × 900 | Pass; open copy, required fields, consent, labels, and visible focus styling present |
+| Registration at 390 × 844 | Pass; all nine interactive form controls present and no horizontal overflow |
+| Public catalogue and HRBA overview | Pass; catalogue visible and HRBA overview retained |
+| Authenticated unassigned HRBA state | Pass; `Invitation required`, no launch link |
+| Unassigned direct learner launch | Pass; 404 and no enrollment |
+| Newly assigned learner | Pass; `Start course` |
+| Assigned external launch | Pass; embedded HRBA route opened at 0% and created the learner enrollment |
+| Assigned learner with progress | Pass; 40% fixture showed `Continue course` |
+| Console | Pass; no error recorded on tested registration, catalogue, overview, or launch paths |
+| Responsive overflow | Pass at both required viewports |
+| Keyboard/accessibility | Native labelled controls remain in sequential focus order; visible focus ring confirmed |
+
+Two clearly fictional, confirmed staging Auth learners were created solely for
+the authenticated Preview matrix. One had an individual `USER` HRBA
+assignment and one had no assignment. No organization/cohort assignment was
+created. Their enrollment, progress, launch tokens, assignments, Hub profiles,
+and Supabase Auth identities were removed after testing.
+
+The public form and callback route render correctly, and the earlier connected
+email-delivery checkpoint proved that staging confirmation mail can be issued.
+End-to-end confirmation-link arrival was not repeated because dedicated
+non-production SMTP remains unavailable. Vercel Deployment Protection may
+still intercept external confirmation redirects; that environment limitation
+is not classified as a Supabase callback defect.
 
 Stage B remains: a DEC-managed course-invitation model and administration flow,
 individual/bulk invitations, invitation delivery and activation, and durable
