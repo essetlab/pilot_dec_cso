@@ -275,3 +275,96 @@ learners, and one fictional administrator/focal-person path:
 **P2D.1 — complete staging Supabase Auth, redirect, email, and Vercel Preview
 configuration, then run connected two-learner, lifecycle, email-recovery,
 HRBA-resume, security, responsive, accessibility, and regression verification.**
+
+## Preview registration-mode discrepancy correction — 2026-07-20
+
+The investigation started from clean commit
+`71ab7b70b82a86da3286294b06035d256b3f286f` on
+`feature/pilot-cso-onboarding-access`. `origin/main` remained at
+`4ba0233b5c8e391e37629e982240d44e21961c8d`.
+
+### Root cause and classification
+
+The stable feature Preview initially resolved `Simple access-code mode`.
+Vercel metadata showed the three required registration variable names as
+encrypted, Preview-only, and scoped to the feature branch, but the deployment
+serving the feature alias had been created before those branch variables were
+added. It therefore did not contain their runtime snapshot. The existing page
+was request-rendered, so Next.js static output was not the primary cause; the
+stale Vercel deployment/environment snapshot was.
+
+The code also had two safety gaps: strict mode with a missing invited-email
+allowlist did not expose an unavailable state, and the strict label was the
+older `Invited-email mode` rather than the approved learner-facing label. The
+classification is therefore **F. COMBINED DEFECT**, comprising environment
+delivery/stale-deployment behavior plus configuration-dependency and UI
+hardening gaps.
+
+Before correction, source-level strict mode did trim and lowercase the mode and
+email values and denied an uninvited email when the strict variable reached the
+runtime. The deployed feature runtime did not resolve strict mode and therefore
+used simple access-code behavior. No real participant data or account was used
+to test that state.
+
+### Correction
+
+- `src/lib/pilot-registration-config.ts` is the single resolver for explicit
+  simple, strict, and unavailable modes, invited-email normalization, and
+  access-code normalization.
+- A missing mode retains the documented simple-mode default. Unknown mode
+  values, malformed allowlists, and strict mode with no invited email fail
+  closed as `Registration temporarily unavailable`; strict mode never silently
+  downgrades to simple.
+- The registration page and server workflow use the same resolved mode. The
+  page is explicitly request-rendered, displays the exact approved label, and
+  disables account creation when configuration is unavailable.
+- The allowlist is never passed to or rendered by the registration page.
+- The connected S4 verifier now covers the invited, uninvited, incorrect-code,
+  normalized-input, and incomplete-strict-configuration paths and reliably
+  removes its audit, role-assignment, learner, organization, and temporary role
+  records.
+
+### Environment and Preview evidence
+
+Vercel listed `PILOT_REGISTRATION_MODE`, `PILOT_INVITED_EMAILS`, and
+`PILOT_ACCESS_CODE` as encrypted Preview variables scoped only to
+`feature/pilot-cso-onboarding-access`. Values and invited addresses were not
+retrieved or printed. Because Vercel does not return encrypted values through
+CLI metadata, the exact allowlist count could not be independently read. The
+new Preview's strict label proves that the normalized mode is `strict` and that
+the server resolver parsed a non-empty, syntactically valid allowlist. The
+configured expectation remains at least two entries; no address was exposed.
+
+Correction commit `d231f4bab4267f533bac0b5e4b60d470f7b6bb69` produced Git-connected Preview
+deployment `dpl_Fb7w2MuNUJJAi7WhFb2FnmMf1ZEG` at
+`https://pilot-dec-b45auugja-esset-lab.vercel.app`. Vercel classified it as
+`Preview`, `Ready`, and assigned the stable feature alias. An authenticated
+CLI request to the protected alias returned HTTP 200 and the exact label
+`Strict invited-email and access-code mode`; neither the simple nor unavailable
+label nor the allowlist environment name appeared in the returned page.
+
+### Verification results
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | Pass |
+| `npm run verify:p2d-onboarding-access` | Pass |
+| `npm run verify:pilot-registration-mode` | Pass |
+| `npm run verify:s4-supabase-registration` against approved staging | Pass; fictional verification records cleaned |
+| `npm run build` | Pass; existing fallback-course-data warning only |
+| `npm run lint` | Pass |
+| `npx prisma validate` | Pass |
+| `npm run prisma:validate` | Pass |
+| `git diff --check` | Pass |
+
+The connected verifier confirmed that a fictional invited email plus the valid
+controlled code passed the strict access gates, an uninvited email was denied,
+an incorrect code was denied, whitespace/case normalization worked, and an
+incomplete strict configuration failed closed. It stopped the accepted path at
+a deliberately nonexistent organization, so it did not create another Auth
+identity. No secret, invited address, schema change, migration, seed, Project
+Management change, Production promotion, or Production environment-variable
+change occurred in this correction.
+
+The next action is to continue P2D.1 connected identity testing using the strict
+feature Preview and approved fictional staging identities.
