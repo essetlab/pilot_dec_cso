@@ -15,7 +15,7 @@ function getPrismaClient() {
     }
 
     const adapter = new PrismaPg({ connectionString });
-    globalForPrisma.prisma = new PrismaClient({ adapter });
+    globalForPrisma.prisma = new PrismaClient({ adapter, errorFormat: "minimal" });
   }
 
   return globalForPrisma.prisma;

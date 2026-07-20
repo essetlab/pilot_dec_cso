@@ -879,3 +879,174 @@ outbound email, a polished learner acceptance page, invitation delivery status,
 or Production configuration. Recommended next stage: Stage B3, a separately
 reviewed administrator invitation-management and delivery workflow, without
 changing the atomic activation contract.
+
+## Stage B3 — administrator-controlled course invitation management and safe delivery
+
+### Baseline, scope, and recovery check
+
+Stage B3 resumed from accepted B2 commit
+`f4e5c506b6a9a3555943322961cb6692a5ed4d36` on
+`feature/pilot-cso-onboarding-access`. `main` and `origin/main` remained at
+`4ba0233b5c8e391e37629e982240d44e21961c8d`. The separate legacy worktree was
+inspected and remained clean and unchanged. Transient environment and Vercel
+metadata from earlier connected work were absent; generated `next-env.d.ts`
+line-ending/stat churn was restored to the baseline blob and is not part of
+this checkpoint.
+
+The slice adds controlled single-recipient invitation administration and the
+learner acceptance surface only. It does not add bulk onboarding, SMTP,
+reminders, participant-management expansion, assignment revocation, or any
+Stage B4 capability.
+
+### Administrator experience and authorization
+
+`/admin/course-invitations` is a basic-admin navigation entry with a bounded
+list, email search, lifecycle-status, organization, course, and created-date
+filters. The list and detail use seven explicit lifecycle states: Draft,
+Delivery pending, Sent, Activated, Expired, Cancelled, and Delivery failed.
+Detail pages show the validated learner, approved organization, exact course
+and version, optional cohort, lifecycle timestamps, activation result, and
+non-sensitive audit history.
+
+Creation uses controlled selectors populated from current database records. It
+requires an active approved organization, published and unarchived
+`ASSIGNED_ONLY` course, matching published version, and any selected active
+cohort linked to that organization. Existing active learner identities are
+rechecked for status, role, organization, and conflicting entitlement. The
+B1/B2 duplicate, version, organization, cohort, and exact-assignment boundaries
+remain authoritative.
+
+Every list, option, detail, create, replacement-link, mark-sent, and cancel
+operation re-resolves the actor in the database. Only an active user with an
+active, unexpired `PLATFORM_ADMIN` or `SUPER_ADMIN` assignment is accepted.
+Ordinary learners are redirected to the existing safe unauthorized page and
+client role claims are never trusted.
+
+### Safe delivery and lifecycle semantics
+
+Approved staging has no configured SMTP delivery variables, so Stage B3 uses
+manual secure delivery only and does not pretend that email was sent. The
+workflow deliberately distinguishes these events:
+
+1. **Invitation created** — a validated draft record and creation audit exist;
+   no learner access exists.
+2. **Secure link prepared** — a new random token hash and expiry are persisted;
+   the plaintext link is returned only to the immediate action result. The
+   previous unused token is invalidated on replacement.
+3. **Manually delivered and marked sent** — an administrator explicitly
+   confirms delivery, moving the invitation to `SENT` and recording a separate
+   non-sensitive audit event. Preparing or copying a link does not mark it sent.
+4. **Invitation activated** — the authenticated matching learner explicitly
+   accepts through the B2 atomic activation endpoint, moving the invitation to
+   terminal `ACTIVATED`.
+5. **Exact course assigned** — the activation transaction creates or reuses one
+   individual `USER` assignment for only the invited published course version;
+   it does not create organization-wide, cohort-wide, or unrelated course
+   access.
+
+The raw URL appears only in immediate React action state. Dismissal, navigation,
+or reload removes it; it is not recoverable from the database, list, detail,
+audit log, verifier output, or this report. Replacement preparation rotates the
+hash and invalidates the prior link. Cancellation terminates an unused link and
+adds lifecycle evidence. A small per-administrator rate boundary covers create
+and replacement operations. Trusted link origins come only from configured
+application URLs, require HTTPS outside loopback development, and reject
+untrusted request-derived hosts.
+
+### Learner acceptance and security controls
+
+`/course-invitations/accept` is a reusable public-shell page with a read-only
+GET preview and an explicit acceptance action through the existing same-origin
+POST endpoint. Unauthenticated visitors are sent to sign-in with a safe internal
+return path. A signed-in account with the wrong email receives a generic account
+mismatch response and no invitation scope. The matching participant sees only
+the invited course, approved CSO, expiry, and the fact that acceptance creates
+one individual assignment. Success links to that exact learner course route;
+same-user replay remains idempotent.
+
+Acceptance responses and page metadata do not expose Prisma errors, stack
+traces, token hashes, other identities, or broader organization data. The route
+is `noindex`, `no-store`, private, and uses a no-referrer policy. The sign-out
+route now preserves only safe internal return paths, enabling an identity
+switch without accepting an external redirect.
+
+### Connected verification and browser evidence
+
+The connected B3 verifier created only test-scoped fictional staging records
+and proved active/expired/inactive administrator authorization, controlled
+selector eligibility, every required creation denial, duplicate concurrency,
+hash-only persistence, explicit mark-sent behavior, B2 activation and replay,
+exact assignment linkage, old-token invalidation, replacement preparation,
+cancellation, stale-scope denial, assigned-after-send denial, terminal states,
+audit contents, and source-level token/privacy assertions. Its `finally`
+cleanup removed all fixtures.
+
+Staging-backed browser QA then covered desktop administration and a 390 × 844
+mobile viewport: list, filters, create form, controlled selectors, immediate
+manual-link panel, explicit delivery confirmation, lifecycle detail/history,
+replacement-link display, cancellation, learner mismatch, sign-out/return,
+matching learner acceptance, same invitation success state, exact course route,
+and ordinary-learner admin denial. Both tested mobile pages had no horizontal
+overflow. A fresh browser tab verified landing, catalogue, canonical HRBA
+overview, and sign-in with no console error and no public creator, RDF, Build
+Studio, reviewer, monitoring, or community link.
+
+This live pass found and corrected two runtime-only defects before closure: a
+plain initial-state object exported from a `use server` module, and detail-page
+revalidation that unmounted the one-time replacement-link result. The state now
+lives in the client component, and replacement preparation preserves its
+immediate one-time result while subsequent explicit actions refresh lifecycle
+data.
+
+All Stage B3 browser-QA users, organization, cohort, course, version,
+assignments, invitations, and audits were removed from staging. A post-cleanup
+count returned zero for every Stage B3 fixture category. The temporary fixture
+script, local runner, logs, and other temporary artifacts were deleted. No
+plaintext invitation token, link, fictional address, environment file, Vercel
+metadata, generated output, or temporary QA artifact is included in the final
+diff.
+
+### Schema and validation result
+
+Stage B3 requires no Prisma schema change and adds no migration. Staging remains
+at the eight previously approved migrations. `prisma migrate status` reports
+the schema current and `prisma migrate diff` reports no difference. No migration,
+seed, broad demo-data load, or Production database operation ran in this slice.
+
+| Stage B3 validation | Result |
+|---|---|
+| `npx prisma validate` | Pass |
+| `npm run prisma:validate` | Pass |
+| `npx prisma generate` | Pass |
+| `npm run typecheck` | Pass |
+| production-mode `npm run build` | Pass |
+| `npm run lint` | Pass |
+| `git diff --check` | Pass |
+| `npm run verify:p2d-onboarding-access` | Pass |
+| `npm run verify:open-registration` | Pass |
+| `npm run verify:stage-a-session` | Pass |
+| `npm run verify:hrba-assignment-boundary` | Pass |
+| `npm run verify:s5-signin` | Pass |
+| `npm run verify:s6-route-roles` | Pass |
+| `npm run verify:s7-hrba-supabase-compat` | Pass against staging; fixtures cleaned |
+| `npm run verify:course-invitation-lifecycle` | Pass against staging; fixtures cleaned |
+| `npm run verify:course-invitation-activation` | Pass against staging; fixtures cleaned |
+| `npm run verify:course-invitation-management` | Pass against staging; fixtures cleaned |
+
+The final implementation adds the admin and learner components/routes,
+centralized admin workflow and actions, a focused connected verifier and package
+script, route labels, safe sign-out return handling, acceptance-route response
+headers, and minimal Prisma error formatting so generic handled failures do not
+emit verbose database context. Existing B1/B2 source is extended narrowly; no
+preserved feature or historical record is deleted.
+
+The Stage B3 commit hash and Git-connected Vercel Preview identifiers are
+generated after this report is committed and pushed and are therefore recorded
+in the final handoff. The Preview must be classified as Preview, sourced from
+this feature branch, use Preview variables only, and receive no Production
+alias. `main`, Production variables, Production data, and Production deployments
+remain unchanged.
+
+Recommended next step after deliberate review: plan Stage B4 separately. Do not
+begin bulk onboarding, automated delivery, reminders, expanded participant
+management, or assignment revocation as part of this checkpoint.

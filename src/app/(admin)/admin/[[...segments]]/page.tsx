@@ -1,6 +1,11 @@
 import { EmptyState, PlaceholderPage } from "@/components/shell/PlaceholderPage";
 import { AdminAuditLog } from "@/components/admin/AdminAuditLog";
 import { AdminCourseDetail } from "@/components/admin/AdminCourseDetail";
+import {
+  AdminCourseInvitationCreate,
+  AdminCourseInvitationDetail,
+  AdminCourseInvitationList,
+} from "@/components/admin/AdminCourseInvitations";
 import { AdminCertificateDetail, AdminCertificates } from "@/components/admin/AdminCertificates";
 import { AdminCohortDetail, AdminCohorts } from "@/components/admin/AdminCohorts";
 import { AdminCourses } from "@/components/admin/AdminCourses";
@@ -17,6 +22,11 @@ import { AdminUserCreate, AdminUserDetail, AdminUsers } from "@/components/admin
 import { canAccessAdmin, canAccessPath } from "@/lib/auth/permissions";
 import { getCurrentSession } from "@/lib/auth/server";
 import { getAdminDashboardData } from "@/lib/admin-dashboard-workflow";
+import {
+  getAdminCourseInvitationDetail,
+  getAdminCourseInvitationList,
+  getAdminCourseInvitationOptions,
+} from "@/lib/admin-course-invitation-workflow";
 import {
   getAdminCertificateDetailData,
   getAdminCertificateListData,
@@ -65,6 +75,7 @@ type PageProps = {
     certificate?: string;
     courseCreator?: string;
     courseId?: string;
+    created?: "7d" | "30d" | "90d" | "all";
     dateRange?: "30d" | "quarter" | "year" | "all";
     organizationId?: string;
     query?: string;
@@ -90,6 +101,7 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
     cohortId,
     courseCreator,
     courseId,
+    created,
     dateRange,
     organizationId,
     query,
@@ -165,6 +177,40 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
         adminNotice={adminNotice}
         detail={detail}
         operationOptions={operationOptions}
+      />
+    );
+  }
+
+  if (actualRoute === "/admin/course-invitations") {
+    const data = await getAdminCourseInvitationList(session, {
+      cohortId,
+      courseId,
+      created,
+      organizationId,
+      query,
+      status,
+    });
+
+    return <AdminCourseInvitationList data={data} />;
+  }
+
+  if (actualRoute === "/admin/course-invitations/new") {
+    const options = await getAdminCourseInvitationOptions(session);
+
+    return <AdminCourseInvitationCreate options={options} />;
+  }
+
+  if (segments.length === 2 && segments[0] === "course-invitations") {
+    const detail = await getAdminCourseInvitationDetail(segments[1], session);
+
+    if (!detail) {
+      notFound();
+    }
+
+    return (
+      <AdminCourseInvitationDetail
+        adminNotice={adminNotice}
+        detail={detail}
       />
     );
   }

@@ -56,12 +56,21 @@ export const COURSE_INVITATION_ALLOWED_TRANSITIONS = {
 } satisfies Record<CourseInvitationStatus, CourseInvitationStatus[]>;
 
 type CourseInvitationFailureCode =
+  | "already-assigned"
+  | "conflicting-assignment"
+  | "conflicting-organization"
   | "duplicate-active-invitation"
+  | "elevated-user"
+  | "inactive-cohort"
   | "inactive-organization"
+  | "inactive-user"
+  | "ineligible-user"
   | "invalid-email"
   | "invalid-expiry"
   | "invalid-input"
+  | "invalid-course-state"
   | "invalid-transition"
+  | "invalid-version-state"
   | "not-expired"
   | "not-found"
   | "unknown-cohort"
@@ -89,6 +98,18 @@ type CourseInvitationMutationSuccess = {
 export type CourseInvitationMutationResult =
   | CourseInvitationFailure
   | CourseInvitationMutationSuccess;
+
+type CourseInvitationCreationInput = {
+  cohortId?: string | null;
+  courseId: string;
+  courseVersionId?: string | null;
+  expiresAt?: Date;
+  invitedEmail: string;
+  invitedName: string;
+  invitedRoleOrPosition?: string | null;
+  organizationId: string;
+  session: AuthSession | null;
+};
 
 export type CourseInvitationResolution =
   | {
@@ -130,6 +151,32 @@ export type CourseInvitationActivationResult =
   | {
       code: "integrity-error" | "invalid-or-unavailable" | "unauthorized" | "unavailable";
       success: false;
+    };
+
+export type CourseInvitationAcceptanceResolution =
+  | {
+      state: "cancelled" | "expired" | "unavailable";
+      success: false;
+    }
+  | {
+      authentication: "matching" | "mismatch" | "required";
+      context: {
+        courseSlug: string;
+        courseTitle: string;
+        expiresAt: Date;
+        organizationName: string;
+      };
+      state: "available";
+      success: true;
+    }
+  | {
+      context: {
+        courseSlug: string;
+        courseTitle: string;
+        organizationName: string;
+      };
+      state: "already-activated";
+      success: true;
     };
 
 class CourseInvitationWorkflowError extends Error {
@@ -254,17 +301,137 @@ function failureResult(error: unknown): CourseInvitationFailure {
   return { code: "unavailable", success: false };
 }
 
-export async function createDraftCourseInvitation(input: {
-  cohortId?: string | null;
+async function validateManagedInvitationScope(input: {
+  cohortId: string | null;
   courseId: string;
-  courseVersionId?: string | null;
-  expiresAt?: Date;
+  courseVersionId: string | null;
   invitedEmail: string;
-  invitedName: string;
-  invitedRoleOrPosition?: string | null;
+  now: Date;
   organizationId: string;
-  session: AuthSession | null;
-}): Promise<CourseInvitationMutationResult> {
+  tx: Prisma.TransactionClient;
+}) {
+  const organization = await input.tx.organization.findUnique({
+    select: { status: true },
+    where: { id: input.organizationId },
+  });
+  if (!organization) {
+    throw new CourseInvitationWorkflowError("unknown-organization");
+  }
+  if (organization.status !== OrganizationStatus.ACTIVE) {
+    throw new CourseInvitationWorkflowError("inactive-organization");
+  }
+
+  const course = await input.tx.course.findUnique({
+    select: { archivedAt: true, status: true, visibility: true },
+    where: { id: input.courseId },
+  });
+  if (
+    !course ||
+    course.status !== CourseStatus.PUBLISHED ||
+    course.visibility !== CourseVisibility.ASSIGNED_ONLY ||
+    course.archivedAt
+  ) {
+    throw new CourseInvitationWorkflowError("invalid-course-state");
+  }
+
+  if (!input.courseVersionId) {
+    throw new CourseInvitationWorkflowError("unknown-course-version");
+  }
+  const version = await input.tx.courseVersion.findUnique({
+    select: { archivedAt: true, courseId: true, status: true },
+    where: { id: input.courseVersionId },
+  });
+  if (
+    !version ||
+    version.courseId !== input.courseId ||
+    version.status !== CourseStatus.PUBLISHED ||
+    version.archivedAt
+  ) {
+    throw new CourseInvitationWorkflowError("invalid-version-state");
+  }
+
+  if (input.cohortId) {
+    const cohort = await input.tx.cohort.findUnique({
+      select: {
+        organizationLinks: {
+          select: { id: true },
+          where: { organizationId: input.organizationId },
+        },
+        status: true,
+      },
+      where: { id: input.cohortId },
+    });
+    if (!cohort || cohort.status !== OrganizationStatus.ACTIVE) {
+      throw new CourseInvitationWorkflowError("inactive-cohort");
+    }
+    if (cohort.organizationLinks.length !== 1) {
+      throw new CourseInvitationWorkflowError("unknown-cohort");
+    }
+  }
+
+  const existingUser = await input.tx.user.findUnique({
+    select: {
+      targetedCourseAssignments: {
+        select: { courseVersionId: true, isActive: true },
+        where: { courseId: input.courseId },
+      },
+      organizationId: true,
+      roleAssignments: {
+        select: { expiresAt: true, isActive: true, role: { select: { key: true } } },
+      },
+      status: true,
+    },
+    where: { email: input.invitedEmail },
+  });
+  if (!existingUser) {
+    return;
+  }
+  if (existingUser.status !== UserStatus.ACTIVE) {
+    throw new CourseInvitationWorkflowError("inactive-user");
+  }
+
+  const activeRoles = existingUser.roleAssignments
+    .filter(
+      (assignment) =>
+        assignment.isActive &&
+        (!assignment.expiresAt || assignment.expiresAt.getTime() > input.now.getTime()),
+    )
+    .map((assignment) => assignment.role.key);
+  if (
+    activeRoles.includes(RoleKey.PLATFORM_ADMIN) ||
+    activeRoles.includes(RoleKey.SUPER_ADMIN)
+  ) {
+    throw new CourseInvitationWorkflowError("elevated-user");
+  }
+  if (!activeRoles.includes(RoleKey.PARTICIPANT)) {
+    throw new CourseInvitationWorkflowError("ineligible-user");
+  }
+  if (
+    existingUser.organizationId &&
+    existingUser.organizationId !== input.organizationId
+  ) {
+    throw new CourseInvitationWorkflowError("conflicting-organization");
+  }
+
+  const exactAssignment = existingUser.targetedCourseAssignments.find(
+    (assignment) => assignment.courseVersionId === input.courseVersionId,
+  );
+  if (exactAssignment?.isActive) {
+    throw new CourseInvitationWorkflowError("already-assigned");
+  }
+  if (
+    existingUser.targetedCourseAssignments.some(
+      (assignment) => assignment.courseVersionId !== input.courseVersionId,
+    )
+  ) {
+    throw new CourseInvitationWorkflowError("conflicting-assignment");
+  }
+}
+
+async function createCourseInvitation(
+  input: CourseInvitationCreationInput,
+  validateManagementScope: boolean,
+): Promise<CourseInvitationMutationResult> {
   const invitedEmail = normalizeCourseInvitationEmail(input.invitedEmail);
   const invitedName = cleanText(input.invitedName);
   const invitedRoleOrPosition = cleanText(input.invitedRoleOrPosition);
@@ -335,6 +502,18 @@ export async function createDraftCourseInvitation(input: {
           }
         }
 
+        if (validateManagementScope) {
+          await validateManagedInvitationScope({
+            cohortId,
+            courseId,
+            courseVersionId,
+            invitedEmail,
+            now,
+            organizationId,
+            tx,
+          });
+        }
+
         const duplicate = await tx.courseInvitation.findFirst({
           select: { id: true },
           where: {
@@ -390,6 +569,18 @@ export async function createDraftCourseInvitation(input: {
   }
 }
 
+export function createDraftCourseInvitation(
+  input: CourseInvitationCreationInput,
+): Promise<CourseInvitationMutationResult> {
+  return createCourseInvitation(input, false);
+}
+
+export function createManagedCourseInvitation(
+  input: CourseInvitationCreationInput,
+): Promise<CourseInvitationMutationResult> {
+  return createCourseInvitation(input, true);
+}
+
 async function updateInvitationStatus(input: {
   actionType: AuditActionType;
   description: string;
@@ -397,6 +588,7 @@ async function updateInvitationStatus(input: {
   session: AuthSession | null;
   targetStatus: CourseInvitationStatus;
   timestampField?: "cancelledAt" | "expiredAt" | "sentAt";
+  validateManagementScope?: boolean;
 }) {
   try {
     const invitation = await prisma.$transaction(async (tx) => {
@@ -410,6 +602,20 @@ async function updateInvitationStatus(input: {
       requireTransition(current.status, input.targetStatus);
 
       const now = new Date();
+      if (input.validateManagementScope) {
+        if (current.expiresAt.getTime() <= now.getTime()) {
+          throw new CourseInvitationWorkflowError("invalid-expiry");
+        }
+        await validateManagedInvitationScope({
+          cohortId: current.cohortId,
+          courseId: current.courseId,
+          courseVersionId: current.courseVersionId,
+          invitedEmail: current.invitedEmail,
+          now,
+          organizationId: current.organizationId,
+          tx,
+        });
+      }
       const updated = await tx.courseInvitation.update({
         data: {
           status: input.targetStatus,
@@ -455,11 +661,26 @@ export function markCourseInvitationSent(input: {
   });
 }
 
-export async function prepareCourseInvitationResend(input: {
+export function markManagedCourseInvitationSent(input: {
+  invitationId: string;
+  session: AuthSession | null;
+}) {
+  return updateInvitationStatus({
+    actionType: AuditActionType.COURSE_INVITATION_SENT,
+    description: "Confirmed secure manual delivery of an individual course invitation.",
+    invitationId: input.invitationId,
+    session: input.session,
+    targetStatus: CourseInvitationStatus.SENT,
+    timestampField: "sentAt",
+    validateManagementScope: true,
+  });
+}
+
+async function prepareInvitationResend(input: {
   expiresAt?: Date;
   invitationId: string;
   session: AuthSession | null;
-}): Promise<CourseInvitationMutationResult> {
+}, validateManagementScope: boolean): Promise<CourseInvitationMutationResult> {
   const now = new Date();
   const expiresAt =
     input.expiresAt ?? new Date(now.getTime() + DEFAULT_INVITATION_TTL_MS);
@@ -483,6 +704,18 @@ export async function prepareCourseInvitationResend(input: {
         throw new CourseInvitationWorkflowError("not-found");
       }
       requireTransition(current.status, CourseInvitationStatus.PENDING);
+
+      if (validateManagementScope) {
+        await validateManagedInvitationScope({
+          cohortId: current.cohortId,
+          courseId: current.courseId,
+          courseVersionId: current.courseVersionId,
+          invitedEmail: current.invitedEmail,
+          now,
+          organizationId: current.organizationId,
+          tx,
+        });
+      }
 
       const updated = await tx.courseInvitation.update({
         data: {
@@ -515,6 +748,22 @@ export async function prepareCourseInvitationResend(input: {
   } catch (error) {
     return failureResult(error);
   }
+}
+
+export function prepareCourseInvitationResend(input: {
+  expiresAt?: Date;
+  invitationId: string;
+  session: AuthSession | null;
+}): Promise<CourseInvitationMutationResult> {
+  return prepareInvitationResend(input, false);
+}
+
+export function prepareManagedCourseInvitationResend(input: {
+  expiresAt?: Date;
+  invitationId: string;
+  session: AuthSession | null;
+}): Promise<CourseInvitationMutationResult> {
+  return prepareInvitationResend(input, true);
 }
 
 export function cancelCourseInvitation(input: {
@@ -643,6 +892,77 @@ export async function resolveCourseInvitationToken(
       invitedRoleOrPosition: invitation.invitedRoleOrPosition,
       organization: invitation.organization,
     },
+    success: true,
+  };
+}
+
+export async function resolveCourseInvitationAcceptance(input: {
+  plaintextToken: string;
+  session: AuthSession | null;
+  now?: Date;
+}): Promise<CourseInvitationAcceptanceResolution> {
+  const token = input.plaintextToken.trim();
+  if (!token || token.length > 512) {
+    return { state: "unavailable", success: false };
+  }
+
+  const now = input.now ?? new Date();
+  const invitation = await prisma.courseInvitation.findUnique({
+    include: {
+      course: { select: { slug: true, title: true } },
+      organization: { select: { name: true } },
+    },
+    where: { tokenHash: hashCourseInvitationToken(token) },
+  });
+  if (!invitation) {
+    return { state: "unavailable", success: false };
+  }
+  if (invitation.status === CourseInvitationStatus.CANCELLED) {
+    return { state: "cancelled", success: false };
+  }
+  if (
+    invitation.status === CourseInvitationStatus.EXPIRED ||
+    invitation.expiresAt.getTime() <= now.getTime()
+  ) {
+    return { state: "expired", success: false };
+  }
+
+  const sessionMatches = Boolean(
+    input.session?.userId &&
+      input.session.email &&
+      normalizeCourseInvitationEmail(input.session.email) === invitation.invitedEmail,
+  );
+  if (invitation.status === CourseInvitationStatus.ACTIVATED) {
+    if (!sessionMatches || invitation.activatedUserId !== input.session?.userId) {
+      return { state: "unavailable", success: false };
+    }
+    return {
+      context: {
+        courseSlug: invitation.course.slug,
+        courseTitle: invitation.course.title,
+        organizationName: invitation.organization.name,
+      },
+      state: "already-activated",
+      success: true,
+    };
+  }
+  if (invitation.status !== CourseInvitationStatus.SENT) {
+    return { state: "unavailable", success: false };
+  }
+
+  return {
+    authentication: !input.session
+      ? "required"
+      : sessionMatches
+        ? "matching"
+        : "mismatch",
+    context: {
+      courseSlug: invitation.course.slug,
+      courseTitle: invitation.course.title,
+      expiresAt: invitation.expiresAt,
+      organizationName: invitation.organization.name,
+    },
+    state: "available",
     success: true,
   };
 }
