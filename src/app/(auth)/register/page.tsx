@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/shell/BrandMark";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
 import {
-  getPilotRegistrationModeLabel,
+  resolvePilotRegistrationMode,
 } from "@/lib/pilot-registration-workflow";
 import { registerPilotLearnerAction } from "./actions";
 
@@ -12,6 +12,8 @@ type PageProps = {
     next?: string;
   }>;
 };
+
+export const dynamic = "force-dynamic";
 
 const errorMessage: Record<string, string> = {
   "email-not-invited": "We could not confirm this email for the current pilot. Check the invitation details shared by the programme team.",
@@ -23,6 +25,8 @@ const errorMessage: Record<string, string> = {
   "profile-link-failed": "Registration was started, but the learner profile could not be completed. Please contact support before trying again.",
   "registration-not-completed":
     "Registration could not be completed with these details. Check the invitation information or contact support.",
+  "registration-unavailable":
+    "Pilot registration is temporarily unavailable while access settings are checked. Please contact the programme team.",
   "rate-limited": "Too many registration attempts. Please wait and try again.",
   "supabase-account-exists": "This email may already be registered in the pilot sign-in system. Please sign in when Supabase access is available or contact support.",
   "supabase-registration-failed": "Registration could not be completed with the pilot sign-in system. Please contact support and try again later.",
@@ -72,9 +76,11 @@ function TextInput({
 function RegisterForm({
   error,
   next,
+  registrationAvailable,
 }: {
   error?: string;
   next?: string;
+  registrationAvailable: boolean;
 }) {
   return (
     <section className="rounded-card border border-design-border bg-white-surface p-5 shadow-card sm:p-6">
@@ -97,6 +103,14 @@ function RegisterForm({
         <div className="mt-5">
           <AlertMessage tone="error" title="Registration could not be completed">
             {errorMessage[error] ?? "Please check your details and try again."}
+          </AlertMessage>
+        </div>
+      ) : null}
+
+      {!registrationAvailable ? (
+        <div className="mt-5">
+          <AlertMessage tone="warning" title="Registration temporarily unavailable">
+            Please contact the programme team before trying to create an account.
           </AlertMessage>
         </div>
       ) : null}
@@ -185,7 +199,7 @@ function RegisterForm({
         </label>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <ActionButton type="submit" size="lg">
+          <ActionButton disabled={!registrationAvailable} type="submit" size="lg">
             Create Account
           </ActionButton>
           <ActionButton href="/sign-in" size="lg" variant="secondary">
@@ -197,7 +211,7 @@ function RegisterForm({
   );
 }
 
-function PilotContextPanel() {
+function PilotContextPanel({ modeLabel }: { modeLabel: string }) {
   return (
     <section className="rounded-card border border-design-border bg-white p-5 shadow-soft">
       <p className="text-sm font-semibold text-dark-ink">
@@ -214,7 +228,7 @@ function PilotContextPanel() {
             Access check
           </dt>
           <dd className="mt-2 text-sm font-semibold leading-6 text-dark-ink">
-            {getPilotRegistrationModeLabel()}
+            {modeLabel}
           </dd>
         </div>
       </dl>
@@ -253,6 +267,7 @@ function SupportNote() {
 
 export default async function RegisterPage({ searchParams }: PageProps) {
   const { error, next } = await searchParams;
+  const registrationMode = resolvePilotRegistrationMode();
 
   return (
     <section className="relative overflow-hidden rounded-[32px] border border-design-border bg-white-surface shadow-card">
@@ -279,7 +294,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           </div>
 
           <div className="grid gap-4">
-            <PilotContextPanel />
+            <PilotContextPanel modeLabel={registrationMode.label} />
             <div className="rounded-card border border-design-border bg-white p-5 shadow-soft">
               <p className="text-sm font-semibold text-dark-ink">
                 Before creating your account
@@ -298,7 +313,11 @@ export default async function RegisterPage({ searchParams }: PageProps) {
 
         <div className="bg-white px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
           <div className="mx-auto max-w-xl space-y-6">
-            <RegisterForm error={error} next={next} />
+            <RegisterForm
+              error={error}
+              next={next}
+              registrationAvailable={registrationMode.mode !== "unavailable"}
+            />
             <SupportNote />
           </div>
         </div>

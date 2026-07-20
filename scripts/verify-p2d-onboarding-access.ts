@@ -36,11 +36,12 @@ assert.deepEqual(activeRoleKeys([
 ]), ["CSO_FOCAL_PERSON"]);
 
 const registration = source("src/lib/pilot-registration-workflow.ts");
+const registrationConfig = source("src/lib/pilot-registration-config.ts");
 assert.doesNotMatch(registration, /organization\.upsert/);
 assert.match(registration, /status: OrganizationStatus\.ACTIVE/);
 assert.match(registration, /organization-not-approved/);
 assert.match(registration, /registration-not-completed/);
-assert.match(registration, /process\.env\.NODE_ENV === "production" \? ""/);
+assert.match(registrationConfig, /environment\.NODE_ENV === "production" \? ""/);
 
 const authServer = source("src/lib/auth/server.ts");
 assert.match(authServer, /if \(readSupabasePublicConfig\(\)\)/);

@@ -6,6 +6,13 @@ import {
 } from "../generated/prisma/enums";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hashPassword, validatePasswordPolicy } from "./auth/passwords";
+import {
+  getDefaultPilotAccessCodeForLocalDev,
+  isConfiguredPilotEmail,
+  isPilotAccessCodeValid,
+  resolvePilotRegistrationMode,
+  type PilotRegistrationMode,
+} from "./pilot-registration-config";
 import { prisma } from "./prisma";
 import { readSupabasePublicConfig } from "./supabase/config";
 
@@ -40,6 +47,7 @@ export type PilotRegistrationResult =
         | "missing-fields"
         | "organization-not-approved"
         | "profile-link-failed"
+        | "registration-unavailable"
         | "registration-not-completed"
         | "password-mismatch"
         | "supabase-account-exists"
@@ -48,8 +56,6 @@ export type PilotRegistrationResult =
         | "weak-password";
       success: false;
     };
-
-const DEFAULT_PILOT_ACCESS_CODE = "HRBA-PILOT-2026";
 
 type SupabasePilotSignUpResult =
   | { provider: "local" }
@@ -69,21 +75,8 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-function normalizeAccessCode(value: string) {
-  return value.trim().toUpperCase();
-}
-
 function normalizeText(value: string, maxLength = 160) {
   return value.trim().slice(0, maxLength);
-}
-
-function configuredAccessCodes() {
-  const localDefault = process.env.NODE_ENV === "production" ? "" : DEFAULT_PILOT_ACCESS_CODE;
-
-  return (process.env.PILOT_ACCESS_CODES ?? process.env.PILOT_ACCESS_CODE ?? localDefault)
-    .split(",")
-    .map(normalizeAccessCode)
-    .filter(Boolean);
 }
 
 function getPublicAppUrl() {
@@ -96,36 +89,26 @@ function getPublicAppUrl() {
   }
 }
 
-function configuredInvitedEmails() {
-  return (process.env.PILOT_INVITED_EMAILS ?? "")
-    .split(",")
-    .map(normalizeEmail)
-    .filter(Boolean);
-}
-
-function usesStrictInvitedEmailMode() {
-  return process.env.PILOT_REGISTRATION_MODE?.trim().toLowerCase() === "strict";
-}
-
 export function getPilotRegistrationModeLabel() {
-  return usesStrictInvitedEmailMode() ? "Invited-email mode" : "Simple access-code mode";
+  return resolvePilotRegistrationMode().label;
 }
 
-export function getDefaultPilotAccessCodeForLocalDev() {
-  return DEFAULT_PILOT_ACCESS_CODE;
-}
+export { getDefaultPilotAccessCodeForLocalDev, resolvePilotRegistrationMode };
 
 export function isSupabasePilotRegistrationConfigured() {
   return Boolean(readSupabasePublicConfig());
 }
 
-async function isEmailAllowed(email: string) {
-  if (!usesStrictInvitedEmailMode()) {
+async function isEmailAllowed(email: string, mode: PilotRegistrationMode) {
+  if (mode === "simple") {
     return true;
   }
 
-  const invitedEmails = configuredInvitedEmails();
-  if (invitedEmails.includes(email)) {
+  if (mode === "unavailable") {
+    return false;
+  }
+
+  if (isConfiguredPilotEmail(email)) {
     return true;
   }
 
@@ -337,7 +320,7 @@ export async function registerPilotLearner(
   const organizationName = normalizeText(input.organizationName);
   const jobTitle = normalizeText(input.jobTitle);
   const region = normalizeText(input.region);
-  const accessCode = normalizeAccessCode(input.accessCode);
+  const accessCode = input.accessCode.trim();
 
   if (
     !email ||
@@ -365,11 +348,16 @@ export async function registerPilotLearner(
     return { code: "weak-password", success: false };
   }
 
-  if (!configuredAccessCodes().includes(accessCode)) {
+  const registrationMode = resolvePilotRegistrationMode();
+  if (registrationMode.mode === "unavailable") {
+    return { code: "registration-unavailable", success: false };
+  }
+
+  if (!isPilotAccessCodeValid(accessCode)) {
     return { code: "invalid-access-code", success: false };
   }
 
-  if (!(await isEmailAllowed(email))) {
+  if (!(await isEmailAllowed(email, registrationMode.mode))) {
     return { code: "email-not-invited", success: false };
   }
 

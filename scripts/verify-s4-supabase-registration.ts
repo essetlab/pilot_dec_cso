@@ -23,6 +23,7 @@ async function cleanupUserAndOrg(email: string, organizationName: string) {
   });
 
   if (user) {
+    await prisma.auditLog.deleteMany({ where: { actorUserId: user.id } });
     await prisma.userRoleAssignment.deleteMany({ where: { userId: user.id } });
     await prisma.user.delete({ where: { id: user.id } });
   }
@@ -31,6 +32,10 @@ async function cleanupUserAndOrg(email: string, organizationName: string) {
 }
 
 async function main() {
+  const participantRoleBefore = await prisma.role.findUnique({
+    select: { id: true },
+    where: { key: "PARTICIPANT" },
+  });
   const originalEnv = {
     invitedEmails: process.env.PILOT_INVITED_EMAILS,
     mode: process.env.PILOT_REGISTRATION_MODE,
@@ -129,6 +134,44 @@ async function main() {
       "Expected strict invited-email check to avoid user creation.",
     );
 
+    const invitedResult = await registerPilotLearner({
+      accessCode: " s4-verify-code ",
+      confirmPassword: "StrongPass123",
+      consentAccepted: true,
+      email: "  INVITED-S4@example.local ",
+      fullName: "S4 Invited Learner",
+      jobTitle: "Programme officer",
+      learnerType: "participant",
+      organizationName: "S4 Missing Organization",
+      password: "StrongPass123",
+      region: "Verification",
+    });
+
+    assert(!invitedResult.success, "Expected the nonexistent organization to stop registration.");
+    assert(
+      invitedResult.code === "organization-not-approved",
+      "Expected normalized invited email and access code to pass strict access checks.",
+    );
+
+    delete process.env.PILOT_INVITED_EMAILS;
+    const unavailableResult = await registerPilotLearner({
+      accessCode: "S4-VERIFY-CODE",
+      confirmPassword: "StrongPass123",
+      consentAccepted: true,
+      email: "invited-s4@example.local",
+      fullName: "S4 Unavailable Learner",
+      jobTitle: "Programme officer",
+      learnerType: "participant",
+      organizationName: "S4 Missing Organization",
+      password: "StrongPass123",
+      region: "Verification",
+    });
+    assert(!unavailableResult.success, "Expected incomplete strict configuration to fail.");
+    assert(
+      unavailableResult.code === "registration-unavailable",
+      "Expected incomplete strict configuration to fail closed.",
+    );
+
     const supabaseUserData = buildPilotLearnerUserCreateData({
       authProvider: "supabase",
       authProviderId: "00000000-0000-4000-8000-000000000000",
@@ -152,12 +195,38 @@ async function main() {
   } finally {
     await cleanupUserAndOrg(localEmail, localOrg);
 
-    process.env.NEXT_PUBLIC_SUPABASE_URL = originalEnv.supabaseUrl;
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = originalEnv.supabaseKey;
-    process.env.PILOT_ACCESS_CODE = originalEnv.accessCode;
-    process.env.PILOT_ACCESS_CODES = originalEnv.accessCodes;
-    process.env.PILOT_REGISTRATION_MODE = originalEnv.mode;
-    process.env.PILOT_INVITED_EMAILS = originalEnv.invitedEmails;
+    if (!participantRoleBefore) {
+      const participantRole = await prisma.role.findUnique({
+        select: { id: true },
+        where: { key: "PARTICIPANT" },
+      });
+      if (participantRole) {
+        const assignmentCount = await prisma.userRoleAssignment.count({
+          where: { roleId: participantRole.id },
+        });
+        if (assignmentCount === 0) {
+          await prisma.role.delete({ where: { id: participantRole.id } });
+        }
+      }
+    }
+
+    const restoreEnvironment = (key: string, value: string | undefined) => {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    };
+
+    restoreEnvironment("NEXT_PUBLIC_SUPABASE_URL", originalEnv.supabaseUrl);
+    restoreEnvironment(
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      originalEnv.supabaseKey,
+    );
+    restoreEnvironment("PILOT_ACCESS_CODE", originalEnv.accessCode);
+    restoreEnvironment("PILOT_ACCESS_CODES", originalEnv.accessCodes);
+    restoreEnvironment("PILOT_REGISTRATION_MODE", originalEnv.mode);
+    restoreEnvironment("PILOT_INVITED_EMAILS", originalEnv.invitedEmails);
   }
 }
 
