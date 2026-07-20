@@ -22,6 +22,7 @@ for (const path of [
 ]) {
   assert.match(source(path), /hasLearnerCourseEntitlement/, `${path} must enforce entitlement.`);
 }
+assert.match(source("src/lib/course-data.ts"), /progress: 0,/);
 
 const catalogue = source("src/lib/public-course-catalogue.ts");
 assert.match(catalogue, /accessState: "invitation_required"/);

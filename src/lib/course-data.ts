@@ -640,7 +640,9 @@ function mapDatabaseCourseToSummary(
     lessons: `${lessonCount} lessons`,
     lessonsCount: lessonCount,
     level: levelLabels[record.level],
-    progress: fallback.progress,
+    // Database-backed learner progress must come from the learner's enrollment,
+    // never from partial demo catalogue data.
+    progress: 0,
     resources: String(resourceCount),
     reviewStatus: statusLabels[record.status],
     shortTitle: HRBA_PUBLIC_SLUGS.has(record.slug)
