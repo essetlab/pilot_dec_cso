@@ -115,7 +115,16 @@ const directUrl = checkRequiredPostgresUrl("DIRECT_URL");
 checkRequiredValue("SESSION_SECRET");
 const appUrl = checkRequiredUrl("NEXT_PUBLIC_APP_URL");
 checkRequiredUrl("NEXT_PUBLIC_SUPABASE_URL");
-checkRequiredValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+const supabasePublicKey =
+  valueOf("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ||
+  valueOf("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+if (!supabasePublicKey) {
+  add("Supabase public key", "missing", "set a publishable or legacy anon key");
+} else if (isPlaceholder(supabasePublicKey)) {
+  add("Supabase public key", "placeholder", "public key still looks like a placeholder");
+} else {
+  add("Supabase public key", "ok", "public key is set");
+}
 const hrbaUrl = checkRequiredUrl("HRBA_EXTERNAL_COURSE_URL");
 const hrbaOrigins = checkRequiredValue("HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS");
 

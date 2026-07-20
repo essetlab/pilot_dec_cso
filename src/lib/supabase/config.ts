@@ -1,4 +1,5 @@
 export const SUPABASE_PUBLIC_ENV_KEYS = {
+  anonKey: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   publishableKey: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   url: "NEXT_PUBLIC_SUPABASE_URL",
 } as const;
@@ -15,7 +16,8 @@ function isPlaceholder(value: string) {
 export function readSupabasePublicConfig(): SupabasePublicConfig | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const publishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
   if (
     !url ||
@@ -46,7 +48,7 @@ export function getSupabasePublicConfig(): SupabasePublicConfig {
 
   if (!config) {
     throw new Error(
-      "Supabase public configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+      "Supabase public configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL and a Supabase publishable or legacy anon key.",
     );
   }
 
