@@ -481,7 +481,7 @@ try {
   assert(nextConfig.includes('value: "private, no-store, max-age=0"'));
   assert(nextConfig.includes('value: "no-referrer"'));
   assert(!adminUi.includes("tokenHash"));
-  assert(adminUi.includes("Manual delivery is the approved staging mode"));
+  assert(adminUi.includes("Manual delivery is the designated staging mode"));
 
   const activationAudits = await prisma.auditLog.count({ where: { actionType: AuditActionType.COURSE_INVITATION_ACTIVATED, entityId: stored.id } });
   assert.equal(activationAudits, 1);

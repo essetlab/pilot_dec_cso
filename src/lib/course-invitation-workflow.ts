@@ -462,8 +462,9 @@ async function createCourseInvitation(
   const plaintextToken = createCourseInvitationToken();
   const tokenHash = hashCourseInvitationToken(plaintextToken);
 
-  try {
-    const invitation = await prisma.$transaction(
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const invitation = await prisma.$transaction(
       async (tx) => {
         const actor = await resolveAuthorizedAdministrator(tx as typeof prisma, input.session);
         const invitationScopeLock = `course-invitation:${courseId}:${invitedEmail}`;
@@ -568,10 +569,17 @@ async function createCourseInvitation(
       { isolationLevel: "Serializable" },
     );
 
-    return successResult(invitation, plaintextToken);
-  } catch (error) {
-    return failureResult(error);
+      return successResult(invitation, plaintextToken);
+    } catch (error) {
+      const failure = failureResult(error);
+      if (failure.code !== "unavailable" || attempt === 2) {
+        return failure;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+    }
   }
+
+  return { code: "unavailable", success: false };
 }
 
 export function createDraftCourseInvitation(

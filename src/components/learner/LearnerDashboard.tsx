@@ -344,8 +344,8 @@ export function LearnerDashboard({
               Keep learning at your own pace
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-text">
-              Continue your current course, complete the final assessment when it is ready,
-              or download your certificate after it is issued.
+              Continue your current course, revisit completed learning, or explore another
+              available course when you are ready.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
