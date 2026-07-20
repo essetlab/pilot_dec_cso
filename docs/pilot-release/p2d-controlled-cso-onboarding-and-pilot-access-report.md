@@ -609,3 +609,112 @@ Stage B remains: a DEC-managed course-invitation model and administration flow,
 individual/bulk invitations, invitation delivery and activation, and durable
 assigned-learner acceptance fixtures. Dedicated non-production SMTP and a
 Preview-protection-safe callback path remain environment limitations.
+
+## Stage B1 — course-invitation lifecycle foundation
+
+Stage B1 adds the secure data and internal server-service foundation for an
+administrator to invite one individual to one restricted course. It does not
+add an administrator interface, learner activation page, bulk upload, email
+delivery, course assignment, enrollment, launch, progress, assessment, or
+certificate behavior. The existing `OnboardingInvitation` remains unchanged
+and reserved for staff and administrator onboarding.
+
+### Data model and relationships
+
+The dedicated `CourseInvitation` record stores a normalized invited email,
+invited name, optional role or position, one approved organization, one course,
+optional course version and cohort, hash-only token material, explicit expiry
+and lifecycle timestamps, the issuing administrator, and an optional future
+activated user. `CourseInvitationStatus` defines `DRAFT`, `PENDING`, `SENT`,
+`ACTIVATED`, `EXPIRED`, `CANCELLED`, and `FAILED`.
+
+Organization, course, course-version, cohort, and issuing-user foreign keys use
+restrictive deletion behavior so invitation history is not silently removed.
+The optional activated-user relation uses `SET NULL`, preserving the invitation
+if an ordinary activated-user record is later removed. Indexed relationship,
+status, expiry, and normalized-email/course/status fields support lifecycle and
+duplicate checks.
+
+### Lifecycle, authorization, and security controls
+
+One centralized server-side workflow provides draft creation, marking sent,
+resend preparation, cancellation, failure recording, safe token resolution,
+and idempotent expiry. Allowed transitions are centralized and terminal states
+cannot be edited or reused. Resend preparation replaces the prior token hash
+and expiry before another send attempt. Resolution hashes its input and returns
+only minimum invitation context; it neither consumes nor activates the record.
+Final single-use consumption belongs to the future atomic activation step.
+
+Tokens use 32 cryptographically random bytes and SHA-256 hashing. Only hashes
+are persisted. Plaintext token material is returned once to the internal caller
+that creates or prepares an invitation, and is excluded from logs, audit
+metadata, tests, and this report. Optional activation-code storage is also
+hash-only.
+
+Every management operation re-resolves the current session identity against
+the database and requires an `ACTIVE` user with an active, unexpired
+`PLATFORM_ADMIN` or `SUPER_ADMIN` role. Client-supplied roles are ignored.
+Creation fails closed for inactive or unknown organizations, unknown courses,
+course versions that do not belong to the selected course, and unknown
+cohorts. It never creates an organization from self-reported profile text.
+
+Simultaneously active invitations for the same normalized email and course are
+prevented by supporting indexes plus a check and insert in a serializable
+transaction. Serialization conflicts fail as duplicates. Historical
+activated, expired, and cancelled invitations remain available for audit, and
+a replacement may be created after a terminal state.
+
+Audit actions now cover created, sent, resent, cancelled, activated, expired,
+and failed course-invitation events. Audit metadata contains identifiers,
+status, and expiry only—not invited addresses, names, plaintext tokens, or
+token hashes.
+
+### Migration and connected staging evidence
+
+PostgreSQL migration `20260720090000_course_invitation_lifecycle` adds only the
+course-invitation status enum, `CourseInvitation` table, indexes, foreign keys,
+and seven audit-enum values. SQL inspection found no table replacement, drop,
+truncate, data delete, Supabase-managed schema change, or Production reference.
+The migration was applied only to approved staging through the privately loaded
+`DIRECT_URL`; no seed ran. Prisma reports all seven repository migrations
+applied, the database up to date, and no difference between the staging schema
+and the Prisma model.
+
+The connected verifier used temporary fictional users, organizations, a
+course, course version, cohort, and invitation records. It proved authorized
+creation; denial for learners and inactive, expired, or stale administrator
+sessions; organization and course boundaries; email normalization; hash-only
+token persistence; active duplicate prevention; safe sent-token resolution;
+resend invalidation; cancellation and expiry retention; terminal-state
+replacement; transition enforcement; audit creation; and absence of new
+organizations, assignments, or enrollments. Fixtures were cleaned afterward.
+Stage A application counts remained unchanged: one course, two organizations,
+one user, and zero assignments, enrollments, attempts, certificates, and
+feedback records.
+
+| Stage B1 validation | Result |
+|---|---|
+| `npx prisma validate` | Pass |
+| `npm run prisma:validate` | Pass |
+| `npm run typecheck` | Pass |
+| `npm run build` | Pass with process-only standard production `NODE_ENV`; existing fallback-course-data warning retained |
+| `npm run lint` | Pass |
+| `git diff --check` | Pass |
+| `npm run verify:open-registration` | Pass |
+| `npm run verify:stage-a-session` | Pass |
+| `npm run verify:hrba-assignment-boundary` | Pass |
+| `npm run verify:course-invitation-lifecycle` | Pass against staging; temporary data cleaned |
+| `npm run verify:s5-signin` | Pass |
+| `npm run verify:s6-route-roles` | Pass |
+| `npm run verify:s7-hrba-supabase-compat` | Pass against staging; temporary data cleaned |
+
+No invitation email was sent and no invitation was activated. No
+`CourseAssignment`, `Enrollment`, HRBA launch token, progress, assessment, or
+certificate was created by the invitation workflow. Production, `main`,
+Supabase Auth, and learner-facing behavior were not changed.
+
+Recommended Stage B2 task: implement atomic invitation activation for a new or
+existing Hub account, approved-organization linkage, and one individual
+`USER` assignment for exactly the invited course, with replay and duplicate
+entitlement protection; keep delivery and administrator UI as separately
+reviewable follow-on slices.
