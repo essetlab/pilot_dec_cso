@@ -10,6 +10,7 @@ import {
 import type { AuthSession } from "../src/lib/auth/session-codec";
 import {
   HRBA_EXTERNAL_COURSE_SLUG,
+  HRBA_EXTERNAL_COURSE_ID,
   HRBA_EXTERNAL_COURSE_VERSION_ID,
 } from "../src/lib/external-course-config";
 import {
@@ -54,6 +55,7 @@ async function ensureParticipantRole() {
 }
 
 async function createFixtureLearner(input: {
+  assigned?: boolean;
   authProvider: "local" | "supabase";
   email: string;
 }) {
@@ -81,6 +83,17 @@ async function createFixtureLearner(input: {
       userId: user.id,
     },
   });
+
+  if (input.assigned !== false) {
+    await prisma.courseAssignment.create({
+      data: {
+        assignedById: user.id,
+        assignmentType: "USER",
+        courseId: HRBA_EXTERNAL_COURSE_ID,
+        targetUserId: user.id,
+      },
+    });
+  }
 
   return user;
 }
@@ -149,6 +162,11 @@ async function cleanupFixtureUsers(emails: string[]) {
   });
   await prisma.enrollment.deleteMany({
     where: { userId: { in: userIds } },
+  });
+  await prisma.courseAssignment.deleteMany({
+    where: {
+      OR: [{ targetUserId: { in: userIds } }, { assignedById: { in: userIds } }],
+    },
   });
   await prisma.userRoleAssignment.deleteMany({
     where: { userId: { in: userIds } },
@@ -389,8 +407,9 @@ async function verifyProgressAndCertificate(input: {
 async function main() {
   const localEmail = `s7-local-${randomUUID()}@example.test`;
   const supabaseEmail = `s7-supabase-${randomUUID()}@example.test`;
+  const unassignedEmail = `s7-unassigned-${randomUUID()}@example.test`;
 
-  await cleanupFixtureUsers([localEmail, supabaseEmail]);
+  await cleanupFixtureUsers([localEmail, supabaseEmail, unassignedEmail]);
   await registerHrbaExternalCourse();
 
   const localUser = await createFixtureLearner({
@@ -401,10 +420,26 @@ async function main() {
     authProvider: "supabase",
     email: supabaseEmail,
   });
+  const unassignedUser = await createFixtureLearner({
+    assigned: false,
+    authProvider: "supabase",
+    email: unassignedEmail,
+  });
 
   try {
     await resetExternalCourseState(localUser.id);
     await resetExternalCourseState(supabaseUser.id);
+    await resetExternalCourseState(unassignedUser.id);
+
+    const deniedLaunch = await getExternalCourseLaunchData(
+      HRBA_EXTERNAL_COURSE_SLUG,
+      sessionFor(unassignedUser),
+    );
+    assert(!deniedLaunch, "Expected an unassigned learner to be denied HRBA launch.");
+    assert(
+      (await prisma.enrollment.count({ where: { userId: unassignedUser.id } })) === 0,
+      "Expected denied HRBA launch not to create an enrollment.",
+    );
 
     const localLaunch = await getExternalCourseLaunchData(
       HRBA_EXTERNAL_COURSE_SLUG,

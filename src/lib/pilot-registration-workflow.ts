@@ -1,10 +1,18 @@
 import {
+  AuditActionType,
   OrganizationStatus,
   RoleKey,
   UserStatus,
 } from "../generated/prisma/enums";
-import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { hashPassword, validatePasswordPolicy } from "./auth/passwords";
+import {
+  getDefaultPilotAccessCodeForLocalDev,
+  isConfiguredPilotEmail,
+  isPilotAccessCodeValid,
+  resolvePilotRegistrationMode,
+  type PilotRegistrationMode,
+} from "./pilot-registration-config";
 import { prisma } from "./prisma";
 import { readSupabasePublicConfig } from "./supabase/config";
 
@@ -28,16 +36,19 @@ export type PilotRegistrationResult =
       authProvider: "local" | "supabase";
       code: "created";
       email: string;
+      emailConfirmationRequired: boolean;
       success: true;
       userId: string;
     }
   | {
       code:
-        | "duplicate-email"
         | "email-not-invited"
         | "invalid-access-code"
         | "missing-fields"
+        | "organization-not-approved"
         | "profile-link-failed"
+        | "registration-unavailable"
+        | "registration-not-completed"
         | "password-mismatch"
         | "supabase-account-exists"
         | "supabase-registration-failed"
@@ -46,11 +57,14 @@ export type PilotRegistrationResult =
       success: false;
     };
 
-const DEFAULT_PILOT_ACCESS_CODE = "HRBA-PILOT-2026";
-
 type SupabasePilotSignUpResult =
   | { provider: "local" }
-  | { provider: "supabase"; success: true; userId: string }
+  | {
+      emailConfirmationRequired: boolean;
+      provider: "supabase";
+      success: true;
+      userId: string;
+    }
   | {
       code: "supabase-account-exists" | "supabase-registration-failed";
       provider: "supabase";
@@ -61,51 +75,40 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-function normalizeAccessCode(value: string) {
-  return value.trim().toUpperCase();
-}
-
 function normalizeText(value: string, maxLength = 160) {
   return value.trim().slice(0, maxLength);
 }
 
-function configuredAccessCodes() {
-  return (process.env.PILOT_ACCESS_CODES ?? process.env.PILOT_ACCESS_CODE ?? DEFAULT_PILOT_ACCESS_CODE)
-    .split(",")
-    .map(normalizeAccessCode)
-    .filter(Boolean);
-}
+function getPublicAppUrl() {
+  const configured = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL;
 
-function configuredInvitedEmails() {
-  return (process.env.PILOT_INVITED_EMAILS ?? "")
-    .split(",")
-    .map(normalizeEmail)
-    .filter(Boolean);
-}
-
-function usesStrictInvitedEmailMode() {
-  return process.env.PILOT_REGISTRATION_MODE?.trim().toLowerCase() === "strict";
+  try {
+    return configured ? new URL(configured).origin : "http://localhost:3000";
+  } catch {
+    return "http://localhost:3000";
+  }
 }
 
 export function getPilotRegistrationModeLabel() {
-  return usesStrictInvitedEmailMode() ? "Invited-email mode" : "Simple access-code mode";
+  return resolvePilotRegistrationMode().label;
 }
 
-export function getDefaultPilotAccessCodeForLocalDev() {
-  return DEFAULT_PILOT_ACCESS_CODE;
-}
+export { getDefaultPilotAccessCodeForLocalDev, resolvePilotRegistrationMode };
 
 export function isSupabasePilotRegistrationConfigured() {
   return Boolean(readSupabasePublicConfig());
 }
 
-async function isEmailAllowed(email: string) {
-  if (!usesStrictInvitedEmailMode()) {
+async function isEmailAllowed(email: string, mode: PilotRegistrationMode) {
+  if (mode === "simple") {
     return true;
   }
 
-  const invitedEmails = configuredInvitedEmails();
-  if (invitedEmails.includes(email)) {
+  if (mode === "unavailable") {
+    return false;
+  }
+
+  if (isConfiguredPilotEmail(email)) {
     return true;
   }
 
@@ -170,6 +173,7 @@ function isSupabaseDuplicateAccountError(message: string) {
 async function signUpSupabasePilotLearner(
   email: string,
   password: string,
+  supabaseClient?: SupabaseClient,
 ): Promise<SupabasePilotSignUpResult> {
   const config = readSupabasePublicConfig();
 
@@ -177,15 +181,20 @@ async function signUpSupabasePilotLearner(
     return { provider: "local" as const };
   }
 
-  const supabase = createClient(config.url, config.publishableKey, {
-    auth: {
-      persistSession: false,
-    },
-  });
+  if (!supabaseClient) {
+    return {
+      code: "supabase-registration-failed",
+      provider: "supabase",
+      success: false,
+    };
+  }
 
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await supabaseClient.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: `${getPublicAppUrl()}/auth/callback?next=/sign-in?notice=email-confirmed`,
+    },
   });
 
   if (error) {
@@ -219,6 +228,7 @@ async function signUpSupabasePilotLearner(
   }
 
   return {
+    emailConfirmationRequired: !data.session,
     provider: "supabase" as const,
     success: true as const,
     userId: data.user.id,
@@ -237,18 +247,17 @@ async function createPilotLearnerProfile(input: {
   region: string;
 }) {
   return prisma.$transaction(async (tx) => {
-    const organization = await tx.organization.upsert({
-      create: {
-        name: input.organizationName,
-        region: input.region,
+    const organization = await tx.organization.findFirst({
+      select: { id: true },
+      where: {
+        name: { equals: input.organizationName, mode: "insensitive" },
         status: OrganizationStatus.ACTIVE,
       },
-      update: {
-        region: input.region,
-        status: OrganizationStatus.ACTIVE,
-      },
-      where: { name: input.organizationName },
     });
+
+    if (!organization) {
+      throw new Error("APPROVED_ORGANIZATION_NOT_FOUND");
+    }
 
     const participantRole = await tx.role.upsert({
       create: {
@@ -283,19 +292,35 @@ async function createPilotLearnerProfile(input: {
       },
     });
 
+    await tx.auditLog.create({
+      data: {
+        actionType: AuditActionType.USER_CREATED,
+        actorUserId: user.id,
+        description: "Created an individual pilot learner account.",
+        entityId: user.id,
+        entityType: "User",
+        metadataJson: {
+          consentAcknowledged: true,
+          organizationId: organization.id,
+          registrationChannel: "controlled-pilot-registration",
+        },
+      },
+    });
+
     return user;
   });
 }
 
 export async function registerPilotLearner(
   input: PilotRegistrationInput,
+  supabaseClient?: SupabaseClient,
 ): Promise<PilotRegistrationResult> {
   const email = normalizeEmail(input.email);
   const fullName = normalizeText(input.fullName);
   const organizationName = normalizeText(input.organizationName);
   const jobTitle = normalizeText(input.jobTitle);
   const region = normalizeText(input.region);
-  const accessCode = normalizeAccessCode(input.accessCode);
+  const accessCode = input.accessCode.trim();
 
   if (
     !email ||
@@ -323,11 +348,16 @@ export async function registerPilotLearner(
     return { code: "weak-password", success: false };
   }
 
-  if (!configuredAccessCodes().includes(accessCode)) {
+  const registrationMode = resolvePilotRegistrationMode();
+  if (registrationMode.mode === "unavailable") {
+    return { code: "registration-unavailable", success: false };
+  }
+
+  if (!isPilotAccessCodeValid(accessCode)) {
     return { code: "invalid-access-code", success: false };
   }
 
-  if (!(await isEmailAllowed(email))) {
+  if (!(await isEmailAllowed(email, registrationMode.mode))) {
     return { code: "email-not-invited", success: false };
   }
 
@@ -337,13 +367,35 @@ export async function registerPilotLearner(
   });
 
   if (existingUser) {
-    return { code: "duplicate-email", success: false };
+    return { code: "registration-not-completed", success: false };
   }
 
-  const supabaseSignUp = await signUpSupabasePilotLearner(email, input.password);
+  const approvedOrganization = await prisma.organization.findFirst({
+    select: { id: true },
+    where: {
+      name: { equals: organizationName, mode: "insensitive" },
+      status: OrganizationStatus.ACTIVE,
+    },
+  });
+
+  if (!approvedOrganization) {
+    return { code: "organization-not-approved", success: false };
+  }
+
+  const supabaseSignUp = await signUpSupabasePilotLearner(
+    email,
+    input.password,
+    supabaseClient,
+  );
 
   if ("success" in supabaseSignUp && !supabaseSignUp.success) {
-    return { code: supabaseSignUp.code, success: false };
+    return {
+      code:
+        supabaseSignUp.code === "supabase-account-exists"
+          ? "registration-not-completed"
+          : supabaseSignUp.code,
+      success: false,
+    };
   }
 
   const isSupabaseRegistration =
@@ -366,6 +418,10 @@ export async function registerPilotLearner(
       authProvider: isSupabaseRegistration ? "supabase" : "local",
       code: "created",
       email,
+      emailConfirmationRequired:
+        isSupabaseRegistration && supabaseSignUp.provider === "supabase"
+          ? supabaseSignUp.emailConfirmationRequired
+          : false,
       success: true,
       userId: result.id,
     };

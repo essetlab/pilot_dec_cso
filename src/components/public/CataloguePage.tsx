@@ -154,6 +154,7 @@ function CapacityMapping({ course }: { course: PublicCatalogueCourseSummary }) {
 
 function CourseCatalogueCard({ course }: { course: PublicCatalogueCourseSummary }) {
   const isAvailable = course.availability === "available";
+  const requiresInvitation = course.accessState === "invitation_required";
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-card border border-design-border bg-white-surface shadow-soft transition hover:-translate-y-1 hover:shadow-card">
@@ -168,8 +169,8 @@ function CourseCatalogueCard({ course }: { course: PublicCatalogueCourseSummary 
         />
         <div className="absolute left-4 top-4">
           <StatusBadge
-            label={isAvailable ? "Available now" : "Coming soon"}
-            tone={isAvailable ? "green" : "gray"}
+            label={requiresInvitation ? "Invitation required" : isAvailable ? "Available now" : "Coming soon"}
+            tone={requiresInvitation ? "gold" : isAvailable ? "green" : "gray"}
           />
         </div>
       </div>
@@ -193,7 +194,11 @@ function CourseCatalogueCard({ course }: { course: PublicCatalogueCourseSummary 
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted-text">
-            {isAvailable ? "Open for learning" : "Course information only"}
+            {requiresInvitation
+              ? "Individual assignment required"
+              : isAvailable
+                ? "Open for learning"
+                : "Course information only"}
           </span>
           <ActionButton href={course.href} size="sm" variant="secondary">
             {isAvailable ? "View course" : "View course structure"}

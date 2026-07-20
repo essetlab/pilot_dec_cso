@@ -1,5 +1,5 @@
 import { UserStatus } from "@/generated/prisma/enums";
-import { resolveSupabaseHubSession } from "@/lib/auth/hub-session";
+import { canUsePilotAccount, resolveSupabaseHubSession } from "@/lib/auth/hub-session";
 import { verifyPassword } from "@/lib/auth/passwords";
 import { isRateLimited } from "@/lib/auth/rate-limit";
 import { isRoleKey, type RoleKey } from "@/lib/auth/roles";
@@ -162,9 +162,11 @@ export async function POST(request: NextRequest) {
       email: true,
       fullName: true,
       id: true,
+      organization: { select: { status: true } },
       passwordHash: true,
       roleAssignments: {
         select: {
+          expiresAt: true,
           isActive: true,
           role: { select: { key: true } },
         },
@@ -183,10 +185,21 @@ export async function POST(request: NextRequest) {
   }
 
   const roles = dbUser.roleAssignments
-    .filter((assignment) => assignment.isActive && isRoleKey(assignment.role.key))
+    .filter((assignment) =>
+      assignment.isActive &&
+      (!assignment.expiresAt || assignment.expiresAt.getTime() > Date.now()) &&
+      isRoleKey(assignment.role.key),
+    )
     .map((assignment) => assignment.role.key);
 
-  if (roles.length === 0) {
+  if (
+    roles.length === 0 ||
+    !canUsePilotAccount({
+      organizationStatus: dbUser.organization?.status ?? null,
+      roles,
+      status: dbUser.status,
+    })
+  ) {
     return signInErrorRedirect(request, "inactive-user");
   }
 

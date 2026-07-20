@@ -339,6 +339,7 @@ function PathwaySection() {
 
 function FeaturedCourseCard({ course }: { course: PublicCatalogueCourseSummary }) {
   const isAvailable = course.availability === "available";
+  const requiresInvitation = course.accessState === "invitation_required";
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-card border border-design-border bg-white shadow-soft transition hover:-translate-y-1 hover:shadow-card">
@@ -353,8 +354,8 @@ function FeaturedCourseCard({ course }: { course: PublicCatalogueCourseSummary }
         />
         <div className="absolute left-4 top-4">
           <StatusBadge
-            label={isAvailable ? "Available now" : "Coming soon"}
-            tone={isAvailable ? "green" : "gray"}
+            label={requiresInvitation ? "Invitation required" : isAvailable ? "Available now" : "Coming soon"}
+            tone={requiresInvitation ? "gold" : isAvailable ? "green" : "gray"}
           />
         </div>
       </div>

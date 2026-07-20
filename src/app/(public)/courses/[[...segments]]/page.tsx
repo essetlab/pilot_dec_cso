@@ -44,14 +44,14 @@ async function getPublicCourseAction(
   if (!session) {
     return {
       href: `/sign-in?next=${encodeURIComponent(learnerPath)}`,
-      label: "Start learning",
+      label: course.accessState === "invitation_required" ? "Sign in to access" : "Start course",
     };
   }
 
   if (course.launchMode === "embedded" && !getCatalogueCourseDefinition(course.slug)) {
     return {
       href: learnerPath,
-      label: "Start learning",
+      label: "Start course",
     };
   }
 
@@ -60,15 +60,19 @@ async function getPublicCourseAction(
   });
 
   if (!learnerCourse) {
+    if (course.accessState === "invitation_required") {
+      return { label: "Invitation required" };
+    }
+
     return {
       href: "/learn/my-courses",
-      label: "Go to My Courses",
+      label: "Start course",
     };
   }
 
   return {
     href: learnerPath,
-    label: learnerCourse.progress > 0 ? "Continue learning" : "Start learning",
+    label: learnerCourse.progress > 0 ? "Continue course" : "Start course",
   };
 }
 

@@ -31,6 +31,7 @@ import type {
 } from "./external-course-types";
 import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
+import { hasLearnerCourseEntitlement } from "./course-entitlement";
 
 const issuerName = "DEC / WHH CSF+ CSO Learning Hub";
 const externalCourseLaunchTokenTtlMs = 8 * 60 * 60 * 1000;
@@ -303,30 +304,46 @@ async function ensureIntegrationOwner() {
   return user;
 }
 
-async function ensureHrbaCapacityArea() {
-  return prisma.capacityArea.upsert({
-    create: {
-      id: "CAP-HRBA",
-      name: "Human Rights-Based Approach",
-      slug: "human-rights-based-approach",
-      description:
-        "Practical HRBA learning for local CSOs, including participation, inclusion, accountability, dignity, safe evidence use, and project-cycle decisions.",
-      isActive: true,
-      sortOrder: 20,
+async function ensureHrbaCapacityAreas() {
+  const definitions = [
+    {
+      id: "CAP-ADV",
+      name: "Evidence-Based Advocacy and Civic Engagement",
+      slug: "evidence-based-advocacy-and-civic-engagement",
+      sortOrder: 6,
     },
-    update: {
-      description:
-        "Practical HRBA learning for local CSOs, including participation, inclusion, accountability, dignity, safe evidence use, and project-cycle decisions.",
-      isActive: true,
-      sortOrder: 20,
+    {
+      id: "CAP-HRSAFE",
+      name: "Human Resources, Inclusion, and Safeguarding",
+      slug: "human-resources-inclusion-and-safeguarding",
+      sortOrder: 5,
     },
-    where: { slug: "human-rights-based-approach" },
-  });
+  ] as const;
+
+  return Promise.all(
+    definitions.map((definition) =>
+      prisma.capacityArea.upsert({
+        create: {
+          ...definition,
+          description: `${definition.name} capacity area.`,
+          isActive: true,
+        },
+        update: {
+          description: `${definition.name} capacity area.`,
+          isActive: true,
+          name: definition.name,
+          slug: definition.slug,
+          sortOrder: definition.sortOrder,
+        },
+        where: { id: definition.id },
+      }),
+    ),
+  );
 }
 
 export async function registerHrbaExternalCourse() {
   const owner = await ensureIntegrationOwner();
-  const capacityArea = await ensureHrbaCapacityArea();
+  const capacityAreas = await ensureHrbaCapacityAreas();
   const metadata = buildHrbaExternalCourseMetadata();
 
   const course = await prisma.course.upsert({
@@ -353,7 +370,7 @@ export async function registerHrbaExternalCourse() {
       targetAudience:
         "Local and grassroots CSO staff, focal persons, facilitators, and programme teams applying HRBA in practical project work.",
       title: "Applying the Human Rights-Based Approach in CSO Practice",
-      visibility: CourseVisibility.PUBLIC,
+      visibility: CourseVisibility.ASSIGNED_ONLY,
     },
     update: {
       analysisMetadataJson: toJson({
@@ -375,24 +392,26 @@ export async function registerHrbaExternalCourse() {
       targetAudience:
         "Local and grassroots CSO staff, focal persons, facilitators, and programme teams applying HRBA in practical project work.",
       title: "Applying the Human Rights-Based Approach in CSO Practice",
-      visibility: CourseVisibility.PUBLIC,
+      visibility: CourseVisibility.ASSIGNED_ONLY,
     },
     where: { slug: HRBA_EXTERNAL_COURSE_SLUG },
   });
 
-  await prisma.courseCapacityArea.upsert({
-    create: {
-      capacityAreaId: capacityArea.id,
-      courseId: course.id,
-    },
-    update: {},
-    where: {
-      courseId_capacityAreaId: {
+  for (const capacityArea of capacityAreas) {
+    await prisma.courseCapacityArea.upsert({
+      create: {
         capacityAreaId: capacityArea.id,
         courseId: course.id,
       },
-    },
-  });
+      update: {},
+      where: {
+        courseId_capacityAreaId: {
+          capacityAreaId: capacityArea.id,
+          courseId: course.id,
+        },
+      },
+    });
+  }
 
   await prisma.courseVersion.upsert({
     create: {
@@ -587,7 +606,7 @@ export async function getExternalCourseLaunchData(
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
   });
-  if (!user) {
+  if (!user || user.status !== UserStatus.ACTIVE) {
     return null;
   }
 
@@ -616,22 +635,15 @@ export async function getExternalCourseLaunchData(
     return null;
   }
 
-  if (course.visibility === CourseVisibility.ASSIGNED_ONLY) {
-    const assignment = await prisma.courseAssignment.findFirst({
-      where: {
-        courseId: course.id,
-        isActive: true,
-        OR: [
-          { targetUserId: user.id },
-          ...(user.primaryCohortId ? [{ targetCohortId: user.primaryCohortId }] : []),
-          ...(user.organizationId ? [{ targetOrganizationId: user.organizationId }] : []),
-        ],
-      },
-    });
-
-    if (!assignment) {
-      return null;
-    }
+  if (!(await hasLearnerCourseEntitlement({
+    courseId: course.id,
+    courseSlug: course.slug,
+    organizationId: user.organizationId,
+    primaryCohortId: user.primaryCohortId,
+    userId: user.id,
+    visibility: course.visibility,
+  }))) {
+    return null;
   }
 
   const enrollment = await prisma.enrollment.upsert({
@@ -754,7 +766,7 @@ export async function recordExternalCourseProgress({
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
   });
-  if (!user) {
+  if (!user || user.status !== UserStatus.ACTIVE) {
     return { success: false, error: "Unauthorized" };
   }
 
@@ -795,6 +807,17 @@ export async function recordExternalCourseProgress({
 
   if (!course || !version || !metadata) {
     return { success: false, error: "External course not found" };
+  }
+
+  if (!(await hasLearnerCourseEntitlement({
+    courseId: course.id,
+    courseSlug: course.slug,
+    organizationId: user.organizationId,
+    primaryCohortId: user.primaryCohortId,
+    userId: user.id,
+    visibility: course.visibility,
+  }))) {
+    return { success: false, error: "Unauthorized" };
   }
 
   if (!metadata.allowedOrigins.includes(iframeOrigin)) {

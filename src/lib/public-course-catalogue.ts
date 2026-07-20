@@ -7,6 +7,7 @@ import {
 } from "./external-course-config";
 import type {
   CatalogueAvailability,
+  CatalogueAccessState,
   CatalogueCapacityArea,
   CatalogueIntegrationStatus,
   CatalogueLaunchMode,
@@ -127,6 +128,7 @@ export type ExternalCourseIntegrationContract = {
 };
 
 type CatalogueCourseDefinition = {
+  accessState: CatalogueAccessState;
   assessmentStatus: string;
   availability: CatalogueAvailability;
   certificateStatus: string;
@@ -200,6 +202,7 @@ function comingSoonCourse(
   },
 ): CatalogueCourseDefinition {
   return {
+    accessState: "coming_soon",
     assessmentStatus: "Assessment approach not yet confirmed",
     availability: "coming_soon",
     certificateStatus: "Certificate status not yet confirmed",
@@ -233,6 +236,7 @@ function comingSoonCourse(
 
 export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   {
+    accessState: "invitation_required",
     assessmentStatus:
       "Existing final assessment; certificate eligibility requires a score of 80% or above.",
     availability: "available",
@@ -429,6 +433,7 @@ function definitionCapacityAreas(definition: CatalogueCourseDefinition) {
   );
 
   return {
+    accessState: definition.accessState,
     capacityAreas: [primaryCapacityArea, ...secondaryCapacityAreas],
     primaryCapacityArea,
     secondaryCapacityAreas,

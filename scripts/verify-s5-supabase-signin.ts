@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { UserStatus } from "../src/generated/prisma/enums";
+import { OrganizationStatus, UserStatus } from "../src/generated/prisma/enums";
 import { buildAuthSessionFromHubUser } from "../src/lib/auth/hub-session";
 import { readSupabasePublicConfig } from "../src/lib/supabase/config";
 
 const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const originalSupabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const originalSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function restoreEnv() {
   if (originalSupabaseUrl === undefined) {
@@ -19,6 +20,12 @@ function restoreEnv() {
   } else {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = originalSupabaseKey;
   }
+
+  if (originalSupabaseAnonKey === undefined) {
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  } else {
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = originalSupabaseAnonKey;
+  }
 }
 
 function readSource(path: string) {
@@ -28,6 +35,7 @@ function readSource(path: string) {
 try {
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   assert.equal(readSupabasePublicConfig(), null);
 
   process.env.NEXT_PUBLIC_SUPABASE_URL = "[supabase-project-url]";
@@ -45,14 +53,23 @@ try {
     url: "https://example.supabase.co",
   });
 
+  delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "legacy-anon-test-key";
+  assert.deepEqual(readSupabasePublicConfig(), {
+    publishableKey: "legacy-anon-test-key",
+    url: "https://example.supabase.co",
+  });
+
   const mappedSession = buildAuthSessionFromHubUser(
     {
       authProviderId: "supabase-user-id",
       email: "learner@example.org",
       fullName: "Pilot Learner",
       id: "hub-user-id",
+      organization: { status: OrganizationStatus.ACTIVE },
       roleAssignments: [
         {
+          expiresAt: null,
           isActive: true,
           role: { key: "PARTICIPANT" },
         },
@@ -81,6 +98,7 @@ try {
       email: "learner@example.org",
       fullName: "Pilot Learner",
       id: "hub-user-id",
+      organization: { status: OrganizationStatus.ACTIVE },
       roleAssignments: [],
       status: UserStatus.ACTIVE,
     },
@@ -98,8 +116,10 @@ try {
       email: "learner@example.org",
       fullName: "Pilot Learner",
       id: "hub-user-id",
+      organization: { status: OrganizationStatus.ACTIVE },
       roleAssignments: [
         {
+          expiresAt: null,
           isActive: true,
           role: { key: "PARTICIPANT" },
         },

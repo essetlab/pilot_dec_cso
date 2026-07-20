@@ -26,6 +26,7 @@ import {
   isExternalHrbaCourseMetadata,
 } from "./external-course-config";
 import { prisma } from "./prisma";
+import { hasLearnerCourseEntitlement } from "./course-entitlement";
 import { getCurrentSession } from "./auth/server";
 import { cleanPresentationText } from "./presentation-text";
 import {
@@ -639,7 +640,9 @@ function mapDatabaseCourseToSummary(
     lessons: `${lessonCount} lessons`,
     lessonsCount: lessonCount,
     level: levelLabels[record.level],
-    progress: fallback.progress,
+    // Database-backed learner progress must come from the learner's enrollment,
+    // never from partial demo catalogue data.
+    progress: 0,
     resources: String(resourceCount),
     reviewStatus: statusLabels[record.status],
     shortTitle: HRBA_PUBLIC_SLUGS.has(record.slug)
@@ -725,6 +728,7 @@ function mapManagedExternalCourseToSummary(
   const tones: CourseTone[] = ["blue", "green", "gold", "navy"];
 
   return {
+    accessState: availability === "available" ? "available_open" : "coming_soon",
     availability,
     ...areas,
     certificateLabel: record.certificateEligible
@@ -889,7 +893,8 @@ export async function getPublicCourseSummaries(
       (course) =>
         HRBA_PUBLIC_SLUGS.has(course.slug) &&
         course.status === CourseStatus.PUBLISHED &&
-        course.visibility === CourseVisibility.PUBLIC,
+        (course.visibility === CourseVisibility.PUBLIC ||
+          course.visibility === CourseVisibility.ASSIGNED_ONLY),
     );
     existingHrba = record ? mapDatabaseCourseToSummary(record) : null;
   } catch (error) {
@@ -952,7 +957,8 @@ export async function getPublicCourseBySlug(
     (course) =>
       HRBA_PUBLIC_SLUGS.has(course.slug) &&
       course.status === CourseStatus.PUBLISHED &&
-      course.visibility === CourseVisibility.PUBLIC,
+      (course.visibility === CourseVisibility.PUBLIC ||
+        course.visibility === CourseVisibility.ASSIGNED_ONLY),
   );
 
   if (record) {
@@ -1030,6 +1036,22 @@ export async function getLearnerCourseSummaries(): Promise<
     }
 
     const records = await queryLearnerCourseRecords();
+    const entitledRecords = (
+      await Promise.all(
+        records.map(async (record) =>
+          (await hasLearnerCourseEntitlement({
+            courseId: record.id,
+            courseSlug: record.slug,
+            organizationId: dbUser.organizationId,
+            primaryCohortId: dbUser.primaryCohortId,
+            userId: dbUser.id,
+            visibility: record.visibility,
+          }))
+            ? record
+            : null,
+        ),
+      )
+    ).filter((record): record is DatabaseCourseRecord => Boolean(record));
 
     if (records.length > 0) {
       const [enrollments, certificates, feedback] = await Promise.all([
@@ -1060,7 +1082,7 @@ export async function getLearnerCourseSummaries(): Promise<
           .filter((courseId): courseId is string => Boolean(courseId)),
       );
 
-      return records.map((record) => {
+      return entitledRecords.map((record) => {
         const summary = mapDatabaseCourseToSummary(record);
         const latestVersionId = record.versions[0]?.id;
         const enrollment = enrollments.find(
@@ -1146,24 +1168,15 @@ export async function getLearnerCourseBySlug(
     const record = records.find((course) => course.slug === slug);
 
     if (record) {
-      if (record.visibility === CourseVisibility.ASSIGNED_ONLY) {
-        const orConditions = [
-          { targetUserId: dbUser.id },
-          ...(dbUser.primaryCohortId ? [{ targetCohortId: dbUser.primaryCohortId }] : []),
-          ...(dbUser.organizationId ? [{ targetOrganizationId: dbUser.organizationId }] : []),
-        ];
-
-        const assignment = await prisma.courseAssignment.findFirst({
-          where: {
-            courseId: record.id,
-            isActive: true,
-            OR: orConditions,
-          },
-        });
-
-        if (!assignment) {
-          return null;
-        }
+      if (!(await hasLearnerCourseEntitlement({
+        courseId: record.id,
+        courseSlug: record.slug,
+        organizationId: dbUser.organizationId,
+        primaryCohortId: dbUser.primaryCohortId,
+        userId: dbUser.id,
+        visibility: record.visibility,
+      }))) {
+        return null;
       }
 
       const latestVersion = record.versions[0];

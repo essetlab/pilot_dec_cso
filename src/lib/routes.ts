@@ -56,6 +56,7 @@ export function buildCreatorCourseNav(courseId: string): NavItem[] {
 export const adminNav: NavItem[] = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/course-invitations", label: "Course Invitations" },
   { href: "/admin/organizations", label: "Organizations" },
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/certificates", label: "Certificates" },
@@ -75,6 +76,7 @@ const phaseOneLearnerRoutePatterns = [
 
 const phaseOneAdminRoutePrefixes = [
   "/admin/users",
+  "/admin/course-invitations",
   "/admin/organizations",
   "/admin/courses",
   "/admin/certificates",
@@ -145,6 +147,11 @@ export const publicRoutes: Record<string, RouteDefinition> = {
     title: "Accessibility",
     purpose:
       "Explain mobile, low-bandwidth, and accessibility intentions for pilot learners.",
+  },
+  "/course-invitations/accept": {
+    title: "Accept Course Invitation",
+    purpose:
+      "Allow the intended authenticated learner to review and explicitly accept one controlled course invitation.",
   },
 };
 
@@ -305,6 +312,24 @@ export const adminRoutes: Record<string, RouteDefinition> = {
     title: "User Detail",
     purpose:
       "View and edit a user profile, roles, organization, cohort, and participant activity.",
+  },
+  "/admin/course-invitations": {
+    title: "Course Invitations",
+    purpose:
+      "Manage controlled one-learner invitations for exact approved course versions.",
+    emptyTitle: "No course invitations found.",
+    emptyDescription:
+      "Create a controlled invitation when an approved learner needs access to an assigned-only course.",
+  },
+  "/admin/course-invitations/new": {
+    title: "Create Course Invitation",
+    purpose:
+      "Validate an approved organization, learner, course version, and optional cohort before preparing delivery.",
+  },
+  "/admin/course-invitations/[invitationId]": {
+    title: "Course Invitation Detail",
+    purpose:
+      "Review invitation scope, status, lifecycle history, and safe administrative actions.",
   },
   "/admin/organizations": {
     title: "Organizations",

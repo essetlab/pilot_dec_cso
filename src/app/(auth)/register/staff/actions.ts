@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { completeStaffRegistration } from "@/lib/auth/staff-onboarding";
 import { isRateLimited } from "@/lib/auth/rate-limit";
+import { readSupabasePublicConfig } from "@/lib/supabase/config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function formText(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -30,6 +32,9 @@ export async function completeStaffRegistrationAction(formData: FormData) {
     redirect(`/register/staff?token=${encodeURIComponent(token)}&error=rate-limited`);
   }
 
+  const supabaseClient = readSupabasePublicConfig()
+    ? await createSupabaseServerClient()
+    : undefined;
   const result = await completeStaffRegistration({
     department,
     fullName,
@@ -37,11 +42,15 @@ export async function completeStaffRegistrationAction(formData: FormData) {
     password,
     phone,
     token,
-  });
+  }, supabaseClient);
 
   if (!result.success) {
     redirect(`/register/staff?token=${encodeURIComponent(token)}&error=${result.code}`);
   }
 
-  redirect("/sign-in?notice=registration-complete");
+  redirect(
+    result.code === "confirmation-email-sent"
+      ? "/sign-in?notice=confirmation-email-sent"
+      : "/sign-in?notice=registration-complete",
+  );
 }

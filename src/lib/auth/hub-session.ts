@@ -1,4 +1,7 @@
-import { UserStatus } from "../../generated/prisma/enums";
+import {
+  OrganizationStatus,
+  UserStatus,
+} from "../../generated/prisma/enums";
 import { prisma } from "../prisma";
 import type { AuthSession } from "./session-codec";
 import { isRoleKey, type RoleKey } from "./roles";
@@ -8,8 +11,10 @@ const hubAuthUserSelect = {
   email: true,
   fullName: true,
   id: true,
+  organization: { select: { status: true } },
   roleAssignments: {
     select: {
+      expiresAt: true,
       isActive: true,
       role: { select: { key: true } },
     },
@@ -22,7 +27,9 @@ type HubAuthUser = {
   email: string;
   fullName: string;
   id: string;
+  organization?: { status: OrganizationStatus } | null;
   roleAssignments: {
+    expiresAt?: Date | null;
     isActive: boolean;
     role: { key: string };
   }[];
@@ -48,7 +55,11 @@ export function activeRoleKeys(
   assignments: HubAuthUser["roleAssignments"],
 ): RoleKey[] {
   return assignments.flatMap((assignment) => {
-    if (!assignment.isActive || !isRoleKey(assignment.role.key)) {
+    if (
+      !assignment.isActive ||
+      (assignment.expiresAt && assignment.expiresAt.getTime() <= Date.now()) ||
+      !isRoleKey(assignment.role.key)
+    ) {
       return [];
     }
 
@@ -56,17 +67,33 @@ export function activeRoleKeys(
   });
 }
 
+export function canUseHubAccount(input: {
+  organizationStatus: OrganizationStatus | null;
+  roles: RoleKey[];
+  status: UserStatus;
+}) {
+  return input.status === UserStatus.ACTIVE;
+}
+
+// Transitional export for older verification helpers. Organization eligibility
+// now belongs to restricted-course entitlement, not global account sign-in.
+export const canUsePilotAccount = canUseHubAccount;
+
 export function buildAuthSessionFromHubUser(
   user: HubAuthUser,
   issuedAt: string,
 ): HubSessionLookupResult {
-  if (user.status !== UserStatus.ACTIVE) {
-    return { code: "inactive-user", success: false };
-  }
-
   const roles = activeRoleKeys(user.roleAssignments);
   if (roles.length === 0) {
     return { code: "missing-roles", success: false };
+  }
+
+  if (!canUseHubAccount({
+    organizationStatus: user.organization?.status ?? null,
+    roles,
+    status: user.status,
+  })) {
+    return { code: "inactive-user", success: false };
   }
 
   return {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { UserStatus } from "../src/generated/prisma/enums";
+import { OrganizationStatus, UserStatus } from "../src/generated/prisma/enums";
 import {
   canAccessAdmin,
   canAccessCreator,
@@ -88,8 +88,10 @@ const linkedSupabaseUser = buildAuthSessionFromHubUser(
     email: "linked@example.test",
     fullName: "Linked Learner",
     id: "hub-user-id",
+    organization: { status: OrganizationStatus.ACTIVE },
     roleAssignments: [
       {
+        expiresAt: null,
         isActive: true,
         role: { key: "PARTICIPANT" },
       },
@@ -107,8 +109,10 @@ const inactiveSupabaseUser = buildAuthSessionFromHubUser(
     email: "inactive@example.test",
     fullName: "Inactive Learner",
     id: "hub-user-id",
+    organization: { status: OrganizationStatus.ACTIVE },
     roleAssignments: [
       {
+        expiresAt: null,
         isActive: true,
         role: { key: "PARTICIPANT" },
       },
@@ -128,8 +132,10 @@ const missingRolesSupabaseUser = buildAuthSessionFromHubUser(
     email: "missing-roles@example.test",
     fullName: "Missing Roles",
     id: "hub-user-id",
+    organization: { status: OrganizationStatus.ACTIVE },
     roleAssignments: [
       {
+        expiresAt: null,
         isActive: false,
         role: { key: "PARTICIPANT" },
       },

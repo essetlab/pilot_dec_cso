@@ -149,44 +149,64 @@ enum AuditActionType {
   REFERENCE_DATA_UPDATED
   LOGIN
   LOGOUT
+  COURSE_INVITATION_CREATED
+  COURSE_INVITATION_SENT
+  COURSE_INVITATION_RESENT
+  COURSE_INVITATION_CANCELLED
+  COURSE_INVITATION_ACTIVATED
+  COURSE_INVITATION_EXPIRED
+  COURSE_INVITATION_FAILED
+}
+
+enum CourseInvitationStatus {
+  DRAFT
+  PENDING
+  SENT
+  ACTIVATED
+  EXPIRED
+  CANCELLED
+  FAILED
 }
 
 model User {
-  id                           String               @id @default(cuid())
+  id                           String                 @id @default(cuid())
   fullName                     String
-  email                        String               @unique
+  email                        String                 @unique
   passwordHash                 String?
-  authProviderId               String?              @unique
-  authProvider                 String               @default("local")
-  status                       UserStatus           @default(ACTIVE)
+  authProviderId               String?                @unique
+  authProvider                 String                 @default("local")
+  status                       UserStatus             @default(ACTIVE)
   phone                        String?
   jobTitle                     String?
   department                   String?
   preferredLanguage            String?
   region                       String?
   profilePhotoUrl              String?
+  selfReportedOrganizationName String?
   organizationId               String?
   primaryCohortId              String?
-  createdAt                    DateTime             @default(now())
-  updatedAt                    DateTime             @updatedAt
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
   lastLoginAt                  DateTime?
-  organization                 Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  primaryCohort                Cohort?              @relation(fields: [primaryCohortId], references: [id], onDelete: SetNull)
-  roleAssignments              UserRoleAssignment[] @relation("UserRoleAssignments")
-  rolesAssigned                UserRoleAssignment[] @relation("RoleAssignedBy")
-  createdCourses               Course[]             @relation("CourseCreatedBy")
-  assignedCourses              Course[]             @relation("CourseAssignedCreator")
-  createdCourseVersions        CourseVersion[]      @relation("CourseVersionCreatedBy")
-  publishedCourseVersions      CourseVersion[]      @relation("CourseVersionPublishedBy")
-  uploadedResources            Resource[]           @relation("ResourceUploadedBy")
-  assignedCourseAssignments    CourseAssignment[]   @relation("CourseAssignmentAssignedBy")
-  targetedCourseAssignments    CourseAssignment[]   @relation("CourseAssignmentTargetUser")
+  organization                 Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  primaryCohort                Cohort?                @relation(fields: [primaryCohortId], references: [id], onDelete: SetNull)
+  roleAssignments              UserRoleAssignment[]   @relation("UserRoleAssignments")
+  rolesAssigned                UserRoleAssignment[]   @relation("RoleAssignedBy")
+  createdCourses               Course[]               @relation("CourseCreatedBy")
+  assignedCourses              Course[]               @relation("CourseAssignedCreator")
+  createdCourseVersions        CourseVersion[]        @relation("CourseVersionCreatedBy")
+  publishedCourseVersions      CourseVersion[]        @relation("CourseVersionPublishedBy")
+  uploadedResources            Resource[]             @relation("ResourceUploadedBy")
+  assignedCourseAssignments    CourseAssignment[]     @relation("CourseAssignmentAssignedBy")
+  targetedCourseAssignments    CourseAssignment[]     @relation("CourseAssignmentTargetUser")
   enrollments                  Enrollment[]
   quizAttempts                 QuizAttempt[]
   certificates                 Certificate[]
   feedback                     Feedback[]
-  auditLogs                    AuditLog[]           @relation("AuditLogActor")
+  auditLogs                    AuditLog[]             @relation("AuditLogActor")
   invitationsSent              OnboardingInvitation[] @relation("InvitationCreatedBy")
+  courseInvitationsIssued      CourseInvitation[]     @relation("CourseInvitationInvitedBy")
+  courseInvitationsActivated   CourseInvitation[]     @relation("CourseInvitationActivatedUser")
 
   @@index([organizationId])
   @@index([primaryCohortId])
@@ -246,25 +266,26 @@ model UserRoleAssignment {
 }
 
 model Organization {
-  id                 String                       @id @default(cuid())
-  name               String                       @unique
-  status             OrganizationStatus           @default(ACTIVE)
+  id                 String                      @id @default(cuid())
+  name               String                      @unique
+  status             OrganizationStatus          @default(ACTIVE)
   shortName          String?
   region             String?
   zone               String?
   woreda             String?
   organizationTypeId String?
-  formalityStatus    OrganizationFormalityStatus  @default(UNKNOWN)
+  formalityStatus    OrganizationFormalityStatus @default(UNKNOWN)
   registrationNumber String?
   focalPersonName    String?
   focalPersonEmail   String?
   focalPersonPhone   String?
   notes              String?
-  createdAt          DateTime                     @default(now())
-  updatedAt          DateTime                     @updatedAt
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
   users              User[]
   cohortLinks        CohortOrganization[]
-  courseAssignments  CourseAssignment[]           @relation("CourseAssignmentTargetOrganization")
+  courseAssignments  CourseAssignment[]          @relation("CourseAssignmentTargetOrganization")
+  courseInvitations  CourseInvitation[]
 
   @@index([status])
   @@index([region])
@@ -285,6 +306,7 @@ model Cohort {
   users             User[]
   organizationLinks CohortOrganization[]
   courseAssignments CourseAssignment[]   @relation("CourseAssignmentTargetCohort")
+  courseInvitations CourseInvitation[]
 
   @@index([status])
   @@index([region])
@@ -408,6 +430,7 @@ model Course {
   quizAttempts                QuizAttempt[]
   certificates                Certificate[]
   feedback                    Feedback[]
+  courseInvitations           CourseInvitation[]
 
   @@index([status])
   @@index([visibility])
@@ -429,19 +452,19 @@ model CourseCapacityArea {
 }
 
 model LearningOutcome {
-  id            String                        @id @default(cuid())
-  courseId      String
-  statement     String
-  order         Int
-  moduleId      String?
-  lessonId      String?
+  id                    String                        @id @default(cuid())
+  courseId              String
+  statement             String
+  order                 Int
+  moduleId              String?
+  lessonId              String?
   alignmentMetadataJson Json?
-  createdAt     DateTime                      @default(now())
-  updatedAt     DateTime                      @updatedAt
-  course        Course                        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  module        Module?                       @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  lesson        Lesson?                       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-  quizQuestions QuizQuestionLearningOutcome[]
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  course                Course                        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module                Module?                       @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lesson                Lesson?                       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  quizQuestions         QuizQuestionLearningOutcome[]
 
   @@unique([courseId, order])
   @@index([moduleId])
@@ -449,26 +472,28 @@ model LearningOutcome {
 }
 
 model CourseVersion {
-  id            String       @id @default(cuid())
-  courseId      String
-  versionNumber Int
-  status        CourseStatus @default(DRAFT)
-  changeNotes   String?
-  createdById   String
-  publishedById String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  publishedAt   DateTime?
-  archivedAt    DateTime?
-  course        Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  createdBy     User         @relation("CourseVersionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  publishedBy   User?        @relation("CourseVersionPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
-  modules       Module[]
-  resources     Resource[]
-  quizzes       Quiz[]
-  enrollments   Enrollment[]
-  quizAttempts  QuizAttempt[]
-  certificates  Certificate[]
+  id                String             @id @default(cuid())
+  courseId          String
+  versionNumber     Int
+  status            CourseStatus       @default(DRAFT)
+  changeNotes       String?
+  createdById       String
+  publishedById     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  publishedAt       DateTime?
+  archivedAt        DateTime?
+  course            Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy         User               @relation("CourseVersionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  publishedBy       User?              @relation("CourseVersionPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  modules           Module[]
+  resources         Resource[]
+  quizzes           Quiz[]
+  enrollments       Enrollment[]
+  quizAttempts      QuizAttempt[]
+  certificates      Certificate[]
+  courseInvitations CourseInvitation[]
+  courseAssignments CourseAssignment[]
 
   @@unique([courseId, versionNumber])
   @@index([status])
@@ -493,18 +518,18 @@ model Module {
 }
 
 model Lesson {
-  id                       String                 @id @default(cuid())
+  id                       String            @id @default(cuid())
   moduleId                 String
   title                    String
   description              String?
   order                    Int
   estimatedDurationMinutes Int?
-  completionRequired       Boolean                @default(true)
+  completionRequired       Boolean           @default(true)
   completionRule           String?
   alignmentMetadataJson    Json?
-  createdAt                DateTime               @default(now())
-  updatedAt                DateTime               @updatedAt
-  module                   Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  module                   Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   contentBlocks            ContentBlock[]
   lessonProgress           LessonProgress[]
   learningOutcomes         LearningOutcome[]
@@ -648,6 +673,7 @@ model QuizAttempt {
 model CourseAssignment {
   id                   String        @id @default(cuid())
   courseId             String
+  courseVersionId      String?
   assignedById         String
   assignedAt           DateTime      @default(now())
   assignmentType       String
@@ -657,12 +683,16 @@ model CourseAssignment {
   dueDate              DateTime?
   isActive             Boolean       @default(true)
   course               Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseVersion        CourseVersion? @relation(fields: [courseVersionId], references: [id], onDelete: Restrict)
   assignedBy           User          @relation("CourseAssignmentAssignedBy", fields: [assignedById], references: [id], onDelete: Restrict)
   targetUser           User?         @relation("CourseAssignmentTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
   targetCohort         Cohort?       @relation("CourseAssignmentTargetCohort", fields: [targetCohortId], references: [id], onDelete: Cascade)
   targetOrganization   Organization? @relation("CourseAssignmentTargetOrganization", fields: [targetOrganizationId], references: [id], onDelete: Cascade)
+  activatedInvitations CourseInvitation[]
 
+  @@unique([courseId, targetUserId])
   @@index([courseId])
+  @@index([courseVersionId])
   @@index([assignedById])
   @@index([targetUserId])
   @@index([targetCohortId])
@@ -671,24 +701,24 @@ model CourseAssignment {
 }
 
 model Enrollment {
-  id              String             @id @default(cuid())
+  id              String           @id @default(cuid())
   userId          String
   courseId        String
   courseVersionId String
-  status          EnrollmentStatus   @default(NOT_STARTED)
-  progressPercent Int                @default(0)
-  enrolledAt      DateTime           @default(now())
+  status          EnrollmentStatus @default(NOT_STARTED)
+  progressPercent Int              @default(0)
+  enrolledAt      DateTime         @default(now())
   startedAt       DateTime?
   completedAt     DateTime?
   lastAccessedAt  DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course          Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseVersion   CourseVersion      @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseVersion   CourseVersion    @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
   lessonProgress  LessonProgress[]
   certificates    Certificate[]
-  feedback         Feedback[]
+  feedback        Feedback[]
 
   @@unique([userId, courseVersionId])
   @@index([courseId])
@@ -763,29 +793,29 @@ model CertificateTemplate {
 }
 
 model Feedback {
-  id                 String       @id @default(cuid())
-  type               FeedbackType @default(COURSE_FEEDBACK)
-  userId             String
-  courseId           String?
-  enrollmentId       String?
-  lessonId           String?
-  rating             Int?
-  usefulnessRating   Int?
-  easeOfUseRating    Int?
-  clarityRating      Int?
-  certificateProcessRating Int?
-  accessibilityIssue Boolean      @default(false)
-  mostUseful         String?
-  improvementSuggestion String?
-  technicalIssue     String?
-  consentToUseAnonymizedFeedback Boolean @default(false)
-  comment            String?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course             Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  enrollment         Enrollment?  @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
-  lesson             Lesson?      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id                             String       @id @default(cuid())
+  type                           FeedbackType @default(COURSE_FEEDBACK)
+  userId                         String
+  courseId                       String?
+  enrollmentId                   String?
+  lessonId                       String?
+  rating                         Int?
+  usefulnessRating               Int?
+  easeOfUseRating                Int?
+  clarityRating                  Int?
+  certificateProcessRating       Int?
+  accessibilityIssue             Boolean      @default(false)
+  mostUseful                     String?
+  improvementSuggestion          String?
+  technicalIssue                 String?
+  consentToUseAnonymizedFeedback Boolean      @default(false)
+  comment                        String?
+  createdAt                      DateTime     @default(now())
+  updatedAt                      DateTime     @updatedAt
+  user                           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course                         Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollment                     Enrollment?  @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+  lesson                         Lesson?      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@index([type])
   @@index([userId])
@@ -811,6 +841,49 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model CourseInvitation {
+  id                    String                 @id @default(cuid())
+  invitedEmail          String
+  invitedName           String
+  invitedRoleOrPosition String?
+  organizationId        String
+  courseId              String
+  courseVersionId       String?
+  cohortId              String?
+  tokenHash             String                 @unique
+  activationCodeHash    String?                @unique
+  status                CourseInvitationStatus @default(DRAFT)
+  expiresAt             DateTime
+  invitedByUserId       String
+  activatedUserId       String?
+  courseAssignmentId    String?
+  sentAt                DateTime?
+  activatedAt           DateTime?
+  cancelledAt           DateTime?
+  expiredAt             DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  course                Course                 @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  courseVersion         CourseVersion?         @relation(fields: [courseVersionId], references: [id], onDelete: Restrict)
+  cohort                Cohort?                @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  invitedBy             User                   @relation("CourseInvitationInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Restrict)
+  activatedUser         User?                  @relation("CourseInvitationActivatedUser", fields: [activatedUserId], references: [id], onDelete: SetNull)
+  courseAssignment      CourseAssignment?      @relation(fields: [courseAssignmentId], references: [id], onDelete: Restrict)
+
+  @@index([invitedEmail])
+  @@index([organizationId])
+  @@index([courseId])
+  @@index([courseVersionId])
+  @@index([cohortId])
+  @@index([invitedByUserId])
+  @@index([activatedUserId])
+  @@index([courseAssignmentId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([invitedEmail, courseId, status])
+}
+
 model ReferenceDataItem {
   id          String   @id @default(cuid())
   category    String
@@ -828,17 +901,17 @@ model ReferenceDataItem {
 }
 
 model OnboardingInvitation {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  role        RoleKey
-  tokenHash   String    @unique
-  expiresAt   DateTime
+  id              String    @id @default(cuid())
+  email           String    @unique
+  role            RoleKey
+  tokenHash       String    @unique
+  expiresAt       DateTime
   invitedByUserId String
-  usedAt      DateTime?
-  attemptCount Int      @default(0)
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
-  invitedBy   User      @relation("InvitationCreatedBy", fields: [invitedByUserId], references: [id], onDelete: Restrict)
+  usedAt          DateTime?
+  attemptCount    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+  invitedBy       User      @relation("InvitationCreatedBy", fields: [invitedByUserId], references: [id], onDelete: Restrict)
 
   @@index([tokenHash])
   @@index([email])

@@ -2,6 +2,12 @@ export type CourseTone = "blue" | "green" | "gold" | "navy";
 
 export type CatalogueAvailability = "available" | "coming_soon";
 
+export type CatalogueAccessState =
+  | "available_open"
+  | "invitation_required"
+  | "assigned"
+  | "coming_soon";
+
 export type CatalogueIntegrationStatus =
   | "integrated"
   | "integration_pending"
@@ -19,6 +25,7 @@ export type CatalogueCapacityArea = {
 };
 
 export type PublicCatalogueCourseSummary = {
+  accessState: CatalogueAccessState;
   availability: CatalogueAvailability;
   capacityAreas: CatalogueCapacityArea[];
   certificateLabel: string;

@@ -13,6 +13,7 @@ import {
 } from "./demo-data";
 import { cleanPresentationText } from "./presentation-text";
 import { prisma } from "./prisma";
+import { hasLearnerCourseEntitlement } from "./course-entitlement";
 
 export type CertificateRecordStatus = "Issued" | "Locked";
 
@@ -142,6 +143,8 @@ async function getSessionUser(session: AuthSession | null) {
       email: true,
       fullName: true,
       id: true,
+      organizationId: true,
+      primaryCohortId: true,
       organization: {
         select: {
           name: true,
@@ -245,15 +248,17 @@ export async function getLearnerCertificateListData(
     };
   }
 
-  const [certificates, eligibleCourses, inProgressEnrollments] = await Promise.all([
+  const [certificateRecords, eligibleCourseRecords, inProgressEnrollmentRecords] = await Promise.all([
     prisma.certificate.findMany({
       orderBy: { issuedAt: "desc" },
       select: {
         certificateCode: true,
         course: {
           select: {
+            id: true,
             slug: true,
             title: true,
+            visibility: true,
           },
         },
         courseTitleSnapshot: true,
@@ -266,7 +271,8 @@ export async function getLearnerCertificateListData(
         userId: user.id,
       },
     }),
-    prisma.course.count({
+    prisma.course.findMany({
+      select: { id: true, slug: true, visibility: true },
       where: {
         archivedAt: null,
         certificateEligible: true,
@@ -276,13 +282,37 @@ export async function getLearnerCertificateListData(
         },
       },
     }),
-    prisma.enrollment.count({
+    prisma.enrollment.findMany({
+      select: {
+        course: { select: { id: true, slug: true, visibility: true } },
+      },
       where: {
         status: EnrollmentStatus.IN_PROGRESS,
         userId: user.id,
       },
     }),
   ]);
+
+  const canAccess = (course: { id: string; slug: string; visibility: CourseVisibility }) =>
+    hasLearnerCourseEntitlement({
+      courseId: course.id,
+      courseSlug: course.slug,
+      organizationId: user.organizationId,
+      primaryCohortId: user.primaryCohortId,
+      userId: user.id,
+      visibility: course.visibility,
+    });
+  const certificates = (
+    await Promise.all(
+      certificateRecords.map(async (certificate) =>
+        (await canAccess(certificate.course)) ? certificate : null,
+      ),
+    )
+  ).filter((certificate): certificate is NonNullable<typeof certificate> => Boolean(certificate));
+  const eligibleCourses = (await Promise.all(eligibleCourseRecords.map(canAccess))).filter(Boolean).length;
+  const inProgressEnrollments = (
+    await Promise.all(inProgressEnrollmentRecords.map((enrollment) => canAccess(enrollment.course)))
+  ).filter(Boolean).length;
 
   return {
     certificates: certificates.map((certificate) => ({
@@ -321,8 +351,10 @@ export async function getLearnerCertificateDetailData(
       completionDate: true,
       course: {
         select: {
+          id: true,
           slug: true,
           title: true,
+          visibility: true,
         },
       },
       courseTitleSnapshot: true,
@@ -342,13 +374,25 @@ export async function getLearnerCertificateDetailData(
   });
 
   if (issuedCertificate) {
+    if (!(await hasLearnerCourseEntitlement({
+      courseId: issuedCertificate.course.id,
+      courseSlug: issuedCertificate.course.slug,
+      organizationId: user.organizationId,
+      primaryCohortId: user.primaryCohortId,
+      userId: user.id,
+      visibility: issuedCertificate.course.visibility,
+    }))) {
+      return null;
+    }
     return mapIssuedCertificate(issuedCertificate);
   }
 
   const lockedCourse = await prisma.course.findFirst({
     select: {
+      id: true,
       slug: true,
       title: true,
+      visibility: true,
     },
     where: {
       archivedAt: null,
@@ -361,7 +405,14 @@ export async function getLearnerCertificateDetailData(
     },
   });
 
-  if (!lockedCourse) {
+  if (!lockedCourse || !(await hasLearnerCourseEntitlement({
+    courseId: lockedCourse.id,
+    courseSlug: lockedCourse.slug,
+    organizationId: user.organizationId,
+    primaryCohortId: user.primaryCohortId,
+    userId: user.id,
+    visibility: lockedCourse.visibility,
+  }))) {
     return null;
   }
 
@@ -398,7 +449,10 @@ export async function getLearnerCertificatePdfData(
       completionDate: true,
       course: {
         select: {
+          id: true,
+          slug: true,
           title: true,
+          visibility: true,
         },
       },
       courseTitleSnapshot: true,
@@ -418,6 +472,17 @@ export async function getLearnerCertificatePdfData(
   });
 
   if (!certificate) {
+    return null;
+  }
+
+  if (!(await hasLearnerCourseEntitlement({
+    courseId: certificate.course.id,
+    courseSlug: certificate.course.slug,
+    organizationId: user.organizationId,
+    primaryCohortId: user.primaryCohortId,
+    userId: user.id,
+    visibility: certificate.course.visibility,
+  }))) {
     return null;
   }
 
