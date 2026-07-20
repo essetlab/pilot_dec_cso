@@ -34,10 +34,20 @@ assert.doesNotMatch(resetAction, /prisma|courseAssignment|enrollment|lessonProgr
 const forgotAction = await source("src/app/(auth)/forgot-password/actions.ts");
 assert.match(forgotAction, /resetPasswordForEmail/);
 assert.match(forgotAction, /auth\/callback\?next=\/reset-password/);
+assert.match(forgotAction, /resolvePublicAuthOrigin/);
 assert.match(forgotAction, /notice=sent/);
 
 const registrationWorkflow = await source("src/lib/open-registration-workflow.ts");
 assert.equal((registrationWorkflow.match(/\.auth\.signUp\(/g) ?? []).length, 1);
+assert.match(registrationWorkflow, /authOrigin/);
+
+const registrationAction = await source("src/app/(auth)/register/actions.ts");
+assert.match(registrationAction, /resolvePublicAuthOrigin/);
+
+const authOrigin = await source("src/lib/auth/public-auth-origin.ts");
+assert.match(authOrigin, /VERCEL_URL/);
+assert.match(authOrigin, /VERCEL_BRANCH_URL/);
+assert.match(authOrigin, /allowedOrigins\.has\(requestOrigin\)/);
 
 const registerPage = await source("src/app/(auth)/register/page.tsx");
 assert.match(registerPage, /AuthSubmitButton/);

@@ -84,6 +84,7 @@ async function registerAuthIdentity(
   email: string,
   password: string,
   supabaseClient?: SupabaseClient,
+  authOrigin = getPublicAppUrl(),
 ): Promise<AuthRegistrationResult> {
   if (!readSupabasePublicConfig()) {
     return { provider: "local" };
@@ -101,7 +102,7 @@ async function registerAuthIdentity(
     email,
     password,
     options: {
-      emailRedirectTo: `${getPublicAppUrl()}/auth/callback?next=/sign-in?notice=email-confirmed`,
+      emailRedirectTo: `${authOrigin}/auth/callback?next=/sign-in?notice=email-confirmed`,
     },
   });
 
@@ -227,6 +228,7 @@ async function createOpenRegistrationProfile(input: {
 export async function registerOpenLearner(
   input: OpenRegistrationInput,
   supabaseClient?: SupabaseClient,
+  authOrigin?: string,
 ): Promise<OpenRegistrationResult> {
   const email = normalizeOpenRegistrationEmail(input.email);
   const fullName = normalizeText(input.fullName);
@@ -270,7 +272,12 @@ export async function registerOpenLearner(
     return { code: "registration-not-completed", success: false };
   }
 
-  const authRegistration = await registerAuthIdentity(email, input.password, supabaseClient);
+  const authRegistration = await registerAuthIdentity(
+    email,
+    input.password,
+    supabaseClient,
+    authOrigin,
+  );
   if ("success" in authRegistration && !authRegistration.success) {
     return { code: authRegistration.code, success: false };
   }

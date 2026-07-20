@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { resolvePublicAuthOrigin } from "@/lib/auth/public-auth-origin";
 import { isRateLimited } from "@/lib/auth/rate-limit";
 import { registerOpenLearner } from "@/lib/open-registration-workflow";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
@@ -28,6 +29,7 @@ export async function registerOpenLearnerAction(formData: FormData) {
   const supabaseClient = readSupabasePublicConfig()
     ? await createSupabaseServerClient()
     : undefined;
+  const authOrigin = await resolvePublicAuthOrigin();
   const result = await registerOpenLearner({
     confirmPassword: formText(formData, "confirmPassword"),
     consentAccepted: formData.get("consentAccepted") === "on",
@@ -37,7 +39,7 @@ export async function registerOpenLearnerAction(formData: FormData) {
     organizationName: formText(formData, "organization"),
     password: formText(formData, "password"),
     region: formText(formData, "region"),
-  }, supabaseClient);
+  }, supabaseClient, authOrigin);
 
   if (!result.success) {
     const params = new URLSearchParams({ error: result.code });
