@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ActionButton, AlertMessage } from "@/components/ui";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { AlertMessage } from "@/components/ui";
 import { requestPasswordResetAction } from "./actions";
 
 type PageProps = {
@@ -49,7 +50,7 @@ export default async function ForgotPasswordPage({ searchParams }: PageProps) {
             type="email"
           />
         </label>
-        <ActionButton type="submit">Send reset link</ActionButton>
+        <AuthSubmitButton>Send reset link</AuthSubmitButton>
       </form>
 
       <p className="mt-6 text-sm text-muted-text">

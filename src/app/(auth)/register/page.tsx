@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { BrandMark } from "@/components/shell/BrandMark";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
 import { registerOpenLearnerAction } from "./actions";
@@ -171,9 +172,9 @@ function RegisterForm({ error, next }: { error?: string; next?: string }) {
         </label>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <ActionButton type="submit" size="lg">
+          <AuthSubmitButton>
             Create account
-          </ActionButton>
+          </AuthSubmitButton>
           <ActionButton href="/sign-in" size="lg" variant="secondary">
             Back to sign in
           </ActionButton>

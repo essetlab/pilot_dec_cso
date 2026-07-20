@@ -1,6 +1,7 @@
 "use client";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabasePublicConfig } from "./config";
 
 let browserClient: SupabaseClient | null = null;
@@ -8,9 +9,9 @@ let browserClient: SupabaseClient | null = null;
 export function createSupabaseBrowserClient() {
   const config = getSupabasePublicConfig();
 
-  // Browser-safe: this client uses only public/publishable Supabase values.
-  // Never import or pass the service_role key here.
-  return createClient(config.url, config.publishableKey);
+  // Browser-safe: the SSR browser client stores PKCE verifiers and sessions in
+  // cookies shared with the server callback. Never pass the service_role key.
+  return createBrowserClient(config.url, config.publishableKey);
 }
 
 export function getSupabaseBrowserClient() {

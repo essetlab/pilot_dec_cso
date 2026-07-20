@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   if (!code) {
     const fallback = next.startsWith("/reset-password")
-      ? "/reset-password?error=invalid-link"
+      ? "/reset-password?recovery=fragment"
       : "/sign-in?error=confirmation-required";
     return NextResponse.redirect(new URL(fallback, request.url));
   }
