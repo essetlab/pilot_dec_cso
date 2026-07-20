@@ -8,6 +8,7 @@ import {
 } from "../generated/prisma/enums";
 import type { Prisma } from "../generated/prisma/client";
 import type { AuthSession } from "./auth/session-codec";
+import { isControlledRegion } from "./controlled-options";
 import {
   createManagedCourseInvitation,
   prepareManagedCourseInvitationResend,
@@ -100,7 +101,7 @@ export async function getAdminCourseInvitationOptions(session: AuthSession | nul
   const [organizations, courses, cohorts] = await Promise.all([
     prisma.organization.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, region: true },
       where: { status: OrganizationStatus.ACTIVE },
     }),
     prisma.course.findMany({
@@ -315,11 +316,27 @@ export async function createAdminCourseInvitation(input: {
   invitedName: string;
   invitedRoleOrPosition?: string | null;
   organizationId: string;
+  region?: string;
   session: AuthSession | null;
 }): Promise<CourseInvitationDeliveryResult> {
   const origin = getTrustedCourseInvitationOrigin();
   if (!origin) {
     return { code: "missing-app-origin", success: false };
+  }
+
+  await requireInvitationManager(input.session);
+  const organization = await prisma.organization.findFirst({
+    select: { region: true },
+    where: { id: input.organizationId, status: OrganizationStatus.ACTIVE },
+  });
+  if (!organization) {
+    return { code: "unknown-organization", success: false };
+  }
+  const expectedRegion = organization.region && isControlledRegion(organization.region)
+    ? organization.region
+    : "Other / not listed";
+  if (input.region !== undefined && (!isControlledRegion(input.region) || input.region !== expectedRegion)) {
+    return { code: "invalid-region", success: false };
   }
 
   const result = await createManagedCourseInvitation(input);

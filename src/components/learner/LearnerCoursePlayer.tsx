@@ -335,6 +335,12 @@ function splitParagraphs(value: string) {
     .filter(Boolean);
 }
 
+function personalizeLearnerText(value: string, course: LearnerCourseDetail) {
+  return value
+    .replaceAll("{{learnerName}}", course.learnerName?.trim() || "Learner")
+    .replaceAll("{{learnerEmail}}", course.learnerEmail?.trim() || "your account email");
+}
+
 /**
  * Converts a YouTube or Vimeo watch URL into an embeddable URL.
  * Handles:
@@ -765,36 +771,38 @@ function LessonBlock({
 
 function LearnerTextContentBlock({
   block,
+  course,
   templateId,
 }: {
   block: LearnerContentBlock;
+  course: LearnerCourseDetail;
   templateId: string;
 }) {
   const chrome = getTemplateChrome(templateId);
   const heading = getConfigStringAny(block, ["heading", "blockTitle", "title"]);
-  const body = getConfigStringAny(block, ["body", "content", "text"]);
-  const highlightedNote = getConfigStringAny(block, [
+  const body = personalizeLearnerText(getConfigStringAny(block, ["body", "content", "text"]), course);
+  const highlightedNote = personalizeLearnerText(getConfigStringAny(block, [
     "highlightedNote",
     "note",
     "highlight",
-  ]);
-  const pullQuote = getConfigStringAny(block, ["pullQuote", "quote", "statement"]);
+  ]), course);
+  const pullQuote = personalizeLearnerText(getConfigStringAny(block, ["pullQuote", "quote", "statement"]), course);
   const bulletItems = getConfigArrayAny(block, ["bullets", "bulletItems", "items"])
-    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .map((item) => (typeof item === "string" ? personalizeLearnerText(item.trim(), course) : ""))
     .filter(Boolean);
   const stepItems = getConfigArrayAny(block, ["steps", "numberedSteps"])
     .map((item) => {
       if (typeof item === "string") {
-        return item.trim();
+        return personalizeLearnerText(item.trim(), course);
       }
 
       if (item && typeof item === "object") {
-        return getRecordString(item as Record<string, unknown>, [
+        return personalizeLearnerText(getRecordString(item as Record<string, unknown>, [
           "label",
           "title",
           "body",
           "text",
-        ]);
+        ]), course);
       }
 
       return "";
@@ -1733,10 +1741,12 @@ function LearnerSafeFallbackContentBlock({ block }: { block: LearnerContentBlock
 
 function LearnerConfiguredContentBlock({
   block,
+  course,
   siblingBlocks = [],
   templateId,
 }: {
   block: LearnerContentBlock;
+  course: LearnerCourseDetail;
   siblingBlocks?: LearnerContentBlock[];
   templateId: string;
 }) {
@@ -1744,7 +1754,7 @@ function LearnerConfiguredContentBlock({
   const blockType = normalizeLearnerBlockType(block.type);
 
   if (blockType === "TEXT") {
-    rendered = <LearnerTextContentBlock block={block} templateId={templateId} />;
+    rendered = <LearnerTextContentBlock block={block} course={course} templateId={templateId} />;
   } else if (blockType === "KEY_MESSAGE") {
     rendered = <LearnerKeyMessageContentBlock block={block} />;
   } else if (blockType === "CASE_STUDY") {
@@ -1867,7 +1877,9 @@ function LessonContent({
   const prevLessonHref = prevLesson ? `${baseHref}?lessonId=${prevLesson.id}` : undefined;
   const nextLessonHref = nextLesson
     ? `${baseHref}?lessonId=${nextLesson.id}`
-    : finalTestHref;
+    : course.finalTestQuestions.length > 0
+      ? finalTestHref
+      : "/learn";
 
   // Map lesson status to appropriate badge tone
   const currentStatus = displayedLesson?.status ?? "Next";
@@ -1959,6 +1971,7 @@ function LessonContent({
               </div>
               <LearnerConfiguredContentBlock
                 block={block}
+                course={course}
                 siblingBlocks={displayedLesson?.blocks}
                 templateId={course.template.templateId}
               />
@@ -2066,15 +2079,19 @@ export function LearnerCoursePlayer({
                   Submit Feedback
                 </ActionButton>
               )}
-              <ActionButton href={resolvedFinalTestHref} variant="secondary">
-                {course.certificateStatus === "Issued" ? "View Final Test Results" : "View Final Test"}
-              </ActionButton>
+              {course.finalTestQuestions.length > 0 ? (
+                <ActionButton href={resolvedFinalTestHref} variant="secondary">
+                  {course.certificateStatus === "Issued" ? "View Final Test Results" : "View Final Test"}
+                </ActionButton>
+              ) : null}
             </div>
           }
           description={
             course.certificateStatus === "Issued"
               ? "You have completed this course and earned your certificate! Please take a moment to submit course feedback."
-              : "The final test appears at the end of the required lessons."
+              : course.finalTestQuestions.length > 0
+                ? "The final test appears at the end of the required lessons."
+                : "Complete the required lesson pages to save your course progress. This orientation has no final test or certificate."
           }
           title="Course completion path"
         />

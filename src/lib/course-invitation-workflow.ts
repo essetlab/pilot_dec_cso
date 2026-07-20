@@ -119,12 +119,14 @@ export type CourseInvitationResolution =
   | {
       context: {
         cohortId: string | null;
+        cohortName: string | null;
         course: {
           id: string;
           slug: string;
           title: string;
         };
         courseVersionId: string | null;
+        courseVersionNumber: number | null;
         expiresAt: Date;
         id: string;
         invitedEmail: string;
@@ -133,6 +135,7 @@ export type CourseInvitationResolution =
         organization: {
           id: string;
           name: string;
+          region: string | null;
         };
       };
       success: true;
@@ -463,6 +466,8 @@ async function createCourseInvitation(
     const invitation = await prisma.$transaction(
       async (tx) => {
         const actor = await resolveAuthorizedAdministrator(tx as typeof prisma, input.session);
+        const invitationScopeLock = `course-invitation:${courseId}:${invitedEmail}`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${invitationScopeLock}))`;
         const organization = await tx.organization.findUnique({
           select: { id: true, status: true },
           where: { id: organizationId },
@@ -859,8 +864,10 @@ export async function resolveCourseInvitationToken(
 
   const invitation = await prisma.courseInvitation.findUnique({
     include: {
+      cohort: { select: { name: true } },
       course: { select: { id: true, slug: true, title: true } },
-      organization: { select: { id: true, name: true } },
+      courseVersion: { select: { versionNumber: true } },
+      organization: { select: { id: true, name: true, region: true } },
     },
     where: { tokenHash: hashCourseInvitationToken(token) },
   });
@@ -883,8 +890,10 @@ export async function resolveCourseInvitationToken(
   return {
     context: {
       cohortId: invitation.cohortId,
+      cohortName: invitation.cohort?.name ?? null,
       course: invitation.course,
       courseVersionId: invitation.courseVersionId,
+      courseVersionNumber: invitation.courseVersion?.versionNumber ?? null,
       expiresAt: invitation.expiresAt,
       id: invitation.id,
       invitedEmail: invitation.invitedEmail,

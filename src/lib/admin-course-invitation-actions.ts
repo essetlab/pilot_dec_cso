@@ -8,6 +8,7 @@ import {
 } from "./admin-course-invitation-workflow";
 import { getCurrentSession } from "./auth/server";
 import { isRateLimited } from "./auth/rate-limit";
+import { resolveControlledLearnerRole } from "./controlled-options";
 import {
   cancelCourseInvitation,
   markManagedCourseInvitationSent,
@@ -31,7 +32,7 @@ const errorMessages: Record<string, string> = {
   "conflicting-assignment":
     "This learner has a conflicting assignment for the selected course. Review their existing access first.",
   "conflicting-organization":
-    "This learner is linked to a different approved organization. No invitation was created.",
+    "This learner is linked to a different organization. No invitation was created.",
   "duplicate-active-invitation":
     "An active invitation already exists for this learner and course. Open that invitation to resend or cancel it.",
   "elevated-user":
@@ -45,10 +46,12 @@ const errorMessages: Record<string, string> = {
   "invalid-email": "Enter a valid learner email address.",
   "invalid-expiry": "Choose a valid invitation expiry period.",
   "invalid-input": "Complete all required invitation fields.",
+  "invalid-region": "Choose the region that matches the selected CSO.",
+  "invalid-role": "Choose a listed role or function and describe it if you select Other.",
   "invalid-transition": "This invitation action is no longer available.",
-  "invalid-version-state": "The selected course version is no longer published and approved.",
+  "invalid-version-state": "The selected course version is no longer published and available.",
   "missing-app-origin":
-    "The approved application URL is not configured. No invitation link was generated.",
+    "The application URL is not configured. No invitation link was generated.",
   "not-found": "The invitation could not be found.",
   "rate-limited": "Too many invitation operations were requested. Wait briefly and try again.",
   "unauthorized": "You are not authorized to manage course invitations.",
@@ -101,6 +104,13 @@ export async function createCourseInvitationAction(
   if (session?.userId && isRateLimited(`course-invitation-create:${session.userId}`, 20, 10 * 60 * 1000)) {
     return failure("rate-limited");
   }
+  const roleSelection = formText(formData, "invitedRoleOrPosition");
+  const invitedRoleOrPosition = roleSelection
+    ? resolveControlledLearnerRole(roleSelection, formText(formData, "invitedRoleOther"))
+    : null;
+  if (roleSelection && !invitedRoleOrPosition) {
+    return failure("invalid-role");
+  }
   const result = await createAdminCourseInvitation({
     cohortId: formText(formData, "cohortId") || null,
     courseId: formText(formData, "courseId"),
@@ -108,8 +118,9 @@ export async function createCourseInvitationAction(
     expiresAt,
     invitedEmail: formText(formData, "invitedEmail"),
     invitedName: formText(formData, "invitedName"),
-    invitedRoleOrPosition: formText(formData, "invitedRoleOrPosition") || null,
+    invitedRoleOrPosition,
     organizationId: formText(formData, "organizationId"),
+    region: formText(formData, "region"),
     session,
   });
   if (!result.success) {

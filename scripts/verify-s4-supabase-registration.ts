@@ -47,10 +47,11 @@ try {
     consentAccepted: true,
     email: `  ${email.toUpperCase()}  `,
     fullName: "  Fictional Open Learner  ",
-    jobTitle: "  Programme officer  ",
+    jobTitle: "Programme or project management",
     organizationName: `  ${selfReportedOrganizationName}  `,
     password: "StrongPass123",
-    region: "  Oromia  ",
+    preferredLanguage: "English",
+    region: "Oromia",
   });
   assert(result.success, "Expected arbitrary valid unused email registration to succeed.");
 
@@ -72,9 +73,10 @@ try {
     consentAccepted: true,
     email,
     fullName: "Fictional Open Learner",
-    jobTitle: "Programme officer",
+    jobTitle: "Programme or project management",
     organizationName: selfReportedOrganizationName,
     password: "StrongPass123",
+    preferredLanguage: "English",
     region: "Oromia",
   });
   assert.deepEqual(duplicate, { code: "registration-not-completed", success: false });
@@ -84,10 +86,12 @@ try {
     consentAccepted: false,
     email: "another-open-learner@example.test",
     fullName: "Another Learner",
-    jobTitle: "Coordinator",
+    jobTitle: "Other",
     organizationName: "Another CSO",
     password: "StrongPass123",
+    preferredLanguage: "English",
     region: "Somali",
+    roleOther: "Coordinator",
   });
   assert.deepEqual(noConsent, { code: "terms-required", success: false });
 

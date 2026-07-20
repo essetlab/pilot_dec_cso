@@ -16,6 +16,7 @@ const data = buildOpenRegistrationUserCreateData({
   email: "learner@example.org",
   fullName: "Fictional Learner",
   jobTitle: "Programme officer",
+  preferredLanguage: "English",
   region: "Amhara",
   selfReportedOrganizationName: "Self-reported CSO",
 });
@@ -40,7 +41,9 @@ assert.doesNotMatch(workflow, /organization\.(create|upsert|findFirst|findUnique
 assert.match(workflow, /registration-not-completed/);
 assert.match(workflow, /consentAcknowledged: true/);
 assert.match(page, /Create your CSO Learning Hub account/);
-assert.match(page, /does not automatically grant/);
+assert.match(page, /does not grant access/);
+assert.match(page, /Select your region/);
+assert.match(page, /Preferred language/);
 
 const migration = source(
   "prisma/migrations-postgres/20260720070000_open_registration_self_reported_organization/migration.sql",

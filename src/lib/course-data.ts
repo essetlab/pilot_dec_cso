@@ -1313,6 +1313,8 @@ export async function getLearnerCourseBySlug(
 
       return {
         ...learnerDetail,
+        learnerEmail: dbUser.email,
+        learnerName: dbUser.fullName ?? undefined,
         quizId,
         courseVersionId,
         retakeAllowed,
@@ -1326,7 +1328,11 @@ export async function getLearnerCourseBySlug(
         certificateIssuerName: certificate?.issuerNameSnapshot || "DEC / WHH CSF+ CSO Learning Hub",
         certificateCompletionDate: certificate?.completionDate?.toISOString(),
         finalTestQuestions:
-          questions.length > 0 ? questions : getDemoFinalTestQuestions(record.slug),
+          questions.length > 0
+            ? questions
+            : record.finalTestRequired
+              ? getDemoFinalTestQuestions(record.slug)
+              : [],
         modules: mappedModules,
         template: resolveLearnerTemplateSelection(record.analysisMetadataJson),
       };

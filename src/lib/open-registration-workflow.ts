@@ -1,6 +1,11 @@
 import { AuditActionType, RoleKey, UserStatus } from "../generated/prisma/enums";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hashPassword, validatePasswordPolicy } from "./auth/passwords";
+import {
+  isControlledRegion,
+  isSupportedLanguage,
+  resolveControlledLearnerRole,
+} from "./controlled-options";
 import { prisma } from "./prisma";
 import { readSupabasePublicConfig } from "./supabase/config";
 
@@ -14,7 +19,9 @@ export type OpenRegistrationInput = {
   jobTitle: string;
   organizationName: string;
   password: string;
+  preferredLanguage: string;
   region: string;
+  roleOther?: string;
 };
 
 export type OpenRegistrationResult =
@@ -28,6 +35,9 @@ export type OpenRegistrationResult =
   | {
       code:
         | "invalid-email"
+        | "invalid-language"
+        | "invalid-region"
+        | "invalid-role"
         | "missing-fields"
         | "password-mismatch"
         | "profile-link-failed"
@@ -142,6 +152,7 @@ export function buildOpenRegistrationUserCreateData(input: {
   fullName: string;
   jobTitle: string;
   passwordHash?: string | null;
+  preferredLanguage: string;
   region: string;
   selfReportedOrganizationName: string;
 }) {
@@ -154,6 +165,7 @@ export function buildOpenRegistrationUserCreateData(input: {
     jobTitle: input.jobTitle,
     organizationId: null,
     passwordHash: input.passwordHash ?? null,
+    preferredLanguage: input.preferredLanguage,
     region: input.region,
     selfReportedOrganizationName: input.selfReportedOrganizationName,
     status: UserStatus.ACTIVE,
@@ -167,6 +179,7 @@ async function createOpenRegistrationProfile(input: {
   fullName: string;
   jobTitle: string;
   passwordHash?: string | null;
+  preferredLanguage: string;
   region: string;
   selfReportedOrganizationName: string;
 }) {
@@ -233,14 +246,15 @@ export async function registerOpenLearner(
   const email = normalizeOpenRegistrationEmail(input.email);
   const fullName = normalizeText(input.fullName);
   const organizationName = normalizeText(input.organizationName);
-  const jobTitle = normalizeText(input.jobTitle);
+  const jobTitle = resolveControlledLearnerRole(input.jobTitle, input.roleOther);
+  const preferredLanguage = normalizeText(input.preferredLanguage);
   const region = normalizeText(input.region);
 
   if (
     !email ||
     !fullName ||
     !organizationName ||
-    !jobTitle ||
+    !preferredLanguage ||
     !region ||
     !input.password ||
     !input.confirmPassword
@@ -250,6 +264,18 @@ export async function registerOpenLearner(
 
   if (!EMAIL_PATTERN.test(email)) {
     return { code: "invalid-email", success: false };
+  }
+
+  if (!isControlledRegion(region)) {
+    return { code: "invalid-region", success: false };
+  }
+
+  if (!isSupportedLanguage(preferredLanguage)) {
+    return { code: "invalid-language", success: false };
+  }
+
+  if (!jobTitle) {
+    return { code: "invalid-role", success: false };
   }
 
   if (!input.consentAccepted) {
@@ -293,6 +319,7 @@ export async function registerOpenLearner(
       fullName,
       jobTitle,
       passwordHash: isSupabaseRegistration ? null : hashPassword(input.password),
+      preferredLanguage,
       region,
       selfReportedOrganizationName: organizationName,
     });

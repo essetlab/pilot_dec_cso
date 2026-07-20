@@ -2,6 +2,13 @@ import Link from "next/link";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { BrandMark } from "@/components/shell/BrandMark";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
+import {
+  ETHIOPIA_REGIONS,
+  LEARNER_ROLE_OPTIONS,
+  SUPPORTED_LANGUAGE_OPTIONS,
+  isControlledRegion,
+} from "@/lib/controlled-options";
+import { resolveCourseInvitationToken } from "@/lib/course-invitation-workflow";
 import { registerOpenLearnerAction } from "./actions";
 
 type PageProps = {
@@ -13,6 +20,9 @@ type PageProps = {
 
 const errorMessage: Record<string, string> = {
   "invalid-email": "Enter a valid email address.",
+  "invalid-language": "Choose a supported preferred language.",
+  "invalid-region": "Choose a region from the list.",
+  "invalid-role": "Choose a role or function from the list and describe it if you select Other.",
   "missing-fields": "Please complete all required fields.",
   "password-mismatch": "Passwords do not match.",
   "profile-link-failed":
@@ -35,15 +45,21 @@ const preparationSteps = [
 
 function TextInput({
   autoComplete,
+  defaultValue,
   label,
   name,
   placeholder,
+  readOnly = false,
+  required = true,
   type = "text",
 }: {
   autoComplete?: string;
+  defaultValue?: string;
   label: string;
   name: string;
   placeholder: string;
+  readOnly?: boolean;
+  required?: boolean;
   type?: "email" | "password" | "text";
 }) {
   return (
@@ -52,18 +68,39 @@ function TextInput({
       <input
         autoComplete={autoComplete}
         className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition placeholder:text-muted-text/70 focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+        defaultValue={defaultValue}
         id={name}
         maxLength={160}
         name={name}
         placeholder={placeholder}
-        required
+        readOnly={readOnly}
+        required={required}
         type={type}
       />
     </label>
   );
 }
 
-function RegisterForm({ error, next }: { error?: string; next?: string }) {
+type InvitationRegistrationContext = {
+  cohortName: string | null;
+  courseTitle: string;
+  courseVersionNumber: number | null;
+  email: string;
+  invitedName: string;
+  organizationName: string;
+  region: string;
+  role: string | null;
+};
+
+function RegisterForm({
+  error,
+  invitation,
+  next,
+}: {
+  error?: string;
+  invitation: InvitationRegistrationContext | null;
+  next?: string;
+}) {
   return (
     <section className="rounded-card border border-design-border bg-white-surface p-5 shadow-card sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -73,8 +110,9 @@ function RegisterForm({ error, next }: { error?: string; next?: string }) {
             Create your CSO Learning Hub account
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted-text">
-            Register with your email address, confirm your account, and explore
-            available learning opportunities.
+            {invitation
+              ? "Create your account with the invited email, then return to accept the exact course invitation."
+              : "Register with your email address, confirm your account, and explore available learning opportunities."}
           </p>
         </div>
         <StatusBadge label="Individual account" tone="green" />
@@ -96,15 +134,18 @@ function RegisterForm({ error, next }: { error?: string; next?: string }) {
         <input name="next" type="hidden" value={next ?? ""} />
         <TextInput
           autoComplete="name"
+          defaultValue={invitation?.invitedName}
           label="Full name"
           name="fullName"
           placeholder="Enter your full name"
         />
         <TextInput
           autoComplete="email"
+          defaultValue={invitation?.email}
           label="Email"
           name="email"
           placeholder="Enter your email address"
+          readOnly={Boolean(invitation)}
           type="email"
         />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -123,33 +164,67 @@ function RegisterForm({ error, next }: { error?: string; next?: string }) {
             type="password"
           />
         </div>
-        <div>
-          <TextInput
-            autoComplete="organization"
-            label="Organization name"
-            name="organization"
-            placeholder="Enter your CSO or organization name"
-          />
-          <p className="mt-2 text-sm leading-6 text-muted-text">
-            Enter the organization you currently work with or represent. This
-            information is part of your profile and does not automatically grant
-            access to invitation-only courses.
-          </p>
-        </div>
+        {invitation ? (
+          <section className="rounded-[20px] border border-dec-blue/20 bg-dec-blue/10 p-5">
+            <p className="text-sm font-semibold text-dec-blue">Invitation-controlled access</p>
+            <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+              <div><dt className="font-semibold text-dark-ink">Selected CSO</dt><dd className="mt-1 text-muted-text">{invitation.organizationName}</dd></div>
+              <div><dt className="font-semibold text-dark-ink">Region</dt><dd className="mt-1 text-muted-text">{invitation.region}</dd></div>
+              <div><dt className="font-semibold text-dark-ink">Course</dt><dd className="mt-1 text-muted-text">{invitation.courseTitle}</dd></div>
+              <div><dt className="font-semibold text-dark-ink">Version</dt><dd className="mt-1 text-muted-text">{invitation.courseVersionNumber ? `Version ${invitation.courseVersionNumber}` : "Invitation-selected version"}</dd></div>
+              {invitation.cohortName ? <div><dt className="font-semibold text-dark-ink">Cohort</dt><dd className="mt-1 text-muted-text">{invitation.cohortName}</dd></div> : null}
+            </dl>
+            <input name="organization" type="hidden" value={invitation.organizationName} />
+            <input name="region" type="hidden" value={invitation.region} />
+            {invitation.role ? <input name="jobTitle" type="hidden" value={invitation.role} /> : null}
+          </section>
+        ) : (
+          <div>
+            <TextInput
+              autoComplete="organization"
+              label="Organization name"
+              name="organization"
+              placeholder="Enter your CSO or organization name"
+            />
+            <p className="mt-2 text-sm leading-6 text-muted-text">
+              This profile information does not grant access to invitation-only courses.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextInput
-            autoComplete="organization-title"
-            label="Role or position"
-            name="jobTitle"
-            placeholder="Example: Programme officer"
-          />
-          <TextInput
-            autoComplete="address-level1"
-            label="Region or location"
-            name="region"
-            placeholder="Example: Amhara"
-          />
+          {!invitation?.role ? (
+            <label className="text-sm font-semibold text-dark-ink" htmlFor="jobTitle">
+              Role or function
+              <select className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm" id="jobTitle" name="jobTitle" required defaultValue="">
+                <option value="">Select your role or function</option>
+                {LEARNER_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+              </select>
+              <span className="mt-2 block font-normal leading-6 text-muted-text">Choose the closest match. Use Other only when necessary.</span>
+            </label>
+          ) : (
+            <div className="rounded-control border border-design-border bg-soft-bg p-4 text-sm"><p className="font-semibold text-dark-ink">Role or function</p><p className="mt-1 text-muted-text">{invitation.role}</p></div>
+          )}
+          {!invitation ? (
+            <label className="text-sm font-semibold text-dark-ink" htmlFor="region">
+              Region
+              <select className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm" id="region" name="region" required defaultValue="">
+                <option value="">Select your region</option>
+                {ETHIOPIA_REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}
+              </select>
+            </label>
+          ) : null}
         </div>
+        {!invitation?.role ? (
+          <TextInput autoComplete="organization-title" label="If Other, describe your role" name="roleOther" placeholder="Enter your role or function" required={false} />
+        ) : null}
+        <label className="text-sm font-semibold text-dark-ink" htmlFor="preferredLanguage">
+          Preferred language
+          <select className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm" id="preferredLanguage" name="preferredLanguage" required defaultValue="English">
+            {SUPPORTED_LANGUAGE_OPTIONS.map((language) => <option key={language} value={language}>{language}</option>)}
+          </select>
+          <span className="mt-2 block font-normal leading-6 text-muted-text">Course availability may vary by language.</span>
+        </label>
 
         <label className="flex gap-3 rounded-[18px] border border-dec-blue/20 bg-dec-blue/10 p-4 text-sm leading-6 text-[#26536c]">
           <input
@@ -226,6 +301,34 @@ function SupportNote() {
 
 export default async function RegisterPage({ searchParams }: PageProps) {
   const { error, next } = await searchParams;
+  let invitation: InvitationRegistrationContext | null = null;
+
+  if (next) {
+    try {
+      const nextUrl = new URL(next, "https://hub.invalid");
+      const token = nextUrl.pathname === "/course-invitations/accept"
+        ? nextUrl.searchParams.get("token") ?? ""
+        : "";
+      if (token && token.length <= 512) {
+        const resolution = await resolveCourseInvitationToken(token);
+        if (resolution.success) {
+          const region = resolution.context.organization.region;
+          invitation = {
+            cohortName: resolution.context.cohortName,
+            courseTitle: resolution.context.course.title,
+            courseVersionNumber: resolution.context.courseVersionNumber,
+            email: resolution.context.invitedEmail,
+            invitedName: resolution.context.invitedName,
+            organizationName: resolution.context.organization.name,
+            region: region && isControlledRegion(region) ? region : "Other / not listed",
+            role: resolution.context.invitedRoleOrPosition,
+          };
+        }
+      }
+    } catch {
+      invitation = null;
+    }
+  }
 
   return (
     <section className="relative overflow-hidden rounded-[32px] border border-design-border bg-white-surface shadow-card">
@@ -268,7 +371,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
 
         <div className="bg-white px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
           <div className="mx-auto max-w-xl space-y-6">
-            <RegisterForm error={error} next={next} />
+            <RegisterForm error={error} invitation={invitation} next={next} />
             <SupportNote />
           </div>
         </div>

@@ -3,8 +3,8 @@ import "server-only";
 import {
   getHrbaExternalCourseAllowedOrigins,
   getHrbaExternalCourseUrl,
-  HRBA_EXTERNAL_COURSE_SLUG,
 } from "./external-course-config";
+import { PILOT_CATALOGUE_COURSE_IDENTITIES } from "./catalogue-course-identities";
 import type {
   CatalogueAvailability,
   CatalogueAccessState,
@@ -151,7 +151,7 @@ type CatalogueCourseDefinition = {
   proposedStructureSummary: string;
   resourcesAndSupport: string;
   routeAliases: string[];
-  secondaryCapacityAreaIds: string[];
+  secondaryCapacityAreaIds: readonly string[];
   shortDescription: string;
   slug: string;
   title: string;
@@ -236,6 +236,7 @@ function comingSoonCourse(
 
 export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   {
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[0],
     accessState: "invitation_required",
     assessmentStatus:
       "Existing final assessment; certificate eligibility requires a score of 80% or above.",
@@ -243,7 +244,6 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
     certificateStatus:
       "Certificate available after the required learning and assessment are completed.",
     deliveryFormat: "Hub-tracked embedded course",
-    displayOrder: 1,
     externalCourse: {
       approvedOrigins: getHrbaExternalCourseAllowedOrigins(),
       assessmentCapability: "available",
@@ -279,125 +279,81 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
     practicalOutputs: [
       "Private reflection and analysis for the learner's own CSO practice",
     ],
-    primaryCapacityAreaId: "CAP-ADV",
     proposedStructureSummary:
       "The active course follows the existing HRBA modules, assessment, progress, and certificate flow.",
     resourcesAndSupport:
       "Course-linked resources are available inside the active HRBA learning experience. Hub support remains available through the public Support page.",
     routeAliases: ["human-rights-based-approach-practice"],
-    secondaryCapacityAreaIds: ["CAP-HRSAFE"],
     shortDescription: HRBA_COURSE_PROMISE,
-    slug: HRBA_EXTERNAL_COURSE_SLUG,
-    title: HRBA_COURSE_TITLE,
     tone: "blue",
   },
   comingSoonCourse({
-    displayOrder: 2,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[1],
     integrationStatus: "content_preparation",
     legacyAliases: ["Governance", "Organizational Development"],
-    primaryCapacityAreaId: "CAP-GOV",
-    secondaryCapacityAreaIds: ["CAP-ACC", "CAP-STRAT"],
     shortDescription:
       "A forthcoming course on accountable leadership, governance practice, and organizational direction for local CSOs.",
-    slug: "governance-and-leadership-local-csos",
-    title: "Governance and Leadership for Local CSOs",
     tone: "navy",
   }),
   comingSoonCourse({
-    displayOrder: 3,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[2],
     externalCourse: comingSoonExternalCourse("external_link"),
     integrationStatus: "integration_pending",
     legacyAliases: ["Project Cycle Management", "Project Management"],
-    primaryCapacityAreaId: "CAP-STRAT",
-    secondaryCapacityAreaIds: ["CAP-MEAL", "CAP-FIN", "CAP-PART"],
     shortDescription:
       "A forthcoming course on planning, delivering, and learning from projects in local and grassroots CSOs.",
-    slug: "project-management-local-grassroots-csos",
-    title: "Project Management for Local and Grassroots CSOs",
     tone: "green",
   }),
   comingSoonCourse({
-    displayOrder: 4,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[3],
     integrationStatus: "content_preparation",
     legacyAliases: ["MEAL", "Monitoring and Evaluation"],
-    primaryCapacityAreaId: "CAP-MEAL",
-    secondaryCapacityAreaIds: ["CAP-ACC", "CAP-STRAT"],
     shortDescription:
       "A forthcoming course on using monitoring, evaluation, accountability, and learning to strengthen CSO decisions.",
-    slug: "reporting-to-learning-meal-local-csos",
-    title:
-      "From Reporting to Learning: Monitoring, Evaluation, Accountability, and Learning for Local CSOs",
     tone: "blue",
   }),
   comingSoonCourse({
-    displayOrder: 5,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[4],
     integrationStatus: "content_preparation",
     legacyAliases: ["Financial Management", "Compliance"],
-    primaryCapacityAreaId: "CAP-FIN",
-    secondaryCapacityAreaIds: ["CAP-ACC", "CAP-STRAT"],
     shortDescription:
       "A forthcoming course on responsible financial management, accountability, and compliance in local CSO practice.",
-    slug: "financial-management-compliance-local-grassroots-csos",
-    title:
-      "Financial Management and Compliance for Local and Grassroots CSOs",
     tone: "green",
   }),
   comingSoonCourse({
-    displayOrder: 6,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[5],
     integrationStatus: "content_preparation",
     legacyAliases: ["Organizational Development", "Strategic Planning"],
-    primaryCapacityAreaId: "CAP-STRAT",
-    secondaryCapacityAreaIds: ["CAP-GOV", "CAP-FIN", "CAP-MEAL"],
     shortDescription:
       "A forthcoming course on strategic direction, adaptation, and organizational sustainability for local CSOs.",
-    slug: "strategic-planning-organizational-sustainability-local-csos",
-    title:
-      "Strategic Planning and Organizational Sustainability for Local CSOs",
     tone: "navy",
   }),
   comingSoonCourse({
-    displayOrder: 7,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[6],
     integrationStatus: "content_preparation",
     legacyAliases: ["Safeguarding", "Human Resources", "Inclusion"],
-    primaryCapacityAreaId: "CAP-HRSAFE",
-    secondaryCapacityAreaIds: ["CAP-ADV", "CAP-ACC", "CAP-GOV"],
     shortDescription:
       "A forthcoming course on people practice, inclusion, safeguarding, and duty of care in CSO work.",
-    slug: "people-inclusion-safeguarding-cso-practice",
-    title: "People, Inclusion, and Safeguarding in CSO Practice",
     tone: "gold",
   }),
   comingSoonCourse({
-    displayOrder: 8,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[7],
     integrationStatus: "content_preparation",
     legacyAliases: ["Digital Skills", "Data Use"],
-    primaryCapacityAreaId: "CAP-DIG",
-    secondaryCapacityAreaIds: [
-      "CAP-MEAL",
-      "CAP-ACC",
-      "CAP-HRSAFE",
-      "CAP-GOV",
-    ],
     shortDescription:
       "A forthcoming course on responsible digital practice and data use for local CSO teams.",
-    slug: "responsible-digital-skills-data-use-local-csos",
-    title: "Responsible Digital Skills and Data Use for Local CSOs",
     tone: "blue",
   }),
   comingSoonCourse({
-    displayOrder: 9,
+    ...PILOT_CATALOGUE_COURSE_IDENTITIES[8],
     integrationStatus: "content_preparation",
     legacyAliases: [
       "Partnership and Networking",
       "Networks",
       "Collective Action",
     ],
-    primaryCapacityAreaId: "CAP-PART",
-    secondaryCapacityAreaIds: ["CAP-ADV", "CAP-STRAT", "CAP-GOV"],
     shortDescription:
       "A forthcoming course on partnerships, networks, and collective action for local CSOs.",
-    slug: "partnerships-networks-collective-action-local-csos",
-    title: "Partnerships, Networks, and Collective Action for Local CSOs",
     tone: "green",
   }),
 ];

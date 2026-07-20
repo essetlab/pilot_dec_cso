@@ -10,6 +10,11 @@ import {
   type ManualCourseInvitationActionState,
 } from "@/lib/admin-course-invitation-actions";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
+import {
+  ETHIOPIA_REGIONS,
+  LEARNER_ROLE_OPTIONS,
+  isControlledRegion,
+} from "@/lib/controlled-options";
 
 type InvitationOptions = {
   cohorts: Array<{
@@ -22,7 +27,7 @@ type InvitationOptions = {
     title: string;
     versions: Array<{ id: string; versionNumber: number }>;
   }>;
-  organizations: Array<{ id: string; name: string }>;
+  organizations: Array<{ id: string; name: string; region: string | null }>;
 };
 
 const inputClass =
@@ -55,7 +60,7 @@ function ManualDeliveryPanel({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(delivery.url);
-      setCopyStatus("Link copied. Share it only through the approved secure channel.");
+      setCopyStatus("Link copied. Share it only through the designated private channel.");
     } catch {
       setCopyStatus("Copy was unavailable. Select the link and copy it manually.");
     }
@@ -76,7 +81,7 @@ function ManualDeliveryPanel({
       <p className="mt-2 text-sm leading-6 text-amber-950">{message}</p>
       <p className="mt-2 text-sm leading-6 text-amber-950">
         This link is shown only at this delivery moment and cannot be recovered later.
-        Send it only to the intended learner through the approved private channel. Do not
+        Send it only to the intended learner through a designated private channel. Do not
         place it in reports, screenshots, group chats, or public messages.
       </p>
 
@@ -122,6 +127,9 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
     initialManualCourseInvitationState,
   );
   const [organizationId, setOrganizationId] = useState("");
+  const [organizationQuery, setOrganizationQuery] = useState("");
+  const [region, setRegion] = useState("");
+  const [role, setRole] = useState("");
   const [courseId, setCourseId] = useState("");
   const [courseVersionId, setCourseVersionId] = useState("");
   const [cohortId, setCohortId] = useState("");
@@ -137,6 +145,15 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
       ),
     [options.cohorts, organizationId],
   );
+  const organizations = useMemo(() => {
+    const query = organizationQuery.trim().toLowerCase();
+    return options.organizations.filter((organization) => {
+      const organizationRegion = organization.region && isControlledRegion(organization.region)
+        ? organization.region
+        : "Other / not listed";
+      return organizationRegion === region && (!query || organization.name.toLowerCase().includes(query));
+    });
+  }, [options.organizations, organizationQuery, region]);
 
   if (state.success && state.delivery) {
     return <ManualDeliveryPanel delivery={state.delivery} message={state.message} />;
@@ -151,6 +168,19 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
           </AlertMessage>
         </div>
       ) : null}
+
+      <section className="rounded-[20px] border border-dec-blue/25 bg-dec-blue/10 p-5 text-sm leading-6 text-[#26536c]">
+        <h2 className="font-semibold text-deep-navy">Before creating an invitation</h2>
+        <p className="mt-2">Confirm that:</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>the organization is listed;</li>
+          <li>the learner email is correct;</li>
+          <li>the intended course is available;</li>
+          <li>the correct version is selected;</li>
+          <li>the learner does not already have access;</li>
+          <li>the learner will register or sign in using the same email.</li>
+        </ul>
+      </section>
 
       <div className="grid gap-5 md:grid-cols-2">
         <label className="text-sm font-semibold text-dark-ink">
@@ -171,15 +201,38 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
       </div>
 
       <label className="text-sm font-semibold text-dark-ink">
-        Role or position <span className="font-normal text-muted-text">(optional)</span>
-        <input className={inputClass} maxLength={160} name="invitedRoleOrPosition" />
+        Role or function <span className="font-normal text-muted-text">(optional)</span>
+        <select className={inputClass} name="invitedRoleOrPosition" onChange={(event) => setRole(event.target.value)} value={role}>
+          <option value="">Not specified</option>
+          {LEARNER_ROLE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+        <span className="mt-2 block font-normal leading-6 text-muted-text">Choose the closest match. This will be shown during invited registration.</span>
       </label>
+      {role === "Other" ? <label className="text-sm font-semibold text-dark-ink">Describe the role or function<input className={inputClass} maxLength={160} name="invitedRoleOther" required /></label> : null}
 
       <div className="grid gap-5 md:grid-cols-2">
         <label className="text-sm font-semibold text-dark-ink">
-          Approved organization
+          Region
+          <select className={inputClass} name="region" onChange={(event) => { setRegion(event.target.value); setOrganizationId(""); setCohortId(""); }} required value={region}>
+            <option value="">Select a region</option>
+            {ETHIOPIA_REGIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+          <span className="mt-2 block font-normal leading-6 text-muted-text">The CSO list is filtered by this region.</span>
+        </label>
+
+        <label className="text-sm font-semibold text-dark-ink">
+          Search organizations
+          <input className={inputClass} disabled={!region} onChange={(event) => setOrganizationQuery(event.target.value)} placeholder="Type part of the CSO name" type="search" value={organizationQuery} />
+          <span className="mt-2 block font-normal leading-6 text-muted-text">Search only active organizations in the selected region.</span>
+        </label>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        <label className="text-sm font-semibold text-dark-ink">
+          Organization
           <select
             className={inputClass}
+            disabled={!region}
             name="organizationId"
             onChange={(event) => {
               setOrganizationId(event.target.value);
@@ -188,13 +241,14 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
             required
             value={organizationId}
           >
-            <option value="">Select an active approved organization</option>
-            {options.organizations.map((organization) => (
+            <option value="">Select an active organization</option>
+            {organizations.map((organization) => (
               <option key={organization.id} value={organization.id}>
                 {organization.name}
               </option>
             ))}
           </select>
+          <span className="mt-2 block font-normal leading-6 text-muted-text">If the organization is missing, ask the platform administrator to add it through organization management.</span>
         </label>
 
         <label className="text-sm font-semibold text-dark-ink">
@@ -216,12 +270,13 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
               </option>
             ))}
           </select>
+          <span className="mt-2 block font-normal leading-6 text-muted-text">Only published invitation-eligible courses are shown. Missing courses must be added through course management.</span>
         </label>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
         <label className="text-sm font-semibold text-dark-ink">
-          Approved course version
+          Course version
           <select
             className={inputClass}
             disabled={!courseId}
@@ -237,6 +292,7 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
               </option>
             ))}
           </select>
+          <span className="mt-2 block font-normal leading-6 text-muted-text">Choose the exact published version. Missing versions must be published through course management.</span>
         </label>
 
         <label className="text-sm font-semibold text-dark-ink">
@@ -255,6 +311,7 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
               </option>
             ))}
           </select>
+          <span className="mt-2 block font-normal leading-6 text-muted-text">Only cohorts linked to the selected CSO are shown. Missing cohorts must be added through cohort management.</span>
         </label>
       </div>
 

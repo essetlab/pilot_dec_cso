@@ -1,0 +1,11 @@
+export const PILOT_CATALOGUE_COURSE_IDENTITIES = [
+  { displayOrder: 1, primaryCapacityAreaId: "CAP-ADV", secondaryCapacityAreaIds: ["CAP-HRSAFE"], slug: "applying-human-rights-based-approach-in-cso-practice", title: "Applying the Human Rights-Based Approach in CSO Practice" },
+  { displayOrder: 2, primaryCapacityAreaId: "CAP-GOV", secondaryCapacityAreaIds: ["CAP-ACC", "CAP-STRAT"], slug: "governance-and-leadership-local-csos", title: "Governance and Leadership for Local CSOs" },
+  { displayOrder: 3, primaryCapacityAreaId: "CAP-STRAT", secondaryCapacityAreaIds: ["CAP-MEAL", "CAP-FIN", "CAP-PART"], slug: "project-management-local-grassroots-csos", title: "Project Management for Local and Grassroots CSOs" },
+  { displayOrder: 4, primaryCapacityAreaId: "CAP-MEAL", secondaryCapacityAreaIds: ["CAP-ACC", "CAP-STRAT"], slug: "reporting-to-learning-meal-local-csos", title: "From Reporting to Learning: Monitoring, Evaluation, Accountability, and Learning for Local CSOs" },
+  { displayOrder: 5, primaryCapacityAreaId: "CAP-FIN", secondaryCapacityAreaIds: ["CAP-ACC", "CAP-STRAT"], slug: "financial-management-compliance-local-grassroots-csos", title: "Financial Management and Compliance for Local and Grassroots CSOs" },
+  { displayOrder: 6, primaryCapacityAreaId: "CAP-STRAT", secondaryCapacityAreaIds: ["CAP-GOV", "CAP-FIN", "CAP-MEAL"], slug: "strategic-planning-organizational-sustainability-local-csos", title: "Strategic Planning and Organizational Sustainability for Local CSOs" },
+  { displayOrder: 7, primaryCapacityAreaId: "CAP-HRSAFE", secondaryCapacityAreaIds: ["CAP-ADV", "CAP-ACC", "CAP-GOV"], slug: "people-inclusion-safeguarding-cso-practice", title: "People, Inclusion, and Safeguarding in CSO Practice" },
+  { displayOrder: 8, primaryCapacityAreaId: "CAP-DIG", secondaryCapacityAreaIds: ["CAP-MEAL", "CAP-ACC", "CAP-HRSAFE", "CAP-GOV"], slug: "responsible-digital-skills-data-use-local-csos", title: "Responsible Digital Skills and Data Use for Local CSOs" },
+  { displayOrder: 9, primaryCapacityAreaId: "CAP-PART", secondaryCapacityAreaIds: ["CAP-ADV", "CAP-STRAT", "CAP-GOV"], slug: "partnerships-networks-collective-action-local-csos", title: "Partnerships, Networks, and Collective Action for Local CSOs" },
+] as const;

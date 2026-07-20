@@ -182,6 +182,8 @@ export type LearnerCourseDetail = Omit<PublicCourseDetail, "modules"> & {
   certificateStatus: string;
   finalTestHref: string;
   finalTestQuestions: LearnerFinalTestQuestion[];
+  learnerEmail?: string;
+  learnerName?: string;
   modules: LearnerCourseModule[];
   passThresholdLabel: string;
   passThresholdRule: string;

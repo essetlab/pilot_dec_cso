@@ -30,7 +30,7 @@ function Summary({ context }: { context: NonNullable<AcceptanceProps["context"]>
       </h2>
       <dl className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-text">Approved CSO</dt>
+          <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-text">Selected CSO</dt>
           <dd className="mt-1 text-sm font-semibold text-dark-ink">{context.organizationName}</dd>
         </div>
         {context.expiresAt ? (
@@ -164,7 +164,7 @@ export function CourseInvitationAcceptance({
         {activation.kind === "error" ? (
           <div aria-live="assertive">
             <AlertMessage title="Invitation could not be accepted" tone="error">
-              The invitation is no longer available or your account does not match its approved scope. No access was changed.
+              The invitation is no longer available or your account does not match its invitation details. No access was changed.
             </AlertMessage>
           </div>
         ) : null}

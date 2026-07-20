@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { resolvePublicAuthOrigin } from "@/lib/auth/public-auth-origin";
 import { isRateLimited } from "@/lib/auth/rate-limit";
 import { registerOpenLearner } from "@/lib/open-registration-workflow";
+import { isControlledLearnerRole, isControlledRegion } from "@/lib/controlled-options";
+import { resolveCourseInvitationToken } from "@/lib/course-invitation-workflow";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -19,8 +21,42 @@ function safeNextPath(value: FormDataEntryValue | null) {
 }
 
 export async function registerOpenLearnerAction(formData: FormData) {
-  const email = formText(formData, "email").toLowerCase();
+  let email = formText(formData, "email").toLowerCase();
   const next = safeNextPath(formData.get("next"));
+  let organizationName = formText(formData, "organization");
+  let region = formText(formData, "region");
+  let jobTitle = formText(formData, "jobTitle");
+  let roleOther = formText(formData, "roleOther");
+
+  if (next) {
+    const nextUrl = new URL(next, "https://hub.invalid");
+    const token = nextUrl.pathname === "/course-invitations/accept"
+      ? nextUrl.searchParams.get("token") ?? ""
+      : "";
+
+    if (token && token.length <= 512) {
+      const invitation = await resolveCourseInvitationToken(token);
+      if (!invitation.success) {
+        redirect(`${next}&error=${encodeURIComponent(invitation.code)}`);
+      }
+
+      email = invitation.context.invitedEmail;
+      organizationName = invitation.context.organization.name;
+      region = invitation.context.organization.region && isControlledRegion(invitation.context.organization.region)
+        ? invitation.context.organization.region
+        : "Other / not listed";
+      if (invitation.context.invitedRoleOrPosition) {
+        const invitedRole = invitation.context.invitedRoleOrPosition;
+        if (isControlledLearnerRole(invitedRole)) {
+          jobTitle = invitedRole;
+          roleOther = "";
+        } else {
+          jobTitle = "Other";
+          roleOther = invitedRole;
+        }
+      }
+    }
+  }
 
   if (email && isRateLimited(`open-register:${email}`, 8, 10 * 60 * 1000)) {
     redirect("/register?error=rate-limited");
@@ -35,10 +71,12 @@ export async function registerOpenLearnerAction(formData: FormData) {
     consentAccepted: formData.get("consentAccepted") === "on",
     email,
     fullName: formText(formData, "fullName"),
-    jobTitle: formText(formData, "jobTitle"),
-    organizationName: formText(formData, "organization"),
+    jobTitle,
+    organizationName,
     password: formText(formData, "password"),
-    region: formText(formData, "region"),
+    preferredLanguage: formText(formData, "preferredLanguage"),
+    region,
+    roleOther,
   }, supabaseClient, authOrigin);
 
   if (!result.success) {
