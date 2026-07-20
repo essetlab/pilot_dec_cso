@@ -368,3 +368,64 @@ change occurred in this correction.
 
 The next action is to continue P2D.1 connected identity testing using the strict
 feature Preview and approved fictional staging identities.
+
+## P2D.1 connected email-delivery gate — 2026-07-20
+
+Connected verification resumed from clean, synchronized commit
+`663ab98727b5cae9689f5ff1e29c89e603efddaf` on
+`feature/pilot-cso-onboarding-access`. `origin/main` remained at
+`4ba0233b5c8e391e37629e982240d44e21961c8d`. Preview deployment
+`dpl_5q8n8Dve4StRQHxGwGgbQwmeiFh7` was Ready and resolved strict registration
+mode. The approved staging connection resolved only to project
+`fgyxbzwdvngqlksyxuwa`.
+
+The first isolated Supabase Auth sign-up request was accepted and required
+confirmation. The message arrived at the approved fictional test inbox, and
+staging Auth recorded confirmation approximately 81 seconds after the request.
+The final browser redirect did not reach the Hub callback page because Vercel
+deployment protection intercepted the feature Preview URL. The preliminary
+Auth identity was removed after this delivery proof so it could not conflict
+with the later learner-registration test.
+
+A second confirmation message for the fictional platform-administrator fixture
+was accepted and confirmed in approximately 96 seconds. Its confirmed Supabase
+identity is linked to one active fictional Hub administrator with one active,
+unexpired `PLATFORM_ADMIN` assignment and a null local password hash. Three
+non-sensitive audit records cover the administrator bootstrap and the two
+fictional organization fixtures.
+
+The reusable staging fixtures retained at this checkpoint are:
+
+- one clearly fictional active CSO;
+- one clearly fictional inactive CSO;
+- one confirmed fictional platform administrator;
+- one active, unexpired platform-administrator role assignment.
+
+No address, password, access code, token, complete confirmation URL, or secret
+is recorded here.
+
+The next required focal-person confirmation request was rejected by Supabase
+Auth with HTTP `429`; the provider supplied no retry window. This occurred after
+the two accepted confirmation messages and is consistent with the hosted/default
+mailer limit. No focal-person Auth identity was created. The incomplete Hub
+user, staff invitation, and role assignment produced while diagnosing the
+failure were removed, and final verification found zero partial focal-person
+records.
+
+Per the explicit P2D.1 email-delivery gate, testing stopped at this point. The
+following were not claimed or run: Learner A/B registration, negative
+registration matrix, session tests, password recovery, lifecycle matrix,
+role-authorization matrix, two-learner record separation, HRBA connected tests,
+responsive/accessibility matrix, full regression, and the full automated-check
+suite. Production, Production variables, Production Supabase, schema,
+migrations, seeds, Project Management, and `main` were not changed.
+
+Before resuming, configure dedicated non-production SMTP for staging Supabase
+Auth and verify its send quota. Also provide a Preview confirmation/recovery
+callback path that is not intercepted by Vercel deployment protection, or an
+approved protection-bypass mechanism limited to staging email callbacks. Then
+restart P2D.1 from focal-person onboarding and the two invited learner inboxes.
+
+Readiness decision:
+
+`BLOCKED — non-production SMTP configuration required`
