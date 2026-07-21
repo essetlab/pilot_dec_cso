@@ -38,7 +38,8 @@ assert.doesNotMatch(resetAction, /prisma|courseAssignment|enrollment|lessonProgr
 
 const forgotAction = await source("src/app/(auth)/forgot-password/actions.ts");
 assert.match(forgotAction, /resetPasswordForEmail/);
-assert.match(forgotAction, /auth\/callback\?next=\/reset-password/);
+assert.match(forgotAction, /reset-password\?recovery=fragment/);
+assert.doesNotMatch(forgotAction, /auth\/callback\?next=\/reset-password/);
 assert.match(forgotAction, /resolvePublicAuthOrigin/);
 assert.match(forgotAction, /flowType: "implicit"/);
 assert.match(forgotAction, /persistSession: false/);

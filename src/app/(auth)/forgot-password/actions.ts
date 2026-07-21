@@ -33,7 +33,7 @@ export async function requestPasswordResetAction(formData: FormData) {
     });
     const authOrigin = await resolvePublicAuthOrigin();
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${authOrigin}/auth/callback?next=/reset-password`,
+      redirectTo: `${authOrigin}/reset-password?recovery=fragment`,
     });
   }
 
