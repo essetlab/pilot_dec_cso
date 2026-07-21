@@ -52,17 +52,19 @@ export function RecoveryPasswordForm({
       const recoveryCredentials = readRecoveryCredentials(window.location.hash);
 
       if (recoveryCredentials) {
-        const { error: sessionError } = await supabase.auth.setSession({
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
           access_token: recoveryCredentials.accessToken,
           refresh_token: recoveryCredentials.refreshToken,
         });
 
-        if (sessionError) {
+        if (sessionError || !sessionData.user) {
           if (active) setState("invalid");
           return;
         }
 
         window.history.replaceState(null, "", "/reset-password");
+        if (active) setState("ready");
+        return;
       } else if (window.location.hash || expectsFragment) {
         window.history.replaceState(null, "", "/reset-password?error=invalid-link");
         if (active) setState("invalid");

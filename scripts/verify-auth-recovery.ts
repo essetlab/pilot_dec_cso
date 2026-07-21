@@ -21,6 +21,7 @@ assert.match(callback, /reset-password\?recovery=fragment/);
 const recoveryForm = await source("src/components/auth/RecoveryPasswordForm.tsx");
 assert.match(recoveryForm, /readRecoveryCredentials\(window\.location\.hash\)/);
 assert.match(recoveryForm, /supabase\.auth\.setSession/);
+assert.match(recoveryForm, /sessionData\.user/);
 assert.match(recoveryForm, /supabase\.auth\.getUser/);
 assert.match(recoveryForm, /history\.replaceState/);
 assert.match(recoveryForm, /setState\("invalid"\)/);
