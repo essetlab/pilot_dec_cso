@@ -60,6 +60,10 @@ assert.match(authOrigin, /VERCEL_URL/);
 assert.match(authOrigin, /VERCEL_BRANCH_URL/);
 assert.match(authOrigin, /allowedOrigins\.has\(requestOrigin\)/);
 
+const nextConfig = await source("next.config.ts");
+assert.match(nextConfig, /originFromUrl\(process\.env\.NEXT_PUBLIC_SUPABASE_URL\)/);
+assert.match(nextConfig, /connect-src 'self' \$\{supabaseOrigin\}/);
+
 const registerPage = await source("src/app/(auth)/register/page.tsx");
 assert.match(registerPage, /AuthSubmitButton/);
 

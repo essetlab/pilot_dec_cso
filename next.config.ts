@@ -24,13 +24,15 @@ const externalCourseOrigins = Array.from(
   ].filter(Boolean)),
 );
 
+const supabaseOrigin = originFromUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "frame-ancestors 'self'",
   `frame-src 'self' ${externalCourseOrigins.join(" ")}`,
   `child-src 'self' ${externalCourseOrigins.join(" ")}`,
-  "connect-src 'self'",
+  `connect-src 'self' ${supabaseOrigin}`.trim(),
   "font-src 'self' data:",
   "form-action 'self'",
   "img-src 'self' data: blob: https:",
