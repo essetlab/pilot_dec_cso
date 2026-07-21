@@ -40,6 +40,10 @@ const forgotAction = await source("src/app/(auth)/forgot-password/actions.ts");
 assert.match(forgotAction, /resetPasswordForEmail/);
 assert.match(forgotAction, /auth\/callback\?next=\/reset-password/);
 assert.match(forgotAction, /resolvePublicAuthOrigin/);
+assert.match(forgotAction, /flowType: "implicit"/);
+assert.match(forgotAction, /persistSession: false/);
+assert.match(forgotAction, /detectSessionInUrl: false/);
+assert.doesNotMatch(forgotAction, /createSupabaseServerClient/);
 assert.match(forgotAction, /notice=sent/);
 
 const registrationWorkflow = await source("src/lib/open-registration-workflow.ts");
@@ -57,7 +61,8 @@ assert.match(authOrigin, /allowedOrigins\.has\(requestOrigin\)/);
 const registerPage = await source("src/app/(auth)/register/page.tsx");
 assert.match(registerPage, /AuthSubmitButton/);
 
-console.log("PASS: PKCE callback exchange remains the primary server recovery path.");
+console.log("PASS: recovery email issuance is not bound to a PKCE verifier cookie.");
+console.log("PASS: PKCE callback exchange remains available for compatible recovery links.");
 console.log("PASS: recovery fragments are exchanged client-side and removed from the URL.");
 console.log("PASS: malformed and expired-style recovery fragments fail closed.");
 console.log("PASS: password reset changes Auth credentials without touching assignment or progress data.");
