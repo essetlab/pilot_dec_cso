@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useState, useEffect } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,110 +9,62 @@ import { ActionButton } from "@/components/ui";
 import type { AuthSession } from "@/lib/auth/session-codec";
 import { cx } from "@/components/ui/utils";
 
-type PublicShellProps = {
-  children: ReactNode;
-  session?: AuthSession | null;
-};
-
-type NavItem = {
-  href: string;
-  label: string;
-  exact?: boolean;
-};
+type PublicShellProps = { children: ReactNode; session?: AuthSession | null };
+type NavItem = { href: string; label: string; exact?: boolean };
 
 const publicItems: NavItem[] = [
-  { href: "/", label: "HOME", exact: true },
-  { href: "/courses", label: "COURSES" },
-  { href: "/verify-certificate", label: "VERIFY CERTIFICATE" },
+  { href: "/", label: "Home", exact: true },
+  { href: "/courses", label: "Courses" },
+  { href: "/#how-the-hub-works", label: "How the Hub works" },
+  { href: "/verify-certificate", label: "Verify certificate" },
 ];
 
 const footerPlatformLinks: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/courses", label: "Courses" },
-  { href: "/verify-certificate", label: "Verify Certificate" },
+  { href: "/#how-the-hub-works", label: "How the Hub works" },
 ];
 
 const footerAccountLinks: NavItem[] = [
-  { href: "/sign-in", label: "Sign In" },
+  { href: "/sign-in", label: "Sign in" },
   { href: "/register", label: "Register" },
 ];
 
 const footerTrustLinks: NavItem[] = [
   { href: "/support", label: "Help / Support" },
+  { href: "/verify-certificate", label: "Verify certificate" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/accessibility", label: "Accessibility" },
 ];
 
-const partnerLogos = [
-  { alt: "Development Expertise Center logo", src: "/logos/dec-logo.png" },
-  { alt: "Welt Hunger Hilfe logo", src: "/logos/whh-logo.png" },
-  { alt: "CoSAP logo", src: "/logos/cosap-logo.png" },
-  { alt: "Ziviler Friedensdienst logo", src: "/logos/zfd-logo.png" },
-  { alt: "Pastoralist Forum Ethiopia logo", src: "/logos/pfe-logo.png" },
-  { alt: "European Union logo", src: "/logos/eu-logo.png" },
-];
-
-/* ── Globe Icon ─────────────────────────────────────────── */
-const GlobeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.6 9h16.8M3.6 15h16.8" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a15.3 15.3 0 014 9 15.3 15.3 0 01-4 9 15.3 15.3 0 01-4-9 15.3 15.3 0 014-9z" />
-  </svg>
-);
-
-/* ── Chevron Icon ────────────────────────────────────────── */
-const ChevronDownIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-  </svg>
-);
-
-/* ── Hamburger / Close Icons ──────────────────────────────── */
 const MenuIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
   </svg>
 );
 
 const CloseIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
   </svg>
 );
 
-/* ── Navigation Links ───────────────────────────────────── */
+function isActive(pathname: string, item: NavItem) {
+  if (item.href.includes("#")) return false;
+  return item.exact ? pathname === item.href : pathname.startsWith(item.href) && item.href !== "/";
+}
+
 function PublicNav({ isOverlay }: { isOverlay: boolean }) {
   const pathname = usePathname();
-
   return (
-    <nav aria-label="Public navigation" className="min-w-0">
-      <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 xl:gap-x-8">
+    <nav aria-label="Primary navigation">
+      <ul className="flex items-center gap-5 xl:gap-7">
         {publicItems.map((item) => {
-          const active = item.exact ? pathname === item.href : pathname.startsWith(item.href) && item.href !== "/";
-          const itemColor = isOverlay
-              ? "#ffffff"
-              : active
-                ? "#0f172a"
-                : "#4b5563";
-          
-          const itemClasses = cx(
-            "rounded-full px-2 py-2 text-[13px] font-extrabold tracking-[0.12em] transition-colors",
-            active
-                ? isOverlay
-                  ? "text-white"
-                  : "text-deep-navy"
-                : isOverlay
-                  ? "text-white/90 hover:text-white"
-                  : "text-slate-600 hover:text-deep-navy"
-          );
-
+          const active = isActive(pathname, item);
           return (
             <li key={item.href}>
-              <Link className={itemClasses} href={item.href} style={{ color: itemColor }}>
-                {item.label}
-              </Link>
+              <Link aria-current={active ? "page" : undefined} className={cx("relative flex min-h-11 items-center rounded-lg px-1 text-sm font-semibold transition-colors after:absolute after:inset-x-1 after:bottom-1 after:h-0.5 after:rounded-full", isOverlay ? "text-white/90 hover:text-white focus-visible:text-white" : "text-slate-700 hover:text-[#0b1f3a]", active ? "after:bg-[#72bee8]" : "after:bg-transparent")} href={item.href}>{item.label}</Link>
             </li>
           );
         })}
@@ -121,350 +73,108 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
   );
 }
 
-/* ── Mobile Navigation ───────────────────────────────────── */
-function MobileNav({ session, onClose }: { session?: AuthSession | null; onClose: () => void }) {
+function MobileNav({ session, onClose, onKeyDown, panelRef }: { session?: AuthSession | null; onClose: () => void; onKeyDown: (event: ReactKeyboardEvent<HTMLDivElement>) => void; panelRef: React.RefObject<HTMLDivElement | null> }) {
   const pathname = usePathname();
-
   return (
-    <div className="border-t border-white/15 bg-deep-navy/98 shadow-hero lg:hidden">
-      <div className="px-4 py-4 space-y-1">
+    <div aria-label="Main menu" aria-modal="true" className="border-t border-white/15 bg-[#071426] shadow-[0_24px_50px_rgba(7,20,38,0.28)] lg:hidden" onKeyDown={onKeyDown} ref={panelRef} role="dialog">
+      <nav aria-label="Mobile primary navigation" className="space-y-1 px-5 py-5">
         {publicItems.map((item) => {
-          const active = item.exact ? pathname === item.href : pathname.startsWith(item.href) && item.href !== "/";
-          return (
-            <div key={item.href}>
-              <Link
-                className={cx(
-                  "block rounded-control px-3 py-2.5 text-sm font-semibold tracking-wide transition-colors",
-                  active ? "bg-white text-deep-navy" : "text-white/90 hover:bg-white/10 hover:text-white"
-                )}
-                href={item.href}
-                onClick={onClose}
-              >
-                {item.label}
-              </Link>
-            </div>
-          );
+          const active = isActive(pathname, item);
+          return <Link aria-current={active ? "page" : undefined} className={cx("flex min-h-11 items-center rounded-xl px-4 text-base font-semibold", active ? "bg-white text-[#0b1f3a]" : "text-white hover:bg-white/10")} href={item.href} key={item.href} onClick={onClose}>{item.label}</Link>;
         })}
-        <div className="pt-3 mt-2 border-t border-white/10 flex flex-col gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 text-white/80">
-            <GlobeIcon className="h-4 w-4" />
-            <span className="text-sm font-semibold tracking-wide">ENGLISH</span>
-          </div>
-          {session ? (
-            <Link
-              href="/sign-out"
-              className="block rounded-control px-3 py-2.5 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 hover:text-white"
-              onClick={onClose}
-              prefetch={false}
-            >
-              SIGN OUT
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/sign-in"
-                className="block rounded-control px-3 py-2.5 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 hover:text-white"
-                onClick={onClose}
-              >
-                SIGN IN
-              </Link>
-              <Link
-                href="/register"
-                className="block px-3 py-2.5 rounded-xl text-sm font-bold text-white bg-[#3b99d4] text-center hover:bg-[#2f88bf] transition-colors"
-                onClick={onClose}
-              >
-                REGISTER
-              </Link>
-            </>
-          )}
+        <div className="mt-4 grid gap-3 border-t border-white/15 pt-5">
+          {session ? <><Link className="flex min-h-11 items-center rounded-xl px-4 font-semibold text-white hover:bg-white/10" href="/learn" onClick={onClose}>My learning</Link><Link className="flex min-h-11 items-center rounded-xl px-4 font-semibold text-white hover:bg-white/10" href="/sign-out" onClick={onClose} prefetch={false}>Sign out</Link></> : <><Link className="flex min-h-11 items-center rounded-xl px-4 font-semibold text-white hover:bg-white/10" href="/sign-in" onClick={onClose}>Sign in</Link><Link className="flex min-h-12 items-center justify-center rounded-xl bg-[#0878b9] px-4 font-bold text-white hover:bg-[#075e8e]" href="/register" onClick={onClose}>Register</Link></>}
         </div>
-      </div>
+      </nav>
     </div>
   );
 }
 
-/* ── Header ──────────────────────────────────────────────── */
 export function PublicHeader({ session = null }: { session?: AuthSession | null }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobilePanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    onScroll(); // initial check
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isOverlay = isHome && !scrolled;
-  const headerBg = isOverlay
-    ? "text-white"
-    : "border-b border-design-border bg-white-surface text-slate-700 shadow-[0_8px_24px_rgb(15_23_42_/_0.12)]";
-  const logoGlow = isOverlay
-    ? "drop-shadow-[0_6px_18px_rgb(0_0_0_/_0.45)]"
-    : "";
-  const headerStyle = isOverlay
-    ? {
-        background:
-          "linear-gradient(90deg, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.78) 48%, rgba(15, 23, 42, 0.28) 100%)",
-      }
-    : {
-        backgroundColor: "#ffffff",
-      };
-  const mobileButtonStyle = isOverlay
-    ? {
-        backgroundColor: "rgba(255, 255, 255, 0.1)",
-        borderColor: "rgba(255, 255, 255, 0.25)",
-        color: "#ffffff",
-      }
-    : {
-        backgroundColor: "#ffffff",
-        borderColor: "#e5e7eb",
-        color: "#334155",
-      };
-  const languageStyle = isOverlay
-    ? {
-        backgroundColor: "rgba(255, 255, 255, 0.1)",
-        borderColor: "rgba(255, 255, 255, 0.25)",
-        color: "#ffffff",
-      }
-    : {
-        backgroundColor: "#ffffff",
-        borderColor: "#e5e7eb",
-        color: "#4b5563",
-      };
-  const authLinkStyle = {
-    color: isOverlay ? "#ffffff" : "#374151",
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const firstLink = mobilePanelRef.current?.querySelector<HTMLElement>("a");
+    firstLink?.focus();
+  }, [mobileOpen]);
+
+  const closeMenu = () => {
+    setMobileOpen(false);
+    requestAnimationFrame(() => menuButtonRef.current?.focus());
   };
 
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(mobilePanelRef.current?.querySelectorAll<HTMLElement>("a,button") ?? []).filter((element) => !element.hasAttribute("disabled"));
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  const isOverlay = isHome && !scrolled;
   return (
-    <header 
-      className={cx(
-        "fixed left-0 right-0 top-0 z-50 transition-all duration-300",
-        headerBg
-      )}
-      style={headerStyle}
-    >
-      <div className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        
-        {/* ── Left: Logo + Title ────────────────────────── */}
-        <Link
-          aria-label="Development Expertise Center home"
-          className={cx(
-            "relative h-12 shrink-0 transition-all duration-300 sm:h-14",
-            logoGlow,
-          )}
-          href="/"
-          style={{ width: "clamp(132px, 18vw, 154px)" }}
-        >
-          <Image
-            alt="Development Expertise Center logo"
-            className="object-contain"
-            fill
-            priority
-            sizes="(min-width: 640px) 154px, 132px"
-            src="/logos/dec-logo.png"
-          />
-        </Link>
-
-        <div className="hidden min-w-0 flex-1 items-center justify-center lg:flex">
-          <PublicNav isOverlay={isOverlay} />
-        </div>
-
-        {/* ── Right: Language, Auth, Actions ─────────────── */}
-        <div className="hidden items-center gap-5 lg:flex">
-          <button
-            aria-label="Language: English"
-            className={cx(
-              "flex cursor-default items-center gap-2 rounded-full border px-5 py-2 text-[12px] font-extrabold uppercase tracking-[0.18em] transition-colors",
-              isOverlay
-                ? "border-white/25 bg-white/10 text-white shadow-[0_8px_22px_rgb(0_0_0_/_0.18)]"
-                : "border-design-border bg-white text-slate-600 shadow-soft",
-            )}
-            style={languageStyle}
-          >
-            <GlobeIcon className="h-4.5 w-4.5" />
-            <span>ENGLISH</span>
-          </button>
-
-          <div className={cx("h-7 w-px", isOverlay ? "bg-white/30" : "bg-slate-200")} />
-
-          {session ? (
-            <Link
-              href="/sign-out"
-              className={cx(
-                "flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px] font-extrabold uppercase tracking-[0.12em] transition-colors",
-                isOverlay ? "text-white hover:bg-white/10" : "text-slate-700 hover:text-deep-navy",
-              )}
-              prefetch={false}
-              style={authLinkStyle}
-            >
-              SIGN OUT
-              <ChevronDownIcon className="h-3.5 w-3.5 opacity-60" />
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/sign-in"
-                className={cx(
-                  "flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px] font-extrabold uppercase tracking-[0.12em] transition-colors",
-                  isOverlay ? "text-white hover:bg-white/10" : "text-slate-700 hover:text-deep-navy",
-                )}
-                style={authLinkStyle}
-              >
-                SIGN IN
-                <ChevronDownIcon className="h-3.5 w-3.5 opacity-60" />
-              </Link>
-              <ActionButton 
-                href="/register" 
-                size="md"
-                className="rounded-control border-[#3b99d4] bg-[#3b99d4] px-7 text-[13px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[0_10px_24px_rgb(59_153_212_/_0.28)] hover:border-[#2f88bf] hover:bg-[#2f88bf]"
-              >
-                REGISTER
-              </ActionButton>
-            </>
-          )}
-        </div>
-
-        {/* ── Mobile hamburger ──────────────────────────── */}
-        <button
-          className={cx(
-            "flex h-11 w-11 items-center justify-center rounded-control border shadow-soft transition-colors lg:hidden",
-            isOverlay
-              ? "border-white/25 bg-white/10 text-white hover:bg-white/20"
-              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-          )}
-          style={mobileButtonStyle}
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-        >
-          {mobileOpen ? <CloseIcon className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}
-        </button>
+    <header className={cx("fixed inset-x-0 top-0 z-50 transition-colors duration-200", isOverlay ? "text-white" : "border-b border-[#cad5df] bg-white text-[#0b1f3a] shadow-[0_8px_24px_rgba(7,20,38,0.10)]")} style={isOverlay ? { background: "linear-gradient(90deg,rgba(7,20,38,.98),rgba(7,20,38,.86) 55%,rgba(7,20,38,.45))" } : undefined}>
+      <div className="mx-auto flex min-h-[72px] max-w-[1200px] items-center justify-between gap-5 px-5 sm:px-7 lg:px-10">
+        <Link aria-label="CSO Learning Hub home" className="relative h-11 w-[122px] shrink-0" href="/"><Image alt="Development Expertise Center" className="object-contain" fill priority sizes="122px" src="/logos/dec-logo.png" /></Link>
+        <div className="hidden flex-1 items-center justify-end gap-5 lg:flex"><PublicNav isOverlay={isOverlay} /><span aria-hidden="true" className={cx("h-7 w-px", isOverlay ? "bg-white/25" : "bg-[#cad5df]")} />{session ? <><Link className="flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold" href="/learn">My learning</Link><Link className="flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold" href="/sign-out" prefetch={false}>Sign out</Link></> : <><Link className="flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold" href="/sign-in">Sign in</Link><ActionButton href="/register" size="md">Register</ActionButton></>}</div>
+        <button aria-controls="mobile-public-menu" aria-expanded={mobileOpen} aria-label={mobileOpen ? "Close main menu" : "Open main menu"} className={cx("flex h-12 w-12 items-center justify-center rounded-xl border lg:hidden", isOverlay ? "border-white/30 bg-white/10 text-white" : "border-[#cad5df] bg-white text-[#0b1f3a]")} onClick={() => setMobileOpen((open) => !open)} ref={menuButtonRef} type="button">{mobileOpen ? <CloseIcon className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}</button>
       </div>
-
-      {/* ── Mobile dropdown ───────────────────────────────── */}
-      {mobileOpen && <MobileNav session={session} onClose={() => setMobileOpen(false)} />}
+      <div id="mobile-public-menu">{mobileOpen ? <MobileNav onClose={closeMenu} onKeyDown={handleMenuKeyDown} panelRef={mobilePanelRef} session={session} /> : null}</div>
     </header>
   );
 }
 
-/* ── Footer ──────────────────────────────────────────────── */
 export function PublicFooter() {
+  const currentYear = new Date().getFullYear();
   return (
-    <footer className="mt-auto flex flex-col">
-      {/* Main Footer Content */}
-      <div className="border-t border-slate-200 bg-deep-navy text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-8">
-          <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-            {/* Logo & Description */}
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <div className="relative h-11 w-[92px] shrink-0 overflow-hidden rounded-control bg-white p-1">
-                  <Image
-                    alt="Development Expertise Center logo"
-                    className="object-contain"
-                    fill
-                    sizes="92px"
-                    src="/logos/dec-logo.png"
-                  />
-                </div>
-                <p className="text-lg font-semibold leading-tight text-white">
-                  CSO Learning Hub
-                </p>
-              </div>
-              <p className="max-w-md text-sm leading-6 text-slate-300">
-                The CSO Learning Hub is a practical digital learning platform for local and grassroots civil society organisations in Ethiopia.
-              </p>
-            </div>
-
-            {/* Platform Links */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Platform</h3>
-              <ul className="mt-4 space-y-2 text-sm text-slate-300">
-                {footerPlatformLinks.map((item) => (
-                  <li key={item.href}>
-                    <Link className="hover:text-white focus-visible:outline-dec-blue transition" href={item.href}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Account Links */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Account</h3>
-              <ul className="mt-4 space-y-2 text-sm text-slate-300">
-                {footerAccountLinks.map((item) => (
-                  <li key={item.href}>
-                    <Link className="hover:text-white focus-visible:outline-dec-blue transition" href={item.href}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Trust Links */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Trust &amp; Support</h3>
-              <ul className="mt-4 space-y-2 text-sm text-slate-300">
-                {footerTrustLinks.map((item) => (
-                  <li key={item.href}>
-                    <Link className="hover:text-white focus-visible:outline-dec-blue transition" href={item.href}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom row */}
-          <div className="mt-12 border-t border-white/10 pt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-400">
-            <p>© 2025 Development Expertise Center (DEC). All rights reserved.</p>
-          </div>
+    <footer className="mt-auto bg-[#071426] text-white">
+      <div className="mx-auto max-w-[1200px] px-5 py-14 sm:px-7 lg:px-10">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.5fr_0.8fr_0.8fr_1fr]">
+          <div><div className="relative h-12 w-[130px]"><Image alt="Development Expertise Center" className="object-contain" fill sizes="130px" src="/logos/dec-logo.png" /></div><h2 className="mt-5 text-xl font-bold text-white">CSO Learning Hub</h2><p className="mt-3 max-w-sm text-sm leading-7 text-slate-300">A practical digital learning platform for local and grassroots civil society organisations in Ethiopia.</p></div>
+          {[{ heading: "Platform", links: footerPlatformLinks }, { heading: "Account", links: footerAccountLinks }, { heading: "Trust & Support", links: footerTrustLinks }].map((group) => <nav aria-label={`${group.heading} links`} key={group.heading}><h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#72bee8]">{group.heading}</h2><ul className="mt-4 space-y-1">{group.links.map((item) => <li key={item.href}><Link className="inline-flex min-h-11 items-center text-sm text-slate-300 underline-offset-4 hover:text-white hover:underline" href={item.href}>{item.label}</Link></li>)}</ul></nav>)}
         </div>
+        <p className="mt-12 border-t border-white/15 pt-7 text-xs text-slate-400">© {currentYear} Development Expertise Center (DEC). All rights reserved.</p>
       </div>
-
-      {/* Full-width edge-to-edge partner recognition strip. */}
-      <div className="w-full bg-slate-50 border-t border-slate-200">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-4 px-4 py-5 sm:px-6 lg:px-8 md:flex-row md:gap-6">
-          <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 shrink-0 whitespace-nowrap">
-            Our Partners &amp; Donors
-          </p>
-          <div className="h-5 w-px bg-slate-300 shrink-0 hidden sm:block" />
-          <div className="grid w-full flex-1 grid-cols-2 items-center justify-items-center gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {partnerLogos.map((logo) => (
-              <div className="relative h-10 w-full max-w-[132px]" key={logo.src}>
-                <Image
-                  alt={logo.alt}
-                  className="object-contain opacity-80 transition-opacity duration-300 hover:opacity-100"
-                  fill
-                  sizes="132px"
-                  src={logo.src}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="border-t border-[#cad5df] bg-white py-7">
+        <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10"><p className="mb-5 text-xs font-bold uppercase tracking-[0.15em] text-[#3f5061]">Our partners &amp; donors</p><div className="overflow-x-auto" role="region" aria-label="Partner and donor acknowledgement"><div className="min-w-[760px]"><Image alt="Funding and programme partner logos: European Union, Welthungerhilfe, CoSAP, Development Expertise Center, Pastoralist Forum Ethiopia and Civil Peace Service." className="h-auto w-full" height={188} loading="lazy" sizes="(min-width: 1200px) 1200px, 100vw" src="/images/landing/partner-logo-strip.png" width={1429} /></div></div></div>
       </div>
     </footer>
   );
 }
 
-/* ── Shell ────────────────────────────────────────────────── */
 export function PublicShell({ children, session = null }: PublicShellProps) {
   const pathname = usePathname();
   const isHome = pathname === "/";
-
   return (
-    <div className="min-h-screen flex flex-col bg-light-bg text-dark-ink">
+    <div className="flex min-h-screen flex-col bg-[#f7f8f5] text-[#14212e]">
+      <a className="fixed left-4 top-3 z-[60] -translate-y-24 rounded-lg bg-white px-4 py-3 font-semibold text-[#0b1f3a] shadow-lg transition-transform focus:translate-y-0" href="#main-content">Skip to main content</a>
       <PublicHeader session={session} />
-      <main className={cx("flex-1 flex flex-col", isHome ? "" : "pt-[72px] mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full")}>
-        {children}
-      </main>
+      <main className={cx("flex flex-1 flex-col", isHome ? "" : "mx-auto w-full max-w-[1200px] px-5 pb-10 pt-[104px] sm:px-7 lg:px-10")} id="main-content">{children}</main>
       <PublicFooter />
     </div>
   );

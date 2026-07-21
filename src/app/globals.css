@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #3b99d4;
-  --color-accent: #91c852;
-  --color-navy: #0f172a;
-  --color-ink: #111827;
-  --color-bg: #f9fafb;
-  --color-bg-soft: #f3f7fa;
+  --color-primary: #075e8e;
+  --color-accent: #2f6b3b;
+  --color-navy: #071426;
+  --color-ink: #14212e;
+  --color-bg: #f7f8f5;
+  --color-bg-soft: #eef8f2;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
+  --color-border: #cad5df;
   --color-border-soft: #eef2f7;
   --color-muted: #6b7280;
   --color-muted-soft: #9ca3af;
@@ -24,7 +24,7 @@
   --shadow-soft: 0 8px 24px rgb(15 23 42 / 0.08);
   --shadow-card: 0 16px 40px rgb(15 23 42 / 0.1);
   --shadow-hero: 0 24px 60px rgb(15 23 42 / 0.16);
-  --focus-ring: 0 0 0 3px rgb(59 153 212 / 0.28);
+  --focus-ring: 0 0 0 3px rgb(114 190 232 / 0.38);
   --font-display: Georgia, "Times New Roman", serif;
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -77,9 +77,20 @@ a:not([class]) {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid var(--color-primary);
   outline-offset: 3px;
   box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media print {
