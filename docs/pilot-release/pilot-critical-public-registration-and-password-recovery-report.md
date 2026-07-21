@@ -9,7 +9,7 @@ Preview trigger baseline: `7afc0ad58f9aeee42f3e59137291605c293a1527`
 
 This checkpoint corrects only public registration delivery and password recovery. It does not add Stage B4, bulk onboarding, SMTP campaigns, reminders, dashboards, or participant-management features.
 
-The corrected journeys are ready for Level 1 testing preparation. No pilot-critical application defect remains in public registration or password recovery. The staging Supabase connection pool intermittently closes long-running local verifier connections; this is recorded as staging infrastructure backlog and did not affect the completed Preview browser journeys.
+The corrected journeys are ready for consultant usability review. No pilot-critical application defect remains in public registration or password recovery. The non-production Supabase connection pool intermittently closes long-running local verifier connections; this is recorded as infrastructure backlog and did not affect the completed browser journeys.
 
 ## Root causes and corrections
 

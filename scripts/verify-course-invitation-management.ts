@@ -484,11 +484,11 @@ try {
   assert(nextConfig.includes('value: "private, no-store, max-age=0"'));
   assert(nextConfig.includes('value: "no-referrer"'));
   assert(!adminUi.includes("tokenHash"));
-  assert(adminUi.includes("Manual delivery is the designated staging mode"));
+  assert(adminUi.includes("Send the secure link privately"));
   assert(adminDashboard.includes("DEC Administrator Portal"));
   assert(adminDashboard.includes("Sign in as administrator"));
   assert(adminDashboard.includes("/sign-in?next=%2Fadmin%2Fcourse-invitations"));
-  assert(adminDashboard.includes("Managing a participant invitation"));
+  assert(adminDashboard.includes("How to invite a learner"));
   assert(adminDashboard.includes("Replace or cancel safely"));
   assert(adminPage.includes('actualRoute === "/admin"'));
   assert(adminPage.includes("<AdminPortalEntry />"));

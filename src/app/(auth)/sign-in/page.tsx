@@ -31,7 +31,7 @@ const signInErrorMessages: Record<string, string> = {
   "confirmation-required":
     "Please confirm your email address before signing in. If you need help, contact your programme team.",
   "demo-unavailable":
-    "Quick learner access is available only in local preview mode. Sign in with your email and password.",
+    "Quick learner access is not available here. Sign in with your email and password.",
   "hub-profile-missing":
     "Your sign-in worked, but your Learning Hub profile is not linked yet. Contact your programme team for help.",
   "inactive-user":
@@ -252,7 +252,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
               <div className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div>
                   <p className="text-sm font-semibold text-dec-green">
-                    Learning preview
+                    Continue your learning
                   </p>
                   <h2 className="mt-2 text-xl font-semibold">
                     {DEMO_PROPOSAL_COURSE.shortTitle}

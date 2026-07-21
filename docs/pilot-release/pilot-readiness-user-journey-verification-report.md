@@ -1,4 +1,4 @@
-# Pilot Readiness — Level 1 Acceptance Report
+# Pilot Readiness — User Journey Verification Report
 
 Date: 21 July 2026
 
@@ -12,9 +12,9 @@ Production baseline (`main`): `4ba0233b5c8e391e37629e982240d44e21961c8d`
 
 ## Readiness decision
 
-**READY FOR LEVEL 2 HUMAN TESTING.**
+**READY FOR CONSULTANT HUMAN USABILITY REVIEW.**
 
-All reproducible Critical and High application defects found in this checkpoint were corrected and retested. The staging Supabase project reached its transactional email-send limit during browser testing, so a newly submitted registration could not receive another verification email during the same test window. This was independently confirmed as a Supabase HTTP 429 rate-limit response, not an application failure. Level 2 should begin after the staging email quota/window is available.
+All reproducible Critical and High application defects found in this checkpoint were corrected and retested. The non-production Supabase project reached its transactional email-send limit during browser testing, so a newly submitted registration could not receive another verification email during the same test window. This was independently confirmed as a Supabase HTTP 429 rate-limit response, not an application failure. Consultant review should begin after the email quota window is available.
 
 ## Preview under test
 
@@ -157,10 +157,10 @@ No real participant, real organization, or Production record was used.
 |---|---|---|---|
 | High | A concurrent second invitation transaction could surface `unavailable` after a serializable transaction abort instead of the duplicate result. | Kept the transaction atomic and added three bounded retries only for unexpected transient failures; the next snapshot sees the committed duplicate. | B3 passed, including duplicate count/audit and final cleanup. |
 | High | The demo completion dashboard/player could inherit final-assessment/certificate language intended for full courses. | Demo-aware summary, certificate, next-step, and completion copy; no assessment/certificate action for courses without those requirements. | Browser dashboard/player and readiness verifier passed. |
-| Medium | B3 verifier still asserted “approved staging mode”, conflicting with the required no-approval terminology. | Updated the assertion to the UI’s “designated staging mode”. | B3 passed. |
+| Medium | B3 verification still asserted an older internal delivery label. | Updated the assertion to the plain-language secure-link guidance shown to administrators. | B3 passed. |
 | Environment | Supabase staging email provider returned `email_address_invalid` for reserved example domains and later `over_email_send_rate_limit` (HTTP 429) for confirmable addresses. | Used a temporary confirmed fictional account solely for post-verification browser QA; did not weaken application verification. | Open learner course/progress journey passed; all fixtures deleted. |
 | Low / evidence | In-app browser `Page.captureScreenshot` timed out repeatedly. | Retained accessible DOM, routes, redirects, viewport measurements, logs, and connected verifier evidence; documented the limitation. | No screenshot claimed. |
-| Deferred test maintenance | The optional legacy `verify:learner-course-player` assumes an arbitrary database fixture enters the centralized nine-course public catalogue. That conflicts with the P2B catalogue source-of-truth contract and is not in this checkpoint’s required suite. | No product behavior changed. Its leftover fixture was deleted. | Required Level 1 suite passes. |
+| Deferred test maintenance | The optional legacy `verify:learner-course-player` assumes an arbitrary database fixture enters the centralized nine-course public catalogue. That conflicts with the P2B catalogue source-of-truth contract and is not in this checkpoint’s required suite. | No product behavior changed. Its leftover fixture was deleted. | The required verification suite passes. |
 
 ## Validation results
 
@@ -224,13 +224,13 @@ The first post-wording B3 run exposed the serializable concurrency abort as `una
 - `src/lib/course-types.ts`
 - `src/lib/open-registration-workflow.ts`
 - `src/lib/public-course-catalogue.ts`
-- `docs/pilot-release/pilot-readiness-level1-acceptance-report.md`
+- `docs/pilot-release/pilot-readiness-user-journey-verification-report.md`
 
 Implementation commits before this report:
 
 - `7ce8811` — Prepare structured pilot forms and open demo course
 - `547aac8` — Correct demo course completion messaging
-- `d2d0f48` — Harden Level 1 invitation and demo behavior
+- `d2d0f48` — Harden invitation and demo behavior
 
 ## Integrity and release boundaries
 
@@ -241,6 +241,6 @@ Implementation commits before this report:
 - `main` remains unchanged at `4ba0233b5c8e391e37629e982240d44e21961c8d`.
 - Stage B4, SMTP campaigns, bulk onboarding, reminders, advanced participant management, and Production deployment were not started.
 
-## Safe Level 2 handoff
+## Safe consultant handoff
 
-No fictional credential is committed or left active. A Level 2 tester should receive a newly provisioned short-lived fictional account through a private channel after the Supabase staging email-send quota is available. The stable branch Preview URL above is the testing URL.
+No fictional credential is committed or left active. A consultant should receive a newly provisioned short-lived account through a private channel after the Supabase email-send quota is available. The stable branch URL above is the review URL.

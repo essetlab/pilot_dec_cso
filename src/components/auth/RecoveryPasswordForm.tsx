@@ -13,7 +13,7 @@ const messages: Record<string, string> = {
   "invalid-link": "This reset link is invalid or has expired. Request a new link and try again.",
   "missing-fields": "Enter and confirm your new password.",
   "password-mismatch": "The passwords do not match.",
-  unavailable: "Password recovery is not configured in this environment.",
+  unavailable: "Password recovery is not available right now. Please contact support.",
   "weak-password": "Use at least 10 characters with uppercase and lowercase letters and a number.",
 };
 

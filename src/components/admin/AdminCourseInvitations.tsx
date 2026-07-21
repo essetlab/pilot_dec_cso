@@ -236,9 +236,22 @@ export function AdminCourseInvitationList({ data }: { data: ListData }) {
     <div className="space-y-6">
       <Header
         actions={<ActionButton href="/admin/course-invitations/new" size="lg">Create invitation</ActionButton>}
-        description="Create, deliver, resend, cancel, and audit one learner invitation for one published course version."
+        description="Create, send, replace, cancel, and review one learner invitation for one course."
         title="Course invitations"
       />
+      <section className="rounded-[24px] border border-dec-green/35 bg-dec-green/10 p-5 shadow-soft sm:p-6">
+        <StatusBadge label="First sign-in" tone="green" />
+        <h2 className="mt-4 text-xl font-semibold text-deep-navy">
+          Change your temporary password
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-text">
+          If you received a temporary password, change it before managing pilot access. We
+          will send a private password-change link to your administrator email address.
+        </p>
+        <ActionButton className="mt-5" href="/forgot-password" variant="secondary">
+          Change temporary password
+        </ActionButton>
+      </section>
       <Panel title="Find invitations"><Filters data={data} /></Panel>
       <Panel title={`${data.total} invitation${data.total === 1 ? "" : "s"}`}>
         {data.total > data.limit ? <p className="mb-4 text-sm text-muted-text">Showing the newest {data.limit} matching invitations.</p> : null}
@@ -279,7 +292,7 @@ export function AdminCourseInvitationDetail({
     <div className="space-y-6">
       <Header
         actions={<><ActionButton href="/admin/course-invitations" size="lg" variant="secondary">Back to invitations</ActionButton>{detail.canCancel ? <CourseInvitationCancelForm invitationId={detail.id} /> : null}</>}
-        description="Review the validated invitation scope, delivery state, lifecycle history, and safe actions."
+        description="Review the learner, course, delivery status, history, and available actions."
         title="Invitation details"
       />
       <Notice code={adminNotice} />
@@ -291,7 +304,7 @@ export function AdminCourseInvitationDetail({
               {fields.map(([label, value]) => <div key={label} className="rounded-[16px] border border-design-border bg-soft-bg p-4"><dt className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-text">{label}</dt><dd className="mt-2 text-sm font-semibold leading-6 text-dark-ink">{value}</dd></div>)}
             </dl>
           </Panel>
-          <Panel title="Lifecycle history">
+          <Panel title="Invitation history">
             <ol className="space-y-4">
               {detail.history.map((entry, index) => <li className="border-l-2 border-dec-blue/30 pl-4" key={`${entry.action}-${entry.createdAt}-${index}`}><p className="font-semibold text-dark-ink">{entry.description}</p><p className="mt-1 text-sm text-muted-text">{entry.createdAt} · {entry.actor}</p></li>)}
             </ol>
@@ -299,8 +312,8 @@ export function AdminCourseInvitationDetail({
         </div>
         <aside className="space-y-6">
           <Panel title="Delivery and actions">
-            <p className="text-sm leading-6 text-muted-text">Manual delivery is the designated staging mode. Raw links are never stored and cannot be recovered.</p>
-            {detail.canPrepareLink ? <div className="mt-5"><CourseInvitationPrepareLinkForm invitationId={detail.id} /></div> : <p className="mt-4 rounded-[16px] border border-design-border bg-soft-bg p-4 text-sm text-muted-text">No link preparation action is available for this lifecycle state.</p>}
+            <p className="text-sm leading-6 text-muted-text">Send the secure link privately. Copy it when it appears because it cannot be shown again later.</p>
+            {detail.canPrepareLink ? <div className="mt-5"><CourseInvitationPrepareLinkForm invitationId={detail.id} /></div> : <p className="mt-4 rounded-[16px] border border-design-border bg-soft-bg p-4 text-sm text-muted-text">No secure-link action is available for this invitation.</p>}
           </Panel>
           <Panel title="Activation result">
             {detail.activatedUser ? <p className="text-sm leading-6 text-muted-text">Activated by <span className="font-semibold text-dark-ink">{detail.activatedUser}</span>. One individual course assignment is linked to this invitation.</p> : <p className="text-sm leading-6 text-muted-text">No course assignment has been created by this invitation yet.</p>}

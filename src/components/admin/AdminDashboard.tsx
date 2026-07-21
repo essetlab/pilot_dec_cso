@@ -25,12 +25,12 @@ const invitationSteps = [
   },
   {
     description:
-      "Open Manage invitations, choose Create invitation, and select each value from the controlled options.",
+      "Open Manage invitations, choose Create invitation, and select the CSO, learner, course, and expiry date.",
     title: "Create the invitation",
   },
   {
     description:
-      "Prepare the secure link, copy it immediately, and deliver it privately to the intended learner. The raw link is not stored for later recovery.",
+      "Prepare the secure link, copy it when it appears, and send it privately to the intended learner. The link cannot be shown again later.",
     title: "Copy and deliver the link",
   },
   {
@@ -62,10 +62,10 @@ function InvitationOperationsGuide() {
           className="mt-4 text-2xl font-semibold leading-tight text-deep-navy"
           id="administrator-invitation-guide"
         >
-          Managing a participant invitation
+          How to invite a learner
         </h2>
         <p className="mt-2 text-sm leading-6 text-[#26536c]">
-          Follow these steps to prepare, deliver, and monitor secure individual pilot access.
+          Follow these steps to prepare, send, and monitor one learner invitation.
         </p>
       </div>
       <ol className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -98,8 +98,8 @@ export function AdminPortalEntry() {
           DEC Administrator Portal
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-white/80">
-          This area is for authorized DEC staff managing participant invitations and pilot
-          access. Administrator permissions are checked after sign-in.
+          Use this area to manage participating CSOs, invite learners, select courses,
+          monitor invitation status, replace or cancel invitations, and support pilot access.
         </p>
         <ActionButton
           className="mt-7"
