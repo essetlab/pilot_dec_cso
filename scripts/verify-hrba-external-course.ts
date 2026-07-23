@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { randomUUID } from "node:crypto";
 import {
   HRBA_EXTERNAL_COURSE_SLUG,
   HRBA_EXTERNAL_COURSE_VERSION_ID,
@@ -145,6 +146,12 @@ async function main() {
     launchData.launchToken && !launchData.launchToken.includes(session.userId),
     "Expected launch token to be opaque and not contain the participant id.",
   );
+  assert(
+    launchData.learnerStateKey &&
+      !launchData.learnerStateKey.includes(session.userId) &&
+      !launchData.iframeSrc.includes(launchData.learnerStateKey),
+    "Expected learner state key to be opaque and delivered outside the iframe URL.",
+  );
 
   const launchEnrollment = await prisma.enrollment.findUnique({
     include: {
@@ -167,8 +174,10 @@ async function main() {
     currentModuleId: "module_01_hrba_foundations",
     currentScreenId: "M1-S01",
     iframeOrigin: launchData.allowedOrigin,
+    learnerStateKey: launchData.learnerStateKey,
     launchToken: "not-a-valid-launch-token",
     progressPercent: 10,
+    sentAt: new Date().toISOString(),
     session,
   });
 
@@ -182,8 +191,10 @@ async function main() {
     currentModuleId: "module_01_hrba_foundations",
     currentScreenId: "M1-S01",
     iframeOrigin: launchData.allowedOrigin,
+    learnerStateKey: launchData.learnerStateKey,
     launchToken: launchData.launchToken,
     progressPercent: 10,
+    sentAt: new Date().toISOString(),
     session: otherSession,
   });
 
@@ -196,8 +207,10 @@ async function main() {
     currentModuleId: "module_01_hrba_foundations",
     currentScreenId: "M1-S01",
     iframeOrigin: "http://invalid-origin.local",
+    learnerStateKey: launchData.learnerStateKey,
     launchToken: launchData.launchToken,
     progressPercent: 10,
+    sentAt: new Date().toISOString(),
     session,
   });
 
@@ -218,7 +231,9 @@ async function main() {
     currentModuleId: "module_05_hrba_meal",
     currentScreenId: "M5-PLAYER-COMPLETE",
     iframeOrigin: launchData.allowedOrigin,
+    learnerStateKey: launchData.learnerStateKey,
     launchToken: launchData.launchToken,
+    sentAt: new Date().toISOString(),
     session,
   };
 
@@ -239,10 +254,12 @@ async function main() {
   );
 
   const failedSubmittedAt = new Date().toISOString();
+  const failedEvidenceId = randomUUID();
   const failedIncompleteAssessmentResult = await recordExternalCourseProgress({
     ...baseMessage,
     assessment: {
       attemptNumber: 1,
+      evidenceId: failedEvidenceId,
       maxScore: 10,
       passed: false,
       percentage: 70,
@@ -285,6 +302,7 @@ async function main() {
       ...baseMessage,
       assessment: {
         attemptNumber: 1,
+        evidenceId: failedEvidenceId,
         maxScore: 10,
         passed: false,
         percentage: 70,
@@ -313,23 +331,24 @@ async function main() {
   });
 
   assert(
-    missingAssessmentResult.success,
-    `Expected completion save without assessment: ${missingAssessmentResult.error}`,
+    !missingAssessmentResult.success,
+    "Expected completion without assessment evidence to fail closed.",
   );
-  assert(missingAssessmentResult.completed, "Expected completion to be recorded.");
   assert(
-    missingAssessmentResult.certificateStatus === "assessment-missing",
-    "Expected certificate to remain blocked when assessment is missing.",
+    missingAssessmentResult.error === "Assessment evidence is required for completion",
+    "Expected a specific missing-assessment rejection.",
   );
   assert(
     (await countCertificates(session.userId)) === 0,
     "Completion without assessment must not issue a certificate.",
   );
 
+  const failingEvidenceId = randomUUID();
   const failingAssessmentResult = await recordExternalCourseProgress({
     ...baseMessage,
     assessment: {
       attemptNumber: 2,
+      evidenceId: failingEvidenceId,
       maxScore: 10,
       passed: false,
       percentage: 70,
@@ -358,10 +377,12 @@ async function main() {
   );
 
   const passingSubmittedAt = new Date().toISOString();
+  const passingEvidenceId = randomUUID();
   const passingAssessmentResult = await recordExternalCourseProgress({
     ...baseMessage,
     assessment: {
       attemptNumber: 3,
+      evidenceId: passingEvidenceId,
       maxScore: 10,
       passed: true,
       percentage: 90,
@@ -393,6 +414,7 @@ async function main() {
     ...baseMessage,
     assessment: {
       attemptNumber: 3,
+      evidenceId: passingEvidenceId,
       maxScore: 10,
       passed: true,
       percentage: 90,

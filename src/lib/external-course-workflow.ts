@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import {
   ContentBlockType,
   CourseLevel,
@@ -35,6 +35,9 @@ import { hasLearnerCourseEntitlement } from "./course-entitlement";
 
 const issuerName = "DEC / WHH CSF+ CSO Learning Hub";
 const externalCourseLaunchTokenTtlMs = 8 * 60 * 60 * 1000;
+const externalCourseFutureClockToleranceMs = 5 * 60 * 1000;
+const externalCourseContextClockToleranceMs = 60 * 1000;
+const opaqueEvidenceIdPattern = /^[A-Za-z0-9_-]{20,128}$/;
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue;
@@ -44,8 +47,23 @@ function createExternalCourseLaunchToken() {
   return randomBytes(32).toString("base64url");
 }
 
+function createExternalLearnerStateKey() {
+  return randomBytes(32).toString("base64url");
+}
+
 function hashExternalCourseLaunchToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
+}
+
+function opaqueValueMatchesHash(value: string, expectedHash: string | null) {
+  if (!expectedHash) {
+    return false;
+  }
+
+  const actual = Buffer.from(hashExternalCourseLaunchToken(value), "hex");
+  const expected = Buffer.from(expectedHash, "hex");
+
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 function getPortalOrigin() {
@@ -95,7 +113,17 @@ function normalizeAssessmentResult(
     return null;
   }
 
-  const submittedAt = assessment.submittedAt ? new Date(assessment.submittedAt) : new Date();
+  if (
+    !assessment.evidenceId ||
+    !opaqueEvidenceIdPattern.test(assessment.evidenceId) ||
+    !assessment.submittedAt ||
+    !Number.isInteger(assessment.attemptNumber) ||
+    (assessment.attemptNumber ?? 0) < 1
+  ) {
+    return null;
+  }
+
+  const submittedAt = new Date(assessment.submittedAt);
 
   if (Number.isNaN(submittedAt.getTime())) {
     return null;
@@ -103,6 +131,7 @@ function normalizeAssessmentResult(
 
   return {
     attemptNumber: assessment.attemptNumber,
+    evidenceId: assessment.evidenceId,
     maxScore:
       maxScore !== undefined
         ? Math.round(maxScore)
@@ -138,14 +167,22 @@ function getAttemptAssessmentMetadata(answersJson: Prisma.JsonValue | null) {
 }
 
 function externalAttemptMatches(
-  attempt: { answersJson: Prisma.JsonValue | null },
+  attempt: {
+    answersJson: Prisma.JsonValue | null;
+    externalEvidenceId: string | null;
+  },
   assessment: NormalizedExternalAssessment,
 ) {
   const existingAssessment = getAttemptAssessmentMetadata(attempt.answersJson);
 
   return (
+    attempt.externalEvidenceId === assessment.evidenceId &&
     existingAssessment?.attemptNumber === assessment.attemptNumber &&
-    existingAssessment?.submittedAt === assessment.submittedAt.toISOString()
+    existingAssessment?.submittedAt === assessment.submittedAt.toISOString() &&
+    existingAssessment?.score === assessment.score &&
+    existingAssessment?.maxScore === assessment.maxScore &&
+    existingAssessment?.percentage === assessment.percentage &&
+    existingAssessment?.passed === assessment.passed
   );
 }
 
@@ -194,6 +231,14 @@ async function recordExternalAssessmentAttempt({
   score: number;
   userId: string;
 }) {
+  const evidenceAttempt = await prisma.quizAttempt.findUnique({
+    where: { externalEvidenceId: assessment.evidenceId },
+  });
+
+  if (evidenceAttempt) {
+    return evidenceAttempt;
+  }
+
   const candidateAttempts = await prisma.quizAttempt.findMany({
     orderBy: { createdAt: "desc" },
     take: 25,
@@ -217,6 +262,7 @@ async function recordExternalAssessmentAttempt({
         [questionId]: assessmentPassed ? "completed" : "not completed",
         assessment: {
           attemptNumber: assessment.attemptNumber,
+          evidenceId: assessment.evidenceId,
           maxScore,
           passed: assessment.passed,
           percentage,
@@ -231,6 +277,7 @@ async function recordExternalAssessmentAttempt({
       }),
       courseId,
       courseVersionId,
+      externalEvidenceId: assessment.evidenceId,
       maxScore,
       passed: assessmentPassed,
       percentage,
@@ -646,7 +693,7 @@ export async function getExternalCourseLaunchData(
     return null;
   }
 
-  const enrollment = await prisma.enrollment.upsert({
+  let enrollment = await prisma.enrollment.upsert({
     create: {
       courseId: course.id,
       courseVersionId: version.id,
@@ -665,6 +712,32 @@ export async function getExternalCourseLaunchData(
       },
     },
   });
+
+  if (!enrollment.externalLearnerStateKey || !enrollment.externalStateKeyIssuedAt) {
+    const learnerStateKey = createExternalLearnerStateKey();
+    const stateKeyIssuedAt = new Date();
+
+    await prisma.enrollment.updateMany({
+      data: {
+        externalLearnerStateKey: learnerStateKey,
+        externalStateKeyIssuedAt: stateKeyIssuedAt,
+      },
+      where: {
+        externalLearnerStateKey: null,
+        id: enrollment.id,
+      },
+    });
+
+    enrollment = await prisma.enrollment.findUniqueOrThrow({
+      where: { id: enrollment.id },
+    });
+  }
+
+  const learnerStateKey = enrollment.externalLearnerStateKey;
+
+  if (!learnerStateKey || !enrollment.externalStateKeyIssuedAt) {
+    return null;
+  }
 
   await prisma.lessonProgress.upsert({
     create: {
@@ -716,6 +789,7 @@ export async function getExternalCourseLaunchData(
       courseVersionId: version.id,
       enrollmentId: enrollment.id,
       expiresAt: new Date(now.getTime() + externalCourseLaunchTokenTtlMs),
+      learnerStateKeyHash: hashExternalCourseLaunchToken(learnerStateKey),
       portalOrigin: getPortalOrigin(),
       tokenHash: hashExternalCourseLaunchToken(launchToken),
       userId: user.id,
@@ -733,6 +807,7 @@ export async function getExternalCourseLaunchData(
     courseTitle: course.title,
     iframeSrc: iframeUrl.toString(),
     launchToken,
+    learnerStateKey,
   };
 }
 
@@ -744,8 +819,10 @@ export async function recordExternalCourseProgress({
   currentModuleId,
   currentScreenId,
   iframeOrigin,
+  learnerStateKey,
   launchToken,
   progressPercent,
+  sentAt,
   session,
 }: {
   assessment?: ExternalCourseAssessmentResult;
@@ -755,8 +832,10 @@ export async function recordExternalCourseProgress({
   currentModuleId: string | null;
   currentScreenId: string | null;
   iframeOrigin: string;
+  learnerStateKey: string;
   launchToken: string;
   progressPercent: number;
+  sentAt: string;
   session: AuthSession | null;
 }) {
   if (!session?.userId) {
@@ -792,6 +871,29 @@ export async function recordExternalCourseProgress({
 
   if (tokenRecord.allowedOrigin !== iframeOrigin) {
     return { success: false, error: "Invalid course origin" };
+  }
+
+  if (tokenRecord.portalOrigin !== getPortalOrigin()) {
+    return { success: false, error: "Invalid Hub origin" };
+  }
+
+  if (
+    !learnerStateKey ||
+    !opaqueValueMatchesHash(learnerStateKey, tokenRecord.learnerStateKeyHash)
+  ) {
+    return { success: false, error: "Invalid learner state context" };
+  }
+
+  const callbackSentAt = new Date(sentAt);
+  const serverNow = new Date();
+
+  if (
+    !sentAt ||
+    Number.isNaN(callbackSentAt.getTime()) ||
+    callbackSentAt.getTime() >
+      serverNow.getTime() + externalCourseFutureClockToleranceMs
+  ) {
+    return { success: false, error: "Invalid callback timestamp" };
   }
 
   const course = await prisma.course.findUnique({
@@ -833,18 +935,27 @@ export async function recordExternalCourseProgress({
     !enrollment ||
     enrollment.userId !== user.id ||
     enrollment.courseId !== course.id ||
-    enrollment.courseVersionId !== version.id
+    enrollment.courseVersionId !== version.id ||
+    !enrollment.externalLearnerStateKey ||
+    !enrollment.externalStateKeyIssuedAt ||
+    enrollment.externalLearnerStateKey !== learnerStateKey
   ) {
     return { success: false, error: "Enrollment not found" };
   }
 
-  await prisma.externalCourseLaunchToken.update({
-    data: { lastUsedAt: new Date() },
-    where: { id: tokenRecord.id },
-  });
+  const validContextFrom = Math.max(
+    enrollment.enrolledAt.getTime(),
+    enrollment.externalStateKeyIssuedAt.getTime(),
+  );
+
+  if (
+    callbackSentAt.getTime() <
+    validContextFrom - externalCourseContextClockToleranceMs
+  ) {
+    return { success: false, error: "Stale callback evidence" };
+  }
 
   const alreadyCompleted = enrollment.status === EnrollmentStatus.COMPLETED;
-  const shouldComplete = completed || alreadyCompleted;
   const normalizedAssessment = normalizeAssessmentResult(assessment);
   let externalQuiz:
     | Awaited<ReturnType<typeof getExternalCompletionQuiz>>
@@ -856,6 +967,37 @@ export async function recordExternalCourseProgress({
   }
 
   if (normalizedAssessment) {
+    if (
+      normalizedAssessment.submittedAt.getTime() >
+        serverNow.getTime() + externalCourseFutureClockToleranceMs ||
+      normalizedAssessment.submittedAt.getTime() <
+        validContextFrom - externalCourseContextClockToleranceMs
+    ) {
+      return { success: false, error: "Stale assessment evidence" };
+    }
+
+    const evidenceAttempt = await prisma.quizAttempt.findUnique({
+      where: { externalEvidenceId: normalizedAssessment.evidenceId },
+    });
+
+    if (
+      evidenceAttempt &&
+      (
+        evidenceAttempt.userId !== user.id ||
+        evidenceAttempt.courseId !== course.id ||
+        evidenceAttempt.courseVersionId !== version.id
+      )
+    ) {
+      return { success: false, error: "Assessment evidence context mismatch" };
+    }
+
+    if (
+      evidenceAttempt &&
+      !externalAttemptMatches(evidenceAttempt, normalizedAssessment)
+    ) {
+      return { success: false, error: "Assessment evidence replay mismatch" };
+    }
+
     externalQuiz = await getExternalCompletionQuiz();
 
     if (!externalQuiz) {
@@ -869,12 +1011,33 @@ export async function recordExternalCourseProgress({
       normalizedAssessment.percentage >= passThreshold;
   }
 
+  if (completed && course.finalTestRequired && !normalizedAssessment) {
+    return { success: false, error: "Assessment evidence is required for completion" };
+  }
+
+  const shouldComplete =
+    alreadyCompleted ||
+    (
+      completed &&
+      (!course.finalTestRequired || assessmentPassed)
+    );
+  const effectiveProgress = shouldComplete
+    ? 100
+    : completed && course.finalTestRequired
+      ? Math.min(boundedProgress, 99)
+      : boundedProgress;
+
+  await prisma.externalCourseLaunchToken.update({
+    data: { lastUsedAt: serverNow },
+    where: { id: tokenRecord.id },
+  });
+
   await prisma.$transaction(async (tx) => {
     await tx.enrollment.update({
       data: {
         completedAt: shouldComplete ? (enrollment.completedAt ?? new Date()) : null,
         lastAccessedAt: new Date(),
-        progressPercent: shouldComplete ? 100 : boundedProgress,
+        progressPercent: effectiveProgress,
         status: shouldComplete ? EnrollmentStatus.COMPLETED : EnrollmentStatus.IN_PROGRESS,
       },
       where: { id: enrollment.id },
@@ -898,20 +1061,24 @@ export async function recordExternalCourseProgress({
           ? LessonProgressStatus.COMPLETED
           : LessonProgressStatus.IN_PROGRESS,
       },
-      update: {
-        completedAt: shouldComplete ? (enrollment.completedAt ?? new Date()) : null,
-        lastAccessedAt: new Date(),
-        progressJson: toJson({
-          completedModuleIds,
-          currentModuleId,
-          currentScreenId,
-          iframeOrigin,
-          source: "external-course-postmessage",
-        }),
-        status: shouldComplete
-          ? LessonProgressStatus.COMPLETED
-          : LessonProgressStatus.IN_PROGRESS,
-      },
+      update: alreadyCompleted
+        ? {
+            lastAccessedAt: new Date(),
+          }
+        : {
+            completedAt: shouldComplete ? new Date() : null,
+            lastAccessedAt: new Date(),
+            progressJson: toJson({
+              completedModuleIds,
+              currentModuleId,
+              currentScreenId,
+              iframeOrigin,
+              source: "external-course-postmessage",
+            }),
+            status: shouldComplete
+              ? LessonProgressStatus.COMPLETED
+              : LessonProgressStatus.IN_PROGRESS,
+          },
       where: {
         enrollmentId_lessonId: {
           enrollmentId: enrollment.id,
@@ -1009,6 +1176,6 @@ export async function recordExternalCourseProgress({
     certificateCode,
     certificateStatus,
     completed: shouldComplete,
-    progressPercent: shouldComplete ? 100 : boundedProgress,
+    progressPercent: effectiveProgress,
   };
 }

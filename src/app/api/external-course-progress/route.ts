@@ -47,6 +47,10 @@ function parseAssessment(value: unknown): ExternalCourseAssessmentResult | null 
   }
 
   const record = value as Record<string, unknown>;
+  const evidenceId =
+    record.evidenceId === undefined || record.evidenceId === null
+      ? undefined
+      : asString(record.evidenceId);
   const score = asOptionalFiniteNumber(record.score);
   const maxScore = asOptionalFiniteNumber(record.maxScore);
   const percentage = asOptionalFiniteNumber(record.percentage);
@@ -63,6 +67,7 @@ function parseAssessment(value: unknown): ExternalCourseAssessmentResult | null 
     percentage === null ||
     attemptNumber === null ||
     passed === null ||
+    (record.evidenceId !== undefined && record.evidenceId !== null && !evidenceId) ||
     (record.submittedAt !== undefined && record.submittedAt !== null && !submittedAt)
   ) {
     return null;
@@ -80,6 +85,7 @@ function parseAssessment(value: unknown): ExternalCourseAssessmentResult | null 
 
   return {
     attemptNumber,
+    evidenceId,
     maxScore,
     passed,
     percentage,
@@ -136,8 +142,10 @@ export async function POST(request: NextRequest) {
     currentModuleId: asNullableString(record.currentModuleId),
     currentScreenId: asNullableString(record.currentScreenId),
     iframeOrigin: asString(record.iframeOrigin),
+    learnerStateKey: asString(record.learnerStateKey),
     launchToken: asString(record.launchToken),
     progressPercent,
+    sentAt: asString(record.sentAt),
     session,
   });
 

@@ -6,6 +6,7 @@ import {
   type ExternalCourseAssessmentResult,
   type ExternalCourseEventMessage,
   isExternalCourseEventMessage,
+  EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
   type ExternalCourseLaunchData,
   type ExternalCourseProgressMessage,
@@ -36,6 +37,7 @@ function isAssessmentResult(value: unknown): value is ExternalCourseAssessmentRe
 
   return (
     isOptionalNumber(assessment.attemptNumber) &&
+    isOptionalString(assessment.evidenceId) &&
     isOptionalNumber(assessment.maxScore) &&
     isOptionalBoolean(assessment.passed) &&
     isOptionalNumber(assessment.percentage) &&
@@ -55,6 +57,8 @@ function isProgressMessage(value: unknown): value is ExternalCourseProgressMessa
     message.type === EXTERNAL_COURSE_PROGRESS_MESSAGE &&
     message.version === 1 &&
     typeof message.courseSlug === "string" &&
+    typeof message.learnerStateKey === "string" &&
+    typeof message.sentAt === "string" &&
     (message.userId === undefined || typeof message.userId === "string") &&
     typeof message.progressPercent === "number" &&
     typeof message.completed === "boolean" &&
@@ -75,6 +79,7 @@ export function ExternalCourseFrame({
   const [frameStatus, setFrameStatus] = useState<"loading" | "stabilizing" | "ready">("loading");
   const hasSubmittedCompletion = useRef(false);
   const hasStabilizedFrame = useRef(false);
+  const courseFrame = useRef<HTMLIFrameElement | null>(null);
   const frameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -102,6 +107,7 @@ export function ExternalCourseFrame({
           currentModuleId: progressMessage.currentModuleId,
           currentScreenId: progressMessage.currentScreenId,
           iframeOrigin: launchData.allowedOrigin,
+          learnerStateKey: progressMessage.learnerStateKey,
           launchToken: launchData.launchToken,
           progressPercent: progressMessage.progressPercent,
           sentAt: progressMessage.sentAt,
@@ -141,7 +147,10 @@ export function ExternalCourseFrame({
     }
 
     function handleMessage(event: MessageEvent) {
-      if (event.origin !== launchData.allowedOrigin) {
+      if (
+        event.origin !== launchData.allowedOrigin ||
+        event.source !== courseFrame.current?.contentWindow
+      ) {
         return;
       }
 
@@ -151,6 +160,15 @@ export function ExternalCourseFrame({
         }
 
         if (event.data.event === "course_ready") {
+          courseFrame.current?.contentWindow?.postMessage(
+            {
+              courseSlug: launchData.courseSlug,
+              learnerStateKey: launchData.learnerStateKey,
+              type: EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
+              version: 1,
+            },
+            launchData.allowedOrigin,
+          );
           setMessage("Course ready.");
           return;
         }
@@ -167,6 +185,12 @@ export function ExternalCourseFrame({
         }
 
         const progressEvent = event.data as ExternalCourseEventMessage;
+        if (progressEvent.learnerStateKey !== launchData.learnerStateKey) {
+          setStatus("error");
+          setMessage("The course progress belongs to a different learner context.");
+          return;
+        }
+
         void persistProgress({
           assessment: progressEvent.assessment,
           completed: progressEvent.event === "course_completed",
@@ -174,6 +198,7 @@ export function ExternalCourseFrame({
           courseSlug: progressEvent.courseSlug,
           currentModuleId: progressEvent.currentModuleId ?? null,
           currentScreenId: progressEvent.currentScreenId ?? null,
+          learnerStateKey: progressEvent.learnerStateKey,
           progressPercent: progressEvent.progressPercent ?? 0,
           sentAt: progressEvent.sentAt,
           type: EXTERNAL_COURSE_PROGRESS_MESSAGE,
@@ -182,7 +207,11 @@ export function ExternalCourseFrame({
         return;
       }
 
-      if (!isProgressMessage(event.data) || event.data.courseSlug !== launchData.courseSlug) {
+      if (
+        !isProgressMessage(event.data) ||
+        event.data.courseSlug !== launchData.courseSlug ||
+        event.data.learnerStateKey !== launchData.learnerStateKey
+      ) {
         return;
       }
 
@@ -339,6 +368,7 @@ export function ExternalCourseFrame({
               frameReady ? "opacity-100" : "opacity-0"
             }`}
             onLoad={handleFrameLoad}
+            ref={courseFrame}
             referrerPolicy="strict-origin-when-cross-origin"
             sandbox="allow-downloads allow-forms allow-popups allow-same-origin allow-scripts"
             src={launchData.iframeSrc}

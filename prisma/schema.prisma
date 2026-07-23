@@ -214,18 +214,19 @@ model User {
 }
 
 model ExternalCourseLaunchToken {
-  id              String    @id @default(cuid())
-  tokenHash       String    @unique
-  userId          String
-  courseId        String
-  courseVersionId String
-  enrollmentId    String
-  courseSlug      String
-  allowedOrigin   String
-  portalOrigin    String
-  expiresAt       DateTime
-  lastUsedAt      DateTime?
-  createdAt       DateTime  @default(now())
+  id                  String    @id @default(cuid())
+  tokenHash           String    @unique
+  learnerStateKeyHash String?
+  userId              String
+  courseId            String
+  courseVersionId     String
+  enrollmentId        String
+  courseSlug          String
+  allowedOrigin       String
+  portalOrigin        String
+  expiresAt           DateTime
+  lastUsedAt          DateTime?
+  createdAt           DateTime  @default(now())
 
   @@index([userId])
   @@index([courseId])
@@ -642,26 +643,27 @@ model QuizQuestionLearningOutcome {
 }
 
 model QuizAttempt {
-  id              String            @id @default(cuid())
-  quizId          String
-  userId          String
-  courseId        String
-  courseVersionId String
-  status          QuizAttemptStatus @default(IN_PROGRESS)
-  score           Int?
-  maxScore        Int?
-  percentage      Float?
-  passed          Boolean           @default(false)
-  answersJson     Json?
-  startedAt       DateTime          @default(now())
-  submittedAt     DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  quiz            Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseVersion   CourseVersion     @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
-  certificates    Certificate[]
+  id                 String            @id @default(cuid())
+  quizId             String
+  userId             String
+  courseId           String
+  courseVersionId    String
+  externalEvidenceId String?           @unique
+  status             QuizAttemptStatus @default(IN_PROGRESS)
+  score              Int?
+  maxScore           Int?
+  percentage         Float?
+  passed             Boolean           @default(false)
+  answersJson        Json?
+  startedAt          DateTime          @default(now())
+  submittedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  quiz               Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course             Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseVersion      CourseVersion     @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  certificates       Certificate[]
 
   @@index([quizId])
   @@index([userId])
@@ -701,24 +703,26 @@ model CourseAssignment {
 }
 
 model Enrollment {
-  id              String           @id @default(cuid())
-  userId          String
-  courseId        String
-  courseVersionId String
-  status          EnrollmentStatus @default(NOT_STARTED)
-  progressPercent Int              @default(0)
-  enrolledAt      DateTime         @default(now())
-  startedAt       DateTime?
-  completedAt     DateTime?
-  lastAccessedAt  DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseVersion   CourseVersion    @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
-  lessonProgress  LessonProgress[]
-  certificates    Certificate[]
-  feedback        Feedback[]
+  id                       String           @id @default(cuid())
+  userId                   String
+  courseId                 String
+  courseVersionId          String
+  externalLearnerStateKey  String?          @unique
+  externalStateKeyIssuedAt DateTime?
+  status                   EnrollmentStatus @default(NOT_STARTED)
+  progressPercent          Int              @default(0)
+  enrolledAt               DateTime         @default(now())
+  startedAt                DateTime?
+  completedAt              DateTime?
+  lastAccessedAt           DateTime?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  user                     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course                   Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseVersion            CourseVersion    @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  lessonProgress           LessonProgress[]
+  certificates             Certificate[]
+  feedback                 Feedback[]
 
   @@unique([userId, courseVersionId])
   @@index([courseId])

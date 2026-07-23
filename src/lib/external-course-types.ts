@@ -1,5 +1,7 @@
 export const EXTERNAL_COURSE_PROGRESS_MESSAGE = "cso-learning-hub:external-course-progress";
 export const EXTERNAL_COURSE_EVENT_MESSAGE = "cso-learning-hub:external-course-event";
+export const EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE =
+  "cso-learning-hub:external-course-launch-context";
 
 export type ExternalCourseEventName =
   | "course_ready"
@@ -12,6 +14,7 @@ export type ExternalCourseEventName =
 
 export type ExternalCourseAssessmentResult = {
   attemptNumber?: number;
+  evidenceId?: string;
   maxScore?: number;
   passed?: boolean;
   percentage?: number;
@@ -23,6 +26,7 @@ export type ExternalCourseProgressMessage = {
   type: typeof EXTERNAL_COURSE_PROGRESS_MESSAGE;
   version: 1;
   courseSlug: string;
+  learnerStateKey: string;
   userId?: string;
   enrollmentId?: string;
   courseVersionId?: string;
@@ -39,6 +43,7 @@ export type ExternalCourseEventMessage = {
   type: typeof EXTERNAL_COURSE_EVENT_MESSAGE;
   version: 1;
   courseSlug: string;
+  learnerStateKey?: string;
   event: ExternalCourseEventName;
   sentAt: string;
   assessment?: ExternalCourseAssessmentResult;
@@ -77,6 +82,8 @@ export function isExternalCourseEventMessage(value: unknown): value is ExternalC
     message.version !== 1 ||
     typeof message.courseSlug !== "string" ||
     !message.courseSlug ||
+    (message.learnerStateKey !== undefined &&
+      typeof message.learnerStateKey !== "string") ||
     typeof message.event !== "string" ||
     !externalCourseEvents.has(message.event as ExternalCourseEventName) ||
     typeof message.sentAt !== "string" ||
@@ -93,12 +100,18 @@ export function isExternalCourseEventMessage(value: unknown): value is ExternalC
 
   if (
     ["progress_updated", "module_completed", "assessment_completed"].includes(message.event) &&
-    typeof message.progressPercent !== "number"
+    (
+      typeof message.progressPercent !== "number" ||
+      !message.learnerStateKey
+    )
   ) {
     return false;
   }
 
-  if (message.event === "course_completed" && message.progressPercent !== 100) {
+  if (
+    message.event === "course_completed" &&
+    (message.progressPercent !== 100 || !message.learnerStateKey)
+  ) {
     return false;
   }
 
@@ -118,4 +131,12 @@ export type ExternalCourseLaunchData = {
   courseTitle: string;
   iframeSrc: string;
   launchToken: string;
+  learnerStateKey: string;
+};
+
+export type ExternalCourseLaunchContextMessage = {
+  type: typeof EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE;
+  version: 1;
+  courseSlug: string;
+  learnerStateKey: string;
 };

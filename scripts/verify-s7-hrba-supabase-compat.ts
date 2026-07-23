@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   EnrollmentStatus,
   QuizAttemptStatus,
@@ -216,6 +216,7 @@ function assertIframeUrlIsOpaque(iframeSrc: string, userId: string) {
 }
 
 async function verifyLaunchRecord(input: {
+  learnerStateKey: string;
   launchToken: string;
   userId: string;
 }) {
@@ -237,6 +238,11 @@ async function verifyLaunchRecord(input: {
     "Expected stored launch token value to be hashed.",
   );
   assert(
+    tokenRecord.learnerStateKeyHash ===
+      createHash("sha256").update(input.learnerStateKey).digest("hex"),
+    "Expected launch token to be bound to the learner state key hash.",
+  );
+  assert(
     tokenRecord.expiresAt.getTime() > Date.now(),
     "Expected launch token to have a future expiry.",
   );
@@ -250,6 +256,7 @@ async function verifyLaunchRecord(input: {
 
 async function verifyProgressAndCertificate(input: {
   allowedOrigin: string;
+  learnerStateKey: string;
   launchToken: string;
   session: AuthSession;
 }) {
@@ -260,8 +267,10 @@ async function verifyProgressAndCertificate(input: {
     currentModuleId: "module_01_hrba_foundations",
     currentScreenId: "M1-S01",
     iframeOrigin: input.allowedOrigin,
+    learnerStateKey: input.learnerStateKey,
     launchToken: "not-a-valid-token",
     progressPercent: 10,
+    sentAt: new Date().toISOString(),
     session: input.session,
   });
   assert(!invalidTokenResult.success, "Expected invalid token to be rejected.");
@@ -277,8 +286,10 @@ async function verifyProgressAndCertificate(input: {
     currentModuleId: "module_01_hrba_foundations",
     currentScreenId: "M1-S01",
     iframeOrigin: input.allowedOrigin,
+    learnerStateKey: input.learnerStateKey,
     launchToken: input.launchToken,
     progressPercent: 10,
+    sentAt: new Date().toISOString(),
     session: sessionFor(mismatchUser),
   });
   assert(!mismatchResult.success, "Expected token/session mismatch to be rejected.");
@@ -290,8 +301,10 @@ async function verifyProgressAndCertificate(input: {
     currentModuleId: "module_01_hrba_foundations",
     currentScreenId: "M1-S01",
     iframeOrigin: "https://invalid-origin.example.test",
+    learnerStateKey: input.learnerStateKey,
     launchToken: input.launchToken,
     progressPercent: 10,
+    sentAt: new Date().toISOString(),
     session: input.session,
   });
   assert(!invalidOriginResult.success, "Expected invalid iframe origin to be rejected.");
@@ -299,6 +312,7 @@ async function verifyProgressAndCertificate(input: {
   const failedResult = await recordExternalCourseProgress({
     assessment: {
       attemptNumber: 1,
+      evidenceId: randomUUID(),
       maxScore: 10,
       passed: false,
       percentage: 70,
@@ -317,8 +331,10 @@ async function verifyProgressAndCertificate(input: {
     currentModuleId: "module_05_hrba_meal",
     currentScreenId: "M5-FINAL-ASSESSMENT",
     iframeOrigin: input.allowedOrigin,
+    learnerStateKey: input.learnerStateKey,
     launchToken: input.launchToken,
     progressPercent: 100,
+    sentAt: new Date().toISOString(),
     session: input.session,
   });
   assert(failedResult.success, `Expected failed assessment to record: ${failedResult.error}`);
@@ -330,6 +346,7 @@ async function verifyProgressAndCertificate(input: {
   const passingResult = await recordExternalCourseProgress({
     assessment: {
       attemptNumber: 2,
+      evidenceId: randomUUID(),
       maxScore: 10,
       passed: true,
       percentage: 90,
@@ -348,8 +365,10 @@ async function verifyProgressAndCertificate(input: {
     currentModuleId: "module_05_hrba_meal",
     currentScreenId: "M5-FINAL-ASSESSMENT",
     iframeOrigin: input.allowedOrigin,
+    learnerStateKey: input.learnerStateKey,
     launchToken: input.launchToken,
     progressPercent: 100,
+    sentAt: new Date().toISOString(),
     session: input.session,
   });
   assert(passingResult.success, `Expected passing assessment to record: ${passingResult.error}`);
@@ -448,6 +467,7 @@ async function main() {
     assert(localLaunch, "Expected local fallback learner to launch HRBA.");
     assertIframeUrlIsOpaque(localLaunch.iframeSrc, localUser.id);
     await verifyLaunchRecord({
+      learnerStateKey: localLaunch.learnerStateKey,
       launchToken: localLaunch.launchToken,
       userId: localUser.id,
     });
@@ -463,12 +483,14 @@ async function main() {
     assert(supabaseLaunch, "Expected Supabase-linked Hub learner to launch HRBA by userId.");
     assertIframeUrlIsOpaque(supabaseLaunch.iframeSrc, supabaseUser.id);
     await verifyLaunchRecord({
+      learnerStateKey: supabaseLaunch.learnerStateKey,
       launchToken: supabaseLaunch.launchToken,
       userId: supabaseUser.id,
     });
 
     const callbackResult = await verifyProgressAndCertificate({
       allowedOrigin: supabaseLaunch.allowedOrigin,
+      learnerStateKey: supabaseLaunch.learnerStateKey,
       launchToken: supabaseLaunch.launchToken,
       session: supabaseSession,
     });
