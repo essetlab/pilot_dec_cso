@@ -41,6 +41,10 @@ learner's browser session.
 - Each external assessment carries a globally unique opaque evidence ID.
   Cross-context reuse and mutated replay are rejected; an identical
   same-context retry is idempotent.
+- Each external attempt stores the SHA-256 learner-state-key hash as its
+  opaque enrollment-state binding.
+- Attempt, enrollment, lesson, and certificate writes share one transaction;
+  expected uniqueness races are retried against the stored immutable context.
 - Existing certificate uniqueness remains in force, so a completion replay
   cannot create a second certificate.
 
@@ -56,10 +60,13 @@ launches:
 - `Enrollment.externalStateKeyIssuedAt`
 - `ExternalCourseLaunchToken.learnerStateKeyHash`
 - `QuizAttempt.externalEvidenceId` (unique, nullable for historical attempts)
+- `QuizAttempt.externalLearnerStateKeyHash` (nullable for historical attempts)
 
 No data backfill or seed is required. Existing unbound launch tokens fail
 closed and learners obtain a newly bound token on their next launch. Replacing
-an enrollment creates a new learner-state key.
+an enrollment creates a new learner-state key. Historical attempts without an
+attempt-level state-key hash remain valid records but cannot authorize new
+external evidence reuse.
 
 ## Deterministic verification coverage
 
@@ -74,8 +81,14 @@ an enrollment creates a new learner-state key.
 - same-learner refresh/resume;
 - mismatched token/state-key rejection;
 - cross-learner evidence rejection;
+- immediate replacement-enrollment evidence rejection;
+- exact attempt-to-enrollment-state-hash binding;
+- altered immutable evidence rejection;
 - pre-context and future evidence rejection;
 - idempotent same-context completion replay;
+- concurrent identical callback idempotency;
+- transaction rollback on a certificate-context conflict;
+- legacy unbound launch-token rejection;
 - one attempt and one certificate after replay.
 
 The existing HRBA and S7 integration verifiers were updated to exercise the
@@ -96,11 +109,21 @@ The following source-level checks passed before commit:
 The production build emitted the existing fallback-course-data warning and
 completed successfully.
 
-The database-backed isolation verifier requires a database with the new
-migration applied. It must be run after applying the additive migration to an
-approved non-production verification database. This checkpoint does not apply
-the migration or mutate staging. A disposable local PostgreSQL run was not
-available because the installed Docker CLI had no running engine.
+Database-backed validation used a disposable local PostgreSQL 16 container.
+No repository, staging, or Production environment file was loaded.
+
+- all nine repository migrations applied cleanly with `prisma migrate deploy`;
+- `prisma migrate status` reported the database current;
+- `verify:external-course-learner-isolation` passed all isolation, freshness,
+  replacement, concurrency, atomicity, privacy, and legacy-token assertions;
+- `verify:s7-hrba-supabase-compat` passed against the disposable database;
+- `verify:hrba-external-course` passed after its documented demo fixture was
+  created only inside the disposable database;
+- the isolation verifier removed every synthetic isolation user,
+  organization, and rollback fixture certificate.
+
+The disposable database was not staging and its container was removed after
+validation.
 
 ## Release boundary and follow-up
 
@@ -108,6 +131,7 @@ The Hub and HRBA changes must be released together. Until HRBA implements the
 documented state-key handshake, scoped storage, evidence ID, and callback
 fields, HRBA progress-bearing messages will fail closed.
 
+The coordinated deployment and rollback order is defined in the contract.
 Production authorization remains blocked pending:
 
 1. applying the migration in an approved non-production database;

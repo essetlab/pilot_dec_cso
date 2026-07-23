@@ -643,32 +643,34 @@ model QuizQuestionLearningOutcome {
 }
 
 model QuizAttempt {
-  id                 String            @id @default(cuid())
-  quizId             String
-  userId             String
-  courseId           String
-  courseVersionId    String
-  externalEvidenceId String?           @unique
-  status             QuizAttemptStatus @default(IN_PROGRESS)
-  score              Int?
-  maxScore           Int?
-  percentage         Float?
-  passed             Boolean           @default(false)
-  answersJson        Json?
-  startedAt          DateTime          @default(now())
-  submittedAt        DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  quiz               Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course             Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseVersion      CourseVersion     @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
-  certificates       Certificate[]
+  id                          String            @id @default(cuid())
+  quizId                      String
+  userId                      String
+  courseId                    String
+  courseVersionId             String
+  externalEvidenceId          String?           @unique
+  externalLearnerStateKeyHash String?
+  status                      QuizAttemptStatus @default(IN_PROGRESS)
+  score                       Int?
+  maxScore                    Int?
+  percentage                  Float?
+  passed                      Boolean           @default(false)
+  answersJson                 Json?
+  startedAt                   DateTime          @default(now())
+  submittedAt                 DateTime?
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+  quiz                        Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user                        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course                      Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseVersion               CourseVersion     @relation(fields: [courseVersionId], references: [id], onDelete: Cascade)
+  certificates                Certificate[]
 
   @@index([quizId])
   @@index([userId])
   @@index([courseId])
   @@index([courseVersionId])
+  @@index([externalLearnerStateKeyHash])
   @@index([status])
 }
 

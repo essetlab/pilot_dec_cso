@@ -13,10 +13,16 @@ ON "Enrollment"("externalLearnerStateKey");
 ALTER TABLE "ExternalCourseLaunchToken"
 ADD COLUMN "learnerStateKeyHash" TEXT;
 
--- An external assessment evidence id is globally unique. This makes completion
--- replay idempotent for the same learner and rejectable across learner contexts.
+-- An external assessment evidence id is globally unique. The nullable state-key
+-- hash binds new external attempts to an enrollment state without exposing the
+-- raw key. Historical attempts remain valid records but are not reusable as
+-- evidence for newly bound launches. No backfill is required.
 ALTER TABLE "QuizAttempt"
-ADD COLUMN "externalEvidenceId" TEXT;
+ADD COLUMN "externalEvidenceId" TEXT,
+ADD COLUMN "externalLearnerStateKeyHash" TEXT;
 
 CREATE UNIQUE INDEX "QuizAttempt_externalEvidenceId_key"
 ON "QuizAttempt"("externalEvidenceId");
+
+CREATE INDEX "QuizAttempt_externalLearnerStateKeyHash_idx"
+ON "QuizAttempt"("externalLearnerStateKeyHash");

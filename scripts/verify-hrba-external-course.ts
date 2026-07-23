@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { randomUUID } from "node:crypto";
 import {
+  HRBA_EXTERNAL_COURSE_ID,
   HRBA_EXTERNAL_COURSE_SLUG,
   HRBA_EXTERNAL_COURSE_VERSION_ID,
 } from "../src/lib/external-course-config";
@@ -15,7 +16,11 @@ import {
   getPublicCertificateVerificationData,
 } from "../src/lib/certificate-workflow";
 import type { AuthSession } from "../src/lib/auth/session-codec";
-import { EnrollmentStatus, QuizAttemptStatus } from "../src/generated/prisma/client";
+import {
+  EnrollmentStatus,
+  QuizAttemptStatus,
+  RoleKey,
+} from "../src/generated/prisma/client";
 import { prisma } from "../src/lib/prisma";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -113,6 +118,37 @@ async function countAttempts(userId: string, status?: QuizAttemptStatus) {
 async function main() {
   await registerHrbaExternalCourse();
   const session = await participantSession();
+  const admin = await prisma.user.findFirstOrThrow({
+    where: {
+      roleAssignments: {
+        some: {
+          isActive: true,
+          role: {
+            key: { in: [RoleKey.SUPER_ADMIN, RoleKey.PLATFORM_ADMIN] },
+          },
+        },
+      },
+    },
+  });
+  await prisma.courseAssignment.upsert({
+    create: {
+      assignedById: admin.id,
+      assignmentType: "USER",
+      courseId: HRBA_EXTERNAL_COURSE_ID,
+      courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
+      targetUserId: session.userId,
+    },
+    update: {
+      courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
+      isActive: true,
+    },
+    where: {
+      courseId_targetUserId: {
+        courseId: HRBA_EXTERNAL_COURSE_ID,
+        targetUserId: session.userId,
+      },
+    },
+  });
 
   await resetExternalCourseState(session.userId);
 
