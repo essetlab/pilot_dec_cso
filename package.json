@@ -33,6 +33,7 @@
     "verify:s5-signin": "node --import jiti/register scripts/verify-s5-supabase-signin.ts",
     "verify:s6-route-roles": "node --import jiti/register scripts/verify-s6-route-roles.ts",
     "verify:s7-hrba-supabase-compat": "node --import jiti/register scripts/verify-s7-hrba-supabase-compat.ts",
+    "verify:external-course-contract": "node --import jiti/register scripts/verify-external-course-contract.ts",
     "verify:external-course-learner-isolation": "node --import jiti/register scripts/verify-external-course-learner-isolation.ts",
     "verify:s8-env-readiness": "node --import jiti/register scripts/verify-s8-env-readiness.ts",
     "verify:p2d-onboarding-access": "node --import jiti/register scripts/verify-p2d-onboarding-access.ts",

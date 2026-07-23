@@ -5,7 +5,9 @@ import { ActionButton, AlertMessage, SectionHeader, StatusBadge } from "@/compon
 import {
   type ExternalCourseAssessmentResult,
   type ExternalCourseEventMessage,
+  hasProhibitedExternalCourseIdentifier,
   isExternalCourseEventMessage,
+  isValidExternalCourseEvidenceId,
   EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
   type ExternalCourseLaunchData,
@@ -37,7 +39,8 @@ function isAssessmentResult(value: unknown): value is ExternalCourseAssessmentRe
 
   return (
     isOptionalNumber(assessment.attemptNumber) &&
-    isOptionalString(assessment.evidenceId) &&
+    (assessment.evidenceId === undefined ||
+      isValidExternalCourseEvidenceId(assessment.evidenceId)) &&
     isOptionalNumber(assessment.maxScore) &&
     isOptionalBoolean(assessment.passed) &&
     isOptionalNumber(assessment.percentage) &&
@@ -47,7 +50,11 @@ function isAssessmentResult(value: unknown): value is ExternalCourseAssessmentRe
 }
 
 function isProgressMessage(value: unknown): value is ExternalCourseProgressMessage {
-  if (!value || typeof value !== "object") {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    hasProhibitedExternalCourseIdentifier(value)
+  ) {
     return false;
   }
 
@@ -59,7 +66,6 @@ function isProgressMessage(value: unknown): value is ExternalCourseProgressMessa
     typeof message.courseSlug === "string" &&
     typeof message.learnerStateKey === "string" &&
     typeof message.sentAt === "string" &&
-    (message.userId === undefined || typeof message.userId === "string") &&
     typeof message.progressPercent === "number" &&
     typeof message.completed === "boolean" &&
     Array.isArray(message.completedModuleIds) &&

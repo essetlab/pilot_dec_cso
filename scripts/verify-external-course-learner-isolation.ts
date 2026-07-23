@@ -7,6 +7,11 @@ import {
 } from "../src/generated/prisma/client";
 import type { AuthSession } from "../src/lib/auth/session-codec";
 import {
+  EXTERNAL_COURSE_EVENT_MESSAGE,
+  hasProhibitedExternalCourseIdentifier,
+  isExternalCourseEventMessage,
+} from "../src/lib/external-course-types";
+import {
   HRBA_EXTERNAL_COURSE_ID,
   HRBA_EXTERNAL_COURSE_LESSON_ID,
   HRBA_EXTERNAL_COURSE_SLUG,
@@ -277,6 +282,84 @@ async function main() {
     assert(
       resumeA.success && resumeA.progressPercent === 40,
       "Same-learner refresh/resume with a new launch token must remain valid.",
+    );
+
+    const privacyBoundarySnapshot = {
+      attempts: await prisma.quizAttempt.count({ where: { userId: learnerA.id } }),
+      certificates: await prisma.certificate.count({ where: { userId: learnerA.id } }),
+      enrollment: await prisma.enrollment.findUniqueOrThrow({
+        where: { id: enrollmentA.id },
+      }),
+      lesson: await prisma.lessonProgress.findUniqueOrThrow({
+        where: {
+          enrollmentId_lessonId: {
+            enrollmentId: enrollmentA.id,
+            lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+          },
+        },
+      }),
+    };
+    const validBoundaryCallback = {
+      completedModuleIds: ["module_01_hrba_foundations"],
+      courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
+      currentModuleId: "module_01_hrba_foundations",
+      currentScreenId: "M1-S01",
+      event: "progress_updated",
+      learnerStateKey: launchA1.learnerStateKey,
+      progressPercent: 40,
+      sentAt: new Date().toISOString(),
+      type: EXTERNAL_COURSE_EVENT_MESSAGE,
+      version: 1,
+    } as const;
+    assert(
+      isExternalCourseEventMessage(validBoundaryCallback),
+      "A summary-only governed callback was rejected.",
+    );
+    for (const prohibitedFields of [
+      { userId: learnerA.id },
+      { enrollmentId: enrollmentA.id },
+      { courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID },
+      {
+        learnerId: learnerA.id,
+        organization_id: organization.id,
+        participantId: learnerA.id,
+      },
+    ]) {
+      const prohibitedCallback = {
+        ...validBoundaryCallback,
+        ...prohibitedFields,
+      };
+      assert(
+        hasProhibitedExternalCourseIdentifier(prohibitedCallback) &&
+          !isExternalCourseEventMessage(prohibitedCallback),
+        "A callback containing a prohibited raw Hub identifier was accepted.",
+      );
+    }
+    const privacyBoundaryAfter = {
+      attempts: await prisma.quizAttempt.count({ where: { userId: learnerA.id } }),
+      certificates: await prisma.certificate.count({ where: { userId: learnerA.id } }),
+      enrollment: await prisma.enrollment.findUniqueOrThrow({
+        where: { id: enrollmentA.id },
+      }),
+      lesson: await prisma.lessonProgress.findUniqueOrThrow({
+        where: {
+          enrollmentId_lessonId: {
+            enrollmentId: enrollmentA.id,
+            lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+          },
+        },
+      }),
+    };
+    assert(
+      privacyBoundaryAfter.attempts === privacyBoundarySnapshot.attempts &&
+        privacyBoundaryAfter.certificates === privacyBoundarySnapshot.certificates &&
+        privacyBoundaryAfter.enrollment.status ===
+          privacyBoundarySnapshot.enrollment.status &&
+        privacyBoundaryAfter.enrollment.progressPercent ===
+          privacyBoundarySnapshot.enrollment.progressPercent &&
+        JSON.stringify(privacyBoundaryAfter.lesson.progressJson) ===
+          JSON.stringify(privacyBoundarySnapshot.lesson.progressJson),
+      "Rejected identifier-bearing callbacks changed governed learner records.",
     );
 
     const submittedAtA = new Date().toISOString();
@@ -647,6 +730,8 @@ async function main() {
           legacyUnboundTokenRejected: true,
           mismatchedTokenAndStateKeyRejected: true,
           predatingEvidenceRejected: true,
+          prohibitedIdentifiersCreateNoRecords: true,
+          prohibitedRawIdentifiersRejected: true,
           replayIsIdempotent: true,
           replacedEnrollmentEvidenceRejected: true,
           sameEnrollmentStateKeyStable: true,

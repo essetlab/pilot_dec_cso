@@ -133,7 +133,7 @@ Assessment and course-completion messages must also include:
 {
   "assessment": {
     "attemptNumber": 1,
-    "evidenceId": "<UUID or 20-128 character URL-safe high-entropy value>",
+    "evidenceId": "<UUID v4 or exactly 43-character unpadded base64url value>",
     "score": 10,
     "maxScore": 10,
     "percentage": 100,
@@ -166,6 +166,12 @@ rejected.
 No callback may contain raw Hub identifiers, email addresses, names,
 organization data, detailed Canvas answers, portfolio text, reflection text,
 complaint content, or other learner-generated course content.
+
+The Hub rejects, rather than ignores, callback fields that expose raw Hub
+identifiers. Prohibited names include `userId`, `learnerId`, `participantId`,
+`enrollmentId`, `organizationId`, `orgId`, and `courseVersionId`, including
+snake-case, kebab-case, and equivalent case variants. This prohibition applies
+at every nesting level.
 
 ## Hub validation and failure behavior
 

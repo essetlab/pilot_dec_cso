@@ -29,6 +29,7 @@ import type {
   ExternalCourseAssessmentResult,
   ExternalCourseLaunchData,
 } from "./external-course-types";
+import { isValidExternalCourseEvidenceId } from "./external-course-types";
 import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
 import { hasLearnerCourseEntitlement } from "./course-entitlement";
@@ -38,8 +39,6 @@ const externalCourseLaunchTokenTtlMs = 8 * 60 * 60 * 1000;
 const externalCourseFutureClockToleranceMs = 5 * 60 * 1000;
 const externalCourseContextClockToleranceMs = 60 * 1000;
 const opaqueLearnerStateKeyPattern = /^[A-Za-z0-9_-]{43}$/;
-const opaqueEvidenceIdPattern =
-  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[A-Za-z0-9_-]{43})$/i;
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue;
@@ -117,7 +116,7 @@ function normalizeAssessmentResult(
 
   if (
     !assessment.evidenceId ||
-    !opaqueEvidenceIdPattern.test(assessment.evidenceId) ||
+    !isValidExternalCourseEvidenceId(assessment.evidenceId) ||
     !assessment.submittedAt ||
     !Number.isInteger(assessment.attemptNumber) ||
     (assessment.attemptNumber ?? 0) < 1

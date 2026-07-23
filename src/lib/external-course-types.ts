@@ -3,6 +3,49 @@ export const EXTERNAL_COURSE_EVENT_MESSAGE = "cso-learning-hub:external-course-e
 export const EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE =
   "cso-learning-hub:external-course-launch-context";
 
+const externalCourseEvidenceUuidV4Pattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const externalCourseEvidenceBase64UrlPattern =
+  /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
+const prohibitedExternalCourseIdentifierKeys = new Set([
+  "courseversionid",
+  "enrollmentid",
+  "learnerid",
+  "organizationid",
+  "orgid",
+  "participantid",
+  "userid",
+]);
+
+export function isValidExternalCourseEvidenceId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (
+      externalCourseEvidenceUuidV4Pattern.test(value) ||
+      externalCourseEvidenceBase64UrlPattern.test(value)
+    )
+  );
+}
+
+export function hasProhibitedExternalCourseIdentifier(value: unknown): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(hasProhibitedExternalCourseIdentifier);
+  }
+
+  return Object.entries(value).some(([key, nestedValue]) => {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    return (
+      prohibitedExternalCourseIdentifierKeys.has(normalizedKey) ||
+      hasProhibitedExternalCourseIdentifier(nestedValue)
+    );
+  });
+}
+
 export type ExternalCourseEventName =
   | "course_ready"
   | "course_started"
@@ -27,9 +70,6 @@ export type ExternalCourseProgressMessage = {
   version: 1;
   courseSlug: string;
   learnerStateKey: string;
-  userId?: string;
-  enrollmentId?: string;
-  courseVersionId?: string;
   progressPercent: number;
   completed: boolean;
   completedModuleIds: string[];
@@ -72,7 +112,11 @@ function optionalFiniteNumber(value: unknown) {
 }
 
 export function isExternalCourseEventMessage(value: unknown): value is ExternalCourseEventMessage {
-  if (!value || typeof value !== "object") {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    hasProhibitedExternalCourseIdentifier(value)
+  ) {
     return false;
   }
 

@@ -3,6 +3,7 @@ import { getCurrentSession } from "@/lib/auth/server";
 import { recordExternalCourseProgress } from "@/lib/external-course-workflow";
 import {
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
+  hasProhibitedExternalCourseIdentifier,
   type ExternalCourseAssessmentResult,
 } from "@/lib/external-course-types";
 
@@ -100,6 +101,13 @@ export async function POST(request: NextRequest) {
   if (!body || typeof body !== "object") {
     return NextResponse.json(
       { success: false, error: "Invalid request body" },
+      { status: 400 },
+    );
+  }
+
+  if (hasProhibitedExternalCourseIdentifier(body)) {
+    return NextResponse.json(
+      { success: false, error: "Prohibited Hub identifier" },
       { status: 400 },
     );
   }
