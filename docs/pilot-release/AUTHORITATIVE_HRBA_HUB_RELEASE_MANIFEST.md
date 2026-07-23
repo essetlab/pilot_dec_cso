@@ -25,17 +25,19 @@ The clean authoritative Hub candidate worktree is `D:\z CDP-Lg-Andy-pilot-integr
 | Deployed application commit | `22f9448736f126a5eb7cbed111606daae4b25a71` |
 | Production deployment | `dpl_4UTTSsAsyn2dAct8qJsTxQ71oTvG` |
 | Production alias | `https://pilot-hrba-e-learn-v1-wajj.vercel.app` |
-| Module 5 Draft PR/candidate | `#2` at `867969261b833e4e9cefed5c8a6a81ee184ad30d` |
+| Module 5 Draft PR/candidate | `#2` at `2a0f09ed1b102ad7b09d6aac78d86b15162789c0` |
 
 The Hub launches the standalone course. HRBA module implementation remains in the HRBA repository; Hub source changes require a separately demonstrated integration defect.
 
 ## Approved staging backend
 
 - Supabase reference: `fgyxbzwdvngqlksyxuwa`.
-- Role: approved Hub staging project with fictional fixtures.
+- Role: approved Hub staging project; the current fixtures have not been independently reverified because access is unavailable.
 - Current access: unavailable to the authenticated CLI (HTTP 403); browser sessions were signed out at last verification.
 - Do not create a replacement project for standalone module work.
 
+Supabase access is not a prerequisite for reviewing a standalone HRBA module when its Hub bridge contract is unchanged. It is not required for merge if production deployment is separately controlled; if release-branch merge automatically deploys production, it becomes a pre-merge requirement. It is always required for authenticated pre-production Hub acceptance and any authorized post-deployment Hub smoke test.
+
 ## Manifest maintenance
 
-Update this file after a reviewed Hub production promotion, Hub candidate replacement, HRBA deployment, bridge-contract change or approved staging-backend change. Cite commits and immutable deployments; never record secrets or learner data.
+Update this file after a reviewed Hub production promotion, Hub candidate replacement, HRBA deployment, bridge-contract change or approved staging-backend change. This PR targets the current Hub candidate and does not promote it; when that candidate is promoted, this governance record must be included or independently carried into `main`. Cite commits and immutable deployments; never record secrets or learner data.

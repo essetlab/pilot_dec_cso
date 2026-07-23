@@ -16,14 +16,26 @@ The standalone HRBA course owns module content, interactions, browser-local lear
 8. Record every result against exact commits and immutable deployment IDs.
 9. Do not promote the Hub merely because an HRBA module changed.
 
-## Module 5 current gate
+## Module 5 current gates
 
-Draft PR #2 remains blocked from merge until:
+Before review and merge, Draft PR #2 requires:
 
-- native keyboard-only traversal at approximately 390 px is recorded;
-- authorized access to staging project `fgyxbzwdvngqlksyxuwa` is restored;
-- the Hub candidate Preview has usable non-production configuration; and
-- all 14 authenticated integration checks pass without a P0/P1 defect.
+- recorded native keyboard-only traversal at approximately 390 px;
+- no open P0/P1 standalone defect;
+- confirmation that the Hub bridge files and message contract remain unchanged; and
+- reviewer approval;
+- Vercel-owner confirmation of whether merging `release/hrba-pilot-final` automatically deploys production.
+
+Before production deployment:
+
+- authorized access to staging project `fgyxbzwdvngqlksyxuwa` must be restored;
+- the Hub candidate Preview must have usable non-production configuration;
+- all 14 authenticated integration checks must pass without a P0/P1 defect; and
+- the HRBA Vercel owner must confirm the reviewed source commit, production-branch behavior, alias-retention plan and rollback deployment.
+
+If merging the HRBA release branch automatically deploys production, every pre-production item above becomes a pre-merge requirement. If production deployment is separately controlled, Supabase access and authenticated integration may follow merge but must finish before deployment.
+
+After production deployment, run only a bounded authenticated Hub smoke path unless production completion/certificate record creation has been separately approved. Confirm launch, iframe/origin handling and one progress callback, then update both release manifests.
 
 ## Production boundary
 
