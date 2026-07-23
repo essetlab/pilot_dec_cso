@@ -39,10 +39,28 @@ const initialManualCourseInvitationState: ManualCourseInvitationActionState = {
   success: false,
 };
 
-function SubmitButton({ children }: { children: React.ReactNode }) {
+function SubmitButton({
+  children,
+  name,
+  value,
+  variant = "primary",
+}: {
+  children: React.ReactNode;
+  name?: string;
+  value?: string;
+  variant?: "primary" | "secondary";
+}) {
   const { pending } = useFormStatus();
   return (
-    <ActionButton disabled={pending} loading={pending} size="lg" type="submit">
+    <ActionButton
+      disabled={pending}
+      loading={pending}
+      name={name}
+      size="lg"
+      type="submit"
+      value={value}
+      variant={variant}
+    >
       {children}
     </ActionButton>
   );
@@ -161,11 +179,36 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
 
   return (
     <form action={action} aria-label="Create controlled course invitation" className="grid gap-5">
-      {state.code !== "idle" && !state.success ? (
-        <div aria-live="assertive">
-          <AlertMessage title="Invitation was not created" tone="error">
+      {state.success && state.code === "email-delivery-sent" ? (
+        <div aria-live="polite">
+          <AlertMessage title="Invitation email accepted" tone="success">
             {state.message}
           </AlertMessage>
+          {state.invitationId ? (
+            <ActionButton
+              className="mt-4"
+              href={`/admin/course-invitations/${state.invitationId}`}
+              variant="secondary"
+            >
+              View invitation status
+            </ActionButton>
+          ) : null}
+        </div>
+      ) : null}
+      {state.code !== "idle" && !state.success ? (
+        <div aria-live="assertive">
+          <AlertMessage title="Invitation action was not completed" tone="error">
+            {state.message}
+          </AlertMessage>
+          {state.invitationId ? (
+            <ActionButton
+              className="mt-4"
+              href={`/admin/course-invitations/${state.invitationId}`}
+              variant="secondary"
+            >
+              Review invitation status
+            </ActionButton>
+          ) : null}
         </div>
       ) : null}
 
@@ -327,13 +370,20 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
       </label>
 
       <div className="rounded-[18px] border border-dec-blue/20 bg-dec-blue/10 p-4 text-sm leading-6 text-[#26536c]">
-        Creating the invitation prepares a one-time manual-delivery link. It does not
-        create an account, assignment, enrollment, or sent record. The learner receives
-        exact course access only after authenticated acceptance.
+        Email delivery marks the invitation Sent only after the configured provider
+        accepts the message. Manual delivery shows the one-time link for an approved
+        private channel and requires explicit confirmation. Neither option creates an
+        account, assignment, or enrollment; exact course access begins only after
+        authenticated acceptance.
       </div>
 
-      <div>
-        <SubmitButton>Create invitation and prepare link</SubmitButton>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <SubmitButton name="deliveryMethod" value="email">
+          Create and send email
+        </SubmitButton>
+        <SubmitButton name="deliveryMethod" value="manual" variant="secondary">
+          Prepare manual link
+        </SubmitButton>
       </div>
     </form>
   );
@@ -364,6 +414,13 @@ export function CourseInvitationPrepareLinkForm({ invitationId }: { invitationId
           </AlertMessage>
         </div>
       ) : null}
+      {state.success && state.code === "email-delivery-sent" ? (
+        <div className="mt-4" aria-live="polite">
+          <AlertMessage title="Replacement email accepted" tone="success">
+            {state.message}
+          </AlertMessage>
+        </div>
+      ) : null}
       <label className="mt-4 block max-w-xs text-sm font-semibold text-dark-ink">
         New expiry
         <select className={inputClass} defaultValue="7" name="expiryDays">
@@ -374,8 +431,13 @@ export function CourseInvitationPrepareLinkForm({ invitationId }: { invitationId
           <option value="30">30 days</option>
         </select>
       </label>
-      <div className="mt-4">
-        <SubmitButton>Prepare replacement link</SubmitButton>
+      <div className="mt-4 flex flex-col gap-3">
+        <SubmitButton name="deliveryMethod" value="email">
+          Email replacement invitation
+        </SubmitButton>
+        <SubmitButton name="deliveryMethod" value="manual" variant="secondary">
+          Prepare manual replacement link
+        </SubmitButton>
       </div>
     </form>
   );

@@ -266,7 +266,7 @@ export function AdminCourseInvitationCreate({ options }: { options: InvitationOp
     <div className="space-y-6">
       <Header
         actions={<ActionButton href="/admin/course-invitations" size="lg" variant="secondary">Back to invitations</ActionButton>}
-        description="Validate the learner and exact invitation details before preparing a one-time manual-delivery link."
+        description="Validate the learner and exact invitation details before sending by approved email or preparing a one-time manual-delivery link."
         title="Create course invitation"
       />
       <Panel title="Invitation scope"><CourseInvitationCreateForm options={options} /></Panel>
@@ -312,7 +312,7 @@ export function AdminCourseInvitationDetail({
         </div>
         <aside className="space-y-6">
           <Panel title="Delivery and actions">
-            <p className="text-sm leading-6 text-muted-text">Send the secure link privately. Copy it when it appears because it cannot be shown again later.</p>
+            <p className="text-sm leading-6 text-muted-text">Send through the configured pilot email provider, or use an approved private channel. A manually prepared link appears once and cannot be shown again later.</p>
             {detail.canPrepareLink ? <div className="mt-5"><CourseInvitationPrepareLinkForm invitationId={detail.id} /></div> : <p className="mt-4 rounded-[16px] border border-design-border bg-soft-bg p-4 text-sm text-muted-text">No secure-link action is available for this invitation.</p>}
           </Panel>
           <Panel title="Activation result">

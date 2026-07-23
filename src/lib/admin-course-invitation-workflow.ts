@@ -42,6 +42,15 @@ export type CourseInvitationDeliveryResult =
       success: true;
     };
 
+export type CourseInvitationEmailContext = {
+  courseTitle: string;
+  email: string;
+  expiresAt: Date;
+  learnerName: string;
+  organizationName: string;
+  versionLabel: string;
+};
+
 function clean(value: string | null | undefined) {
   return value?.trim() || undefined;
 }
@@ -376,5 +385,39 @@ export async function prepareAdminCourseInvitationLink(input: {
     deliveryUrl: deliveryUrl(origin, result.plaintextToken),
     invitation: result.invitation,
     success: true,
+  };
+}
+
+export async function getAdminCourseInvitationEmailContext(
+  invitationId: string,
+  session: AuthSession | null,
+): Promise<CourseInvitationEmailContext | null> {
+  await requireInvitationManager(session);
+
+  const invitation = await prisma.courseInvitation.findUnique({
+    select: {
+      course: { select: { title: true } },
+      courseVersion: { select: { versionNumber: true } },
+      expiresAt: true,
+      invitedEmail: true,
+      invitedName: true,
+      organization: { select: { name: true } },
+    },
+    where: { id: invitationId },
+  });
+
+  if (!invitation) {
+    return null;
+  }
+
+  return {
+    courseTitle: invitation.course.title,
+    email: invitation.invitedEmail,
+    expiresAt: invitation.expiresAt,
+    learnerName: invitation.invitedName,
+    organizationName: invitation.organization.name,
+    versionLabel: invitation.courseVersion
+      ? `Version ${invitation.courseVersion.versionNumber}`
+      : "Published version",
   };
 }

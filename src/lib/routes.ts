@@ -55,6 +55,7 @@ export function buildCreatorCourseNav(courseId: string): NavItem[] {
 
 export const adminNav: NavItem[] = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/internal-test-guide", label: "Rehearsal Guide" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/course-invitations", label: "Course Invitations" },
   { href: "/admin/organizations", label: "Organizations" },
@@ -75,6 +76,7 @@ const phaseOneLearnerRoutePatterns = [
 ] as const;
 
 const phaseOneAdminRoutePrefixes = [
+  "/admin/internal-test-guide",
   "/admin/users",
   "/admin/course-invitations",
   "/admin/organizations",
@@ -302,6 +304,11 @@ export const adminRoutes: Record<string, RouteDefinition> = {
     emptyTitle: "No users found.",
     emptyDescription:
       "Add your first platform user to begin assigning roles and access.",
+  },
+  "/admin/internal-test-guide": {
+    title: "DEC Internal Rehearsal Guide",
+    purpose:
+      "Give authorized DEC administrators the controlled pilot test sequence, evidence checklist, and issue-reporting template.",
   },
   "/admin/users/new": {
     title: "Add User",

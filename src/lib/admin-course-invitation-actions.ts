@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createAdminCourseInvitation,
+  getAdminCourseInvitationEmailContext,
   prepareAdminCourseInvitationLink,
 } from "./admin-course-invitation-workflow";
 import { getCurrentSession } from "./auth/server";
@@ -11,8 +12,10 @@ import { isRateLimited } from "./auth/rate-limit";
 import { resolveControlledLearnerRole } from "./controlled-options";
 import {
   cancelCourseInvitation,
+  markManagedCourseInvitationFailed,
   markManagedCourseInvitationSent,
 } from "./course-invitation-workflow";
+import { sendCourseInvitationEmail } from "./email";
 
 const ALLOWED_EXPIRY_DAYS = new Set([1, 3, 7, 14, 30]);
 
@@ -23,6 +26,7 @@ export type ManualCourseInvitationActionState = {
     invitationId: string;
     url: string;
   };
+  invitationId?: string;
   message: string;
   success: boolean;
 };
@@ -52,6 +56,10 @@ const errorMessages: Record<string, string> = {
   "invalid-version-state": "The selected course version is no longer published and available.",
   "missing-app-origin":
     "The application URL is not configured. No invitation link was generated.",
+  "email-accepted-status-pending":
+    "The email provider accepted the message, but the sent status could not be recorded. Open the invitation and confirm delivery before the learner uses the link.",
+  "email-delivery-failed":
+    "The email provider did not accept the invitation. It is marked delivery failed; prepare a replacement link before retrying.",
   "not-found": "The invitation could not be found.",
   "rate-limited": "Too many invitation operations were requested. Wait briefly and try again.",
   "unauthorized": "You are not authorized to manage course invitations.",
@@ -91,6 +99,73 @@ function revalidateInvitationPaths(invitationId?: string) {
   revalidatePath("/admin/audit-log");
 }
 
+async function deliverPreparedInvitationEmail({
+  deliveryUrl,
+  invitationId,
+  session,
+}: {
+  deliveryUrl: string;
+  invitationId: string;
+  session: Awaited<ReturnType<typeof getCurrentSession>>;
+}): Promise<ManualCourseInvitationActionState> {
+  const context = await getAdminCourseInvitationEmailContext(invitationId, session);
+  if (!context) {
+    return failure("not-found");
+  }
+
+  const delivery = await sendCourseInvitationEmail({
+    ...context,
+    invitationUrl: deliveryUrl,
+  });
+
+  if (!delivery.delivered && delivery.reason === "missing-config") {
+    return {
+      code: "manual-delivery-ready",
+      delivery: {
+        expiresAt: context.expiresAt.toISOString(),
+        invitationId,
+        url: deliveryUrl,
+      },
+      invitationId,
+      message:
+        "SMTP is not configured. Use the approved manual secure-delivery process; the invitation is not marked sent.",
+      success: true,
+    };
+  }
+
+  if (!delivery.delivered) {
+    const markedFailed = await markManagedCourseInvitationFailed({
+      invitationId,
+      session,
+    });
+    revalidateInvitationPaths(invitationId);
+    return {
+      ...failure(markedFailed.success ? "email-delivery-failed" : "unavailable"),
+      invitationId,
+    };
+  }
+
+  const markedSent = await markManagedCourseInvitationSent({
+    invitationId,
+    session,
+  });
+  revalidateInvitationPaths(invitationId);
+  if (!markedSent.success) {
+    return {
+      ...failure("email-accepted-status-pending"),
+      invitationId,
+    };
+  }
+
+  return {
+    code: "email-delivery-sent",
+    invitationId,
+    message:
+      "The email provider accepted the invitation and the delivery status is now Sent.",
+    success: true,
+  };
+}
+
 export async function createCourseInvitationAction(
   _previousState: ManualCourseInvitationActionState,
   formData: FormData,
@@ -125,6 +200,14 @@ export async function createCourseInvitationAction(
   });
   if (!result.success) {
     return failure(result.code);
+  }
+
+  if (formText(formData, "deliveryMethod") === "email") {
+    return deliverPreparedInvitationEmail({
+      deliveryUrl: result.deliveryUrl,
+      invitationId: result.invitation.id,
+      session,
+    });
   }
 
   revalidateInvitationPaths(result.invitation.id);
@@ -162,6 +245,14 @@ export async function prepareCourseInvitationLinkAction(
   });
   if (!result.success) {
     return failure(result.code);
+  }
+
+  if (formText(formData, "deliveryMethod") === "email") {
+    return deliverPreparedInvitationEmail({
+      deliveryUrl: result.deliveryUrl,
+      invitationId: result.invitation.id,
+      session,
+    });
   }
 
   return {

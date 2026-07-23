@@ -1260,11 +1260,17 @@ type StaffInvitationDeliveryResult = {
 async function deliverStaffInvitationEmail({
   email,
   invitationUrl,
+  roleName,
 }: {
   email: string;
   invitationUrl: string;
+  roleName: string;
 }): Promise<Pick<StaffInvitationDeliveryResult, "code" | "emailDelivered">> {
-  const emailResult = await sendStaffInvitationEmail({ email, invitationUrl });
+  const emailResult = await sendStaffInvitationEmail({
+    email,
+    invitationUrl,
+    roleName,
+  });
 
   if (emailResult.delivered) {
     return { code: "invitation-created", emailDelivered: true };
@@ -2358,7 +2364,9 @@ export async function inviteStaffMember({
       tokenHash,
     });
   } catch (error) {
-    console.error("Failed to create invitation", error);
+    console.error(
+      "Failed to create a staff invitation; recipient and database details were not logged.",
+    );
     if (error instanceof Error && error.message === "missing-role") {
       return { code: "invalid-role", emailDelivered: false, success: false };
     }
@@ -2369,6 +2377,7 @@ export async function inviteStaffMember({
   const delivery = await deliverStaffInvitationEmail({
     email: cleanEmail,
     invitationUrl,
+    roleName: roleLabels[roleKey],
   });
 
   return {

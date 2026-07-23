@@ -12,6 +12,7 @@ import { AdminCourses } from "@/components/admin/AdminCourses";
 import { AdminExternalCourseManager } from "@/components/admin/AdminExternalCourseManager";
 import { AdminDashboard, AdminPortalEntry } from "@/components/admin/AdminDashboard";
 import { AdminMonitoring } from "@/components/admin/AdminMonitoring";
+import { AdminInternalTestGuide } from "@/components/admin/AdminInternalTestGuide";
 import { AdminOrganizationDetail, AdminOrganizations } from "@/components/admin/AdminOrganizations";
 import { AdminPilotMonitoring } from "@/components/admin/AdminPilotMonitoring";
 import { AdminReferenceData } from "@/components/admin/AdminReferenceData";
@@ -139,6 +140,10 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
     }
 
     return <AdminDashboard data={dashboardData} />;
+  }
+
+  if (actualRoute === "/admin/internal-test-guide") {
+    return <AdminInternalTestGuide />;
   }
 
   if (actualRoute === "/admin/users") {

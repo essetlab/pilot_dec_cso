@@ -806,6 +806,21 @@ export function markCourseInvitationFailed(input: {
   });
 }
 
+export function markManagedCourseInvitationFailed(input: {
+  invitationId: string;
+  session: AuthSession | null;
+}) {
+  return updateInvitationStatus({
+    actionType: AuditActionType.COURSE_INVITATION_FAILED,
+    description:
+      "Recorded a failed email delivery attempt for an individual course invitation.",
+    invitationId: input.invitationId,
+    session: input.session,
+    targetStatus: CourseInvitationStatus.FAILED,
+    validateManagementScope: true,
+  });
+}
+
 export async function expireCourseInvitation(input: {
   invitationId: string;
   now?: Date;
