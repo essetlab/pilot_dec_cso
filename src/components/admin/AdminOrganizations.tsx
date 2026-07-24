@@ -355,9 +355,11 @@ function SelectField({
 function OrganizationForm({
   detail,
   options,
+  returnTo,
 }: {
   detail: AdminOrganizationDetailData | null;
   options: AdminOrganizationOperationOptions;
+  returnTo?: string;
 }) {
   return (
     <Panel
@@ -366,6 +368,7 @@ function OrganizationForm({
     >
       <form action={detail ? updateAdminOrganizationAction : createAdminOrganizationAction} className="space-y-5">
         {detail ? <input name="organizationId" type="hidden" value={detail.id} /> : null}
+        {!detail && returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
         <div className="grid gap-4 md:grid-cols-2">
           <TextField defaultValue={detail?.name} label="Organization name" name="name" required />
           <TextField defaultValue={detail?.shortName} label="Short name" name="shortName" />
@@ -404,8 +407,8 @@ function OrganizationForm({
           <ActionButton type="submit">
             {detail ? "Save Organization" : "Create Organization"}
           </ActionButton>
-          <ActionButton href="/admin/organizations" variant="secondary">
-            Back to Organizations
+          <ActionButton href={returnTo ?? "/admin/organizations"} variant="secondary">
+            {returnTo ? "Back to invitation" : "Back to Organizations"}
           </ActionButton>
         </div>
       </form>
@@ -417,10 +420,12 @@ export function AdminOrganizationDetail({
   adminNotice,
   detail,
   operationOptions,
+  returnTo,
 }: {
   adminNotice?: string;
   detail: AdminOrganizationDetailData | null;
   operationOptions: AdminOrganizationOperationOptions;
+  returnTo?: string;
 }) {
   if (!detail) {
     return (
@@ -435,7 +440,7 @@ export function AdminOrganizationDetail({
             Create a CSO profile that can be linked to cohorts and participants.
           </p>
         </section>
-        <OrganizationForm detail={null} options={operationOptions} />
+        <OrganizationForm detail={null} options={operationOptions} returnTo={returnTo} />
       </div>
     );
   }

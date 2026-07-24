@@ -239,19 +239,6 @@ export function AdminCourseInvitationList({ data }: { data: ListData }) {
         description="Create, send, replace, cancel, and review one learner invitation for one course."
         title="Course invitations"
       />
-      <section className="rounded-[24px] border border-dec-green/35 bg-dec-green/10 p-5 shadow-soft sm:p-6">
-        <StatusBadge label="First sign-in" tone="green" />
-        <h2 className="mt-4 text-xl font-semibold text-deep-navy">
-          Change your temporary password
-        </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-text">
-          If you received a temporary password, change it before managing pilot access. We
-          will send a private password-change link to your administrator email address.
-        </p>
-        <ActionButton className="mt-5" href="/forgot-password" variant="secondary">
-          Change temporary password
-        </ActionButton>
-      </section>
       <Panel title="Find invitations"><Filters data={data} /></Panel>
       <Panel title={`${data.total} invitation${data.total === 1 ? "" : "s"}`}>
         {data.total > data.limit ? <p className="mb-4 text-sm text-muted-text">Showing the newest {data.limit} matching invitations.</p> : null}
@@ -261,15 +248,46 @@ export function AdminCourseInvitationList({ data }: { data: ListData }) {
   );
 }
 
-export function AdminCourseInvitationCreate({ options }: { options: InvitationOptions }) {
+export function AdminCourseInvitationCreate({
+  adminNotice,
+  options,
+  preferredOrganizationId,
+  recentInvitations,
+}: {
+  adminNotice?: string;
+  options: InvitationOptions;
+  preferredOrganizationId?: string;
+  recentInvitations: ListData;
+}) {
+  const recent = {
+    ...recentInvitations,
+    records: recentInvitations.records.slice(0, 5),
+  };
+
   return (
     <div className="space-y-6">
       <Header
         actions={<ActionButton href="/admin/course-invitations" size="lg" variant="secondary">Back to invitations</ActionButton>}
-        description="Validate the learner and exact invitation details before preparing a one-time manual-delivery link."
+        description="Choose the learner, organization, and governed course. The Hub handles the technical assignment details."
         title="Create course invitation"
       />
-      <Panel title="Invitation scope"><CourseInvitationCreateForm options={options} /></Panel>
+      {adminNotice === "organization-created" ? (
+        <AlertMessage title="Organization added" tone="success">
+          The new organization is available and selected below.
+        </AlertMessage>
+      ) : null}
+      <Panel title="Learner and course">
+        <CourseInvitationCreateForm
+          options={options}
+          preferredOrganizationId={preferredOrganizationId}
+        />
+      </Panel>
+      <Panel title="Recent invitation status">
+        <p className="mb-5 text-sm leading-6 text-muted-text">
+          Newly created invitations appear here immediately. Open a record to confirm delivery or monitor activation.
+        </p>
+        <InvitationList data={recent} />
+      </Panel>
     </div>
   );
 }

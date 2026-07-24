@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   cancelCourseInvitationAction,
@@ -10,11 +10,7 @@ import {
   type ManualCourseInvitationActionState,
 } from "@/lib/admin-course-invitation-actions";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
-import {
-  ETHIOPIA_REGIONS,
-  LEARNER_ROLE_OPTIONS,
-  isControlledRegion,
-} from "@/lib/controlled-options";
+import { LEARNER_ROLE_OPTIONS } from "@/lib/controlled-options";
 
 type InvitationOptions = {
   cohorts: Array<{
@@ -39,10 +35,16 @@ const initialManualCourseInvitationState: ManualCourseInvitationActionState = {
   success: false,
 };
 
-function SubmitButton({ children }: { children: React.ReactNode }) {
+function SubmitButton({
+  children,
+  disabled = false,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
   const { pending } = useFormStatus();
   return (
-    <ActionButton disabled={pending} loading={pending} size="lg" type="submit">
+    <ActionButton disabled={disabled || pending} loading={pending} size="lg" type="submit">
       {children}
     </ActionButton>
   );
@@ -56,6 +58,19 @@ function ManualDeliveryPanel({
   message: string;
 }) {
   const [copyStatus, setCopyStatus] = useState("");
+  const expiresAt = new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(delivery.expiresAt));
+  const summaryFields = delivery.invitedEmail && delivery.organizationName && delivery.courseTitle
+    ? [
+        ["Learner", delivery.invitedName ? `${delivery.invitedName} (${delivery.invitedEmail})` : delivery.invitedEmail],
+        ["Organization", delivery.organizationName],
+        ["Course", delivery.courseTitle],
+        ["Status", delivery.status === "DRAFT" ? "Ready for manual delivery" : delivery.status],
+        ["Expires", expiresAt],
+      ]
+    : [];
 
   async function copyLink() {
     try {
@@ -73,10 +88,10 @@ function ManualDeliveryPanel({
     >
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge label="Manual secure delivery" tone="gold" />
-        <StatusBadge label="Not yet sent" tone="orange" />
+        <StatusBadge label={delivery.status === "DRAFT" ? "Ready for delivery" : delivery.status} tone="orange" />
       </div>
-      <h2 className="mt-4 text-xl font-semibold text-deep-navy" id="manual-delivery-heading">
-        Share this one-time link now
+      <h2 className="mt-4 text-xl font-semibold text-deep-navy" id="manual-delivery-heading" tabIndex={-1}>
+        {summaryFields.length > 0 ? "Invitation created" : "Share this replacement link now"}
       </h2>
       <p className="mt-2 text-sm leading-6 text-amber-950">{message}</p>
       <p className="mt-2 text-sm leading-6 text-amber-950">
@@ -85,8 +100,19 @@ function ManualDeliveryPanel({
         place it in reports, screenshots, group chats, or public messages.
       </p>
 
+      {summaryFields.length > 0 ? (
+        <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+          {summaryFields.map(([label, value]) => (
+            <div className="rounded-[16px] border border-amber-200 bg-white/75 p-4" key={label}>
+              <dt className="text-xs font-semibold uppercase tracking-[0.1em] text-amber-900">{label}</dt>
+              <dd className="mt-1 text-sm font-semibold leading-6 text-dark-ink">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
       <label className="mt-5 block text-sm font-semibold text-dark-ink" htmlFor="manual-invitation-url">
-        One-time invitation link
+        Secure invitation link
         <input
           className={inputClass}
           id="manual-invitation-url"
@@ -109,58 +135,65 @@ function ManualDeliveryPanel({
             Confirm link was delivered
           </ActionButton>
         </form>
-        <ActionButton
-          onClick={() => window.location.assign(`/admin/course-invitations/${delivery.invitationId}`)}
-          type="button"
-          variant="secondary"
-        >
-          Dismiss without marking sent
+        <ActionButton href={`/admin/course-invitations/${delivery.invitationId}`} variant="secondary">
+          View invitation status
         </ActionButton>
       </div>
     </section>
   );
 }
 
-export function CourseInvitationCreateForm({ options }: { options: InvitationOptions }) {
+export function CourseInvitationCreateForm({
+  options,
+  preferredOrganizationId,
+}: {
+  options: InvitationOptions;
+  preferredOrganizationId?: string;
+}) {
   const [state, action] = useActionState(
     createCourseInvitationAction,
     initialManualCourseInvitationState,
   );
-  const [organizationId, setOrganizationId] = useState("");
-  const [organizationQuery, setOrganizationQuery] = useState("");
-  const [region, setRegion] = useState("");
+  const defaultOrganizationId =
+    options.organizations.find((organization) => organization.id === preferredOrganizationId)?.id ??
+    (options.organizations.length === 1 ? options.organizations[0].id : "");
+  const defaultCourseId = options.courses.length === 1 ? options.courses[0].id : "";
+  const [organizationId, setOrganizationId] = useState(defaultOrganizationId);
   const [role, setRole] = useState("");
-  const [courseId, setCourseId] = useState("");
-  const [courseVersionId, setCourseVersionId] = useState("");
-  const [cohortId, setCohortId] = useState("");
+  const [courseId, setCourseId] = useState(defaultCourseId);
+  const selectedCourse = options.courses.find((course) => course.id === courseId);
+  const courseVersionId = selectedCourse?.versions[0]?.id ?? "";
+  const blockingMessages = [
+    options.organizations.length === 0
+      ? "No active organization is available. Add an organization before creating an invitation."
+      : null,
+    options.courses.length === 0
+      ? "No governed course is available. Publish an assigned-only course before creating an invitation."
+      : null,
+  ].filter((message): message is string => Boolean(message));
 
-  const versions = useMemo(
-    () => options.courses.find((course) => course.id === courseId)?.versions ?? [],
-    [courseId, options.courses],
-  );
-  const cohorts = useMemo(
-    () =>
-      options.cohorts.filter((cohort) =>
-        cohort.organizationLinks.some((link) => link.organizationId === organizationId),
-      ),
-    [options.cohorts, organizationId],
-  );
-  const organizations = useMemo(() => {
-    const query = organizationQuery.trim().toLowerCase();
-    return options.organizations.filter((organization) => {
-      const organizationRegion = organization.region && isControlledRegion(organization.region)
-        ? organization.region
-        : "Other / not listed";
-      return organizationRegion === region && (!query || organization.name.toLowerCase().includes(query));
-    });
-  }, [options.organizations, organizationQuery, region]);
+  useEffect(() => {
+    if (!state.field) {
+      return;
+    }
+
+    document.getElementById(`course-invitation-${state.field}`)?.focus();
+  }, [state.code, state.field]);
+
+  useEffect(() => {
+    if (!state.success || !state.delivery) {
+      return;
+    }
+
+    document.getElementById("manual-delivery-heading")?.focus();
+  }, [state.delivery, state.success]);
 
   if (state.success && state.delivery) {
     return <ManualDeliveryPanel delivery={state.delivery} message={state.message} />;
   }
 
   return (
-    <form action={action} aria-label="Create controlled course invitation" className="grid gap-5">
+    <form action={action} aria-label="Create course invitation" className="grid gap-5">
       {state.code !== "idle" && !state.success ? (
         <div aria-live="assertive">
           <AlertMessage title="Invitation was not created" tone="error">
@@ -169,29 +202,32 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
         </div>
       ) : null}
 
-      <section className="rounded-[20px] border border-dec-blue/25 bg-dec-blue/10 p-5 text-sm leading-6 text-[#26536c]">
-        <h2 className="font-semibold text-deep-navy">Before creating an invitation</h2>
-        <p className="mt-2">Confirm that:</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>the organization is listed;</li>
-          <li>the learner email is correct;</li>
-          <li>the intended course is available;</li>
-          <li>the correct version is selected;</li>
-          <li>the learner does not already have access;</li>
-          <li>the learner will register or sign in using the same email.</li>
-        </ul>
-      </section>
+      {blockingMessages.length > 0 ? (
+        <AlertMessage title="Invitation setup is incomplete" tone="warning">
+          <ul className="list-disc space-y-1 pl-5">
+            {blockingMessages.map((message) => <li key={message}>{message}</li>)}
+          </ul>
+        </AlertMessage>
+      ) : (
+        <section className="rounded-[20px] border border-dec-blue/25 bg-dec-blue/10 p-5 text-sm leading-6 text-[#26536c]">
+          <h2 className="font-semibold text-deep-navy">Invite one learner to HRBA</h2>
+          <p className="mt-2">
+            Enter the learner details, confirm the organization and course, then create a secure link for private manual delivery.
+          </p>
+        </section>
+      )}
 
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="text-sm font-semibold text-dark-ink">
-          Learner name
-          <input className={inputClass} maxLength={160} name="invitedName" required />
+        <label className="text-sm font-semibold text-dark-ink" htmlFor="course-invitation-invitedName">
+          Learner full name
+          <input className={inputClass} id="course-invitation-invitedName" maxLength={160} name="invitedName" required />
         </label>
-        <label className="text-sm font-semibold text-dark-ink">
+        <label className="text-sm font-semibold text-dark-ink" htmlFor="course-invitation-invitedEmail">
           Learner email
           <input
             autoComplete="email"
             className={inputClass}
+            id="course-invitation-invitedEmail"
             maxLength={254}
             name="invitedEmail"
             required
@@ -200,9 +236,9 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
         </label>
       </div>
 
-      <label className="text-sm font-semibold text-dark-ink">
+      <label className="text-sm font-semibold text-dark-ink" htmlFor="course-invitation-invitedRoleOrPosition">
         Role or function <span className="font-normal text-muted-text">(optional)</span>
-        <select className={inputClass} name="invitedRoleOrPosition" onChange={(event) => setRole(event.target.value)} value={role}>
+        <select className={inputClass} id="course-invitation-invitedRoleOrPosition" name="invitedRoleOrPosition" onChange={(event) => setRole(event.target.value)} value={role}>
           <option value="">Not specified</option>
           {LEARNER_ROLE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
@@ -211,113 +247,61 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
       {role === "Other" ? <label className="text-sm font-semibold text-dark-ink">Describe the role or function<input className={inputClass} maxLength={160} name="invitedRoleOther" required /></label> : null}
 
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="text-sm font-semibold text-dark-ink">
-          Region
-          <select className={inputClass} name="region" onChange={(event) => { setRegion(event.target.value); setOrganizationId(""); setCohortId(""); }} required value={region}>
-            <option value="">Select a region</option>
-            {ETHIOPIA_REGIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select>
-          <span className="mt-2 block font-normal leading-6 text-muted-text">The CSO list is filtered by this region.</span>
-        </label>
+        <div>
+          <label className="text-sm font-semibold text-dark-ink" htmlFor="course-invitation-organizationId">
+            Organization
+            <select
+              className={inputClass}
+              disabled={options.organizations.length === 0}
+              id="course-invitation-organizationId"
+              name="organizationId"
+              onChange={(event) => setOrganizationId(event.target.value)}
+              required
+              value={organizationId}
+            >
+              <option value="">{options.organizations.length === 0 ? "No active organizations available" : "Select an organization"}</option>
+              {options.organizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name}
+                </option>
+              ))}
+            </select>
+            <span className="mt-2 block font-normal leading-6 text-muted-text">All active pilot organizations are shown.</span>
+          </label>
+          <ActionButton className="mt-3" href="/admin/organizations/new?returnTo=%2Fadmin%2Fcourse-invitations%2Fnew" size="sm" variant="secondary">
+            Add organization
+          </ActionButton>
+        </div>
 
-        <label className="text-sm font-semibold text-dark-ink">
-          Search organizations
-          <input className={inputClass} disabled={!region} onChange={(event) => setOrganizationQuery(event.target.value)} placeholder="Type part of the CSO name" type="search" value={organizationQuery} />
-          <span className="mt-2 block font-normal leading-6 text-muted-text">Search only active organizations in the selected region.</span>
-        </label>
-      </div>
-
-      <div className="grid gap-5 md:grid-cols-2">
-        <label className="text-sm font-semibold text-dark-ink">
-          Organization
+        <label className="text-sm font-semibold text-dark-ink" htmlFor="course-invitation-courseId">
+          Course
           <select
             className={inputClass}
-            disabled={!region}
-            name="organizationId"
-            onChange={(event) => {
-              setOrganizationId(event.target.value);
-              setCohortId("");
-            }}
-            required
-            value={organizationId}
-          >
-            <option value="">Select an active organization</option>
-            {organizations.map((organization) => (
-              <option key={organization.id} value={organization.id}>
-                {organization.name}
-              </option>
-            ))}
-          </select>
-          <span className="mt-2 block font-normal leading-6 text-muted-text">If the organization is missing, ask the platform administrator to add it through organization management.</span>
-        </label>
-
-        <label className="text-sm font-semibold text-dark-ink">
-          Eligible course
-          <select
-            className={inputClass}
+            disabled={options.courses.length === 0}
+            id="course-invitation-courseId"
             name="courseId"
-            onChange={(event) => {
-              setCourseId(event.target.value);
-              setCourseVersionId("");
-            }}
+            onChange={(event) => setCourseId(event.target.value)}
             required
             value={courseId}
           >
-            <option value="">Select a published assigned-only course</option>
+            <option value="">{options.courses.length === 0 ? "No governed courses available" : "Select a course"}</option>
             {options.courses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.title}
               </option>
             ))}
           </select>
-          <span className="mt-2 block font-normal leading-6 text-muted-text">Only published invitation-eligible courses are shown. Missing courses must be added through course management.</span>
+          <span className="mt-2 block font-normal leading-6 text-muted-text">
+            Only published courses that require governed access are shown. The latest published version is selected automatically.
+          </span>
         </label>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
-        <label className="text-sm font-semibold text-dark-ink">
-          Course version
-          <select
-            className={inputClass}
-            disabled={!courseId}
-            name="courseVersionId"
-            onChange={(event) => setCourseVersionId(event.target.value)}
-            required
-            value={courseVersionId}
-          >
-            <option value="">Select the exact published version</option>
-            {versions.map((version) => (
-              <option key={version.id} value={version.id}>
-                Version {version.versionNumber}
-              </option>
-            ))}
-          </select>
-          <span className="mt-2 block font-normal leading-6 text-muted-text">Choose the exact published version. Missing versions must be published through course management.</span>
-        </label>
+      <input name="courseVersionId" type="hidden" value={courseVersionId} />
 
-        <label className="text-sm font-semibold text-dark-ink">
-          Cohort <span className="font-normal text-muted-text">(optional)</span>
-          <select
-            className={inputClass}
-            disabled={!organizationId}
-            name="cohortId"
-            onChange={(event) => setCohortId(event.target.value)}
-            value={cohortId}
-          >
-            <option value="">No cohort</option>
-            {cohorts.map((cohort) => (
-              <option key={cohort.id} value={cohort.id}>
-                {cohort.name}
-              </option>
-            ))}
-          </select>
-          <span className="mt-2 block font-normal leading-6 text-muted-text">Only cohorts linked to the selected CSO are shown. Missing cohorts must be added through cohort management.</span>
-        </label>
-      </div>
-
-      <label className="max-w-sm text-sm font-semibold text-dark-ink">
-        Link expiry
-        <select className={inputClass} defaultValue="7" name="expiryDays" required>
+      <label className="max-w-sm text-sm font-semibold text-dark-ink" htmlFor="course-invitation-expiryDays">
+        Invitation expiry
+        <select className={inputClass} defaultValue="7" id="course-invitation-expiryDays" name="expiryDays" required>
           <option value="1">1 day</option>
           <option value="3">3 days</option>
           <option value="7">7 days</option>
@@ -327,13 +311,19 @@ export function CourseInvitationCreateForm({ options }: { options: InvitationOpt
       </label>
 
       <div className="rounded-[18px] border border-dec-blue/20 bg-dec-blue/10 p-4 text-sm leading-6 text-[#26536c]">
-        Creating the invitation prepares a one-time manual-delivery link. It does not
-        create an account, assignment, enrollment, or sent record. The learner receives
-        exact course access only after authenticated acceptance.
+        A secure one-time link will appear after creation. Copy it for private manual delivery.
+        Course access is created only after the invited email signs in and accepts.
       </div>
 
       <div>
-        <SubmitButton>Create invitation and prepare link</SubmitButton>
+        <SubmitButton disabled={blockingMessages.length > 0 || !organizationId || !courseId || !courseVersionId}>
+          Create invitation
+        </SubmitButton>
+        {blockingMessages.length === 0 && (!organizationId || !courseId) ? (
+          <p className="mt-2 text-sm font-medium text-red-700">
+            Select an organization and course to enable invitation creation.
+          </p>
+        ) : null}
       </div>
     </form>
   );

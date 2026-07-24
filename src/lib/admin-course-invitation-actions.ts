@@ -19,10 +19,16 @@ const ALLOWED_EXPIRY_DAYS = new Set([1, 3, 7, 14, 30]);
 export type ManualCourseInvitationActionState = {
   code: string;
   delivery?: {
+    courseTitle?: string;
     expiresAt: string;
     invitationId: string;
+    invitedEmail?: string;
+    invitedName?: string;
+    organizationName?: string;
+    status: string;
     url: string;
   };
+  field?: "courseId" | "expiryDays" | "invitedEmail" | "invitedName" | "invitedRoleOrPosition" | "organizationId";
   message: string;
   success: boolean;
 };
@@ -75,9 +81,30 @@ function expiryDate(formData: FormData) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
+const errorFields: Partial<Record<string, ManualCourseInvitationActionState["field"]>> = {
+  "already-assigned": "invitedEmail",
+  "conflicting-assignment": "invitedEmail",
+  "conflicting-organization": "organizationId",
+  "duplicate-active-invitation": "invitedEmail",
+  "elevated-user": "invitedEmail",
+  "inactive-organization": "organizationId",
+  "inactive-user": "invitedEmail",
+  "ineligible-user": "invitedEmail",
+  "invalid-course-state": "courseId",
+  "invalid-email": "invitedEmail",
+  "invalid-expiry": "expiryDays",
+  "invalid-input": "invitedName",
+  "invalid-role": "invitedRoleOrPosition",
+  "invalid-version-state": "courseId",
+  "unknown-course": "courseId",
+  "unknown-course-version": "courseId",
+  "unknown-organization": "organizationId",
+};
+
 function failure(code: string): ManualCourseInvitationActionState {
   return {
     code,
+    field: errorFields[code],
     message: errorMessages[code] ?? errorMessages.unavailable,
     success: false,
   };
@@ -112,7 +139,7 @@ export async function createCourseInvitationAction(
     return failure("invalid-role");
   }
   const result = await createAdminCourseInvitation({
-    cohortId: formText(formData, "cohortId") || null,
+    cohortId: null,
     courseId: formText(formData, "courseId"),
     courseVersionId: formText(formData, "courseVersionId"),
     expiresAt,
@@ -120,7 +147,6 @@ export async function createCourseInvitationAction(
     invitedName: formText(formData, "invitedName"),
     invitedRoleOrPosition,
     organizationId: formText(formData, "organizationId"),
-    region: formText(formData, "region"),
     session,
   });
   if (!result.success) {
@@ -131,8 +157,13 @@ export async function createCourseInvitationAction(
   return {
     code: "manual-delivery-ready",
     delivery: {
+      courseTitle: result.summary?.courseTitle,
       expiresAt: result.invitation.expiresAt.toISOString(),
       invitationId: result.invitation.id,
+      invitedEmail: result.summary?.invitedEmail,
+      invitedName: result.summary?.invitedName,
+      organizationName: result.summary?.organizationName,
+      status: result.invitation.status,
       url: result.deliveryUrl,
     },
     message:
@@ -169,6 +200,7 @@ export async function prepareCourseInvitationLinkAction(
     delivery: {
       expiresAt: result.invitation.expiresAt.toISOString(),
       invitationId: result.invitation.id,
+      status: result.invitation.status,
       url: result.deliveryUrl,
     },
     message:

@@ -245,6 +245,9 @@ try {
   const prepared = await createAdminCourseInvitation(baseInput(email("activate")));
   assert(prepared.success, prepared.success ? undefined : prepared.code);
   assert.equal(prepared.invitation.status, CourseInvitationStatus.DRAFT);
+  assert.equal(prepared.summary?.courseTitle, courses.eligible.title);
+  assert.equal(prepared.summary?.invitedEmail, email("activate"));
+  assert.equal(prepared.summary?.organizationName, organizations.active.name);
   const preparedUrl = new URL(prepared.deliveryUrl);
   assert.equal(preparedUrl.origin, "https://preview.example.test");
   const activationToken = preparedUrl.searchParams.get("token");
@@ -462,14 +465,16 @@ try {
   assert.deepEqual(await resolveCourseInvitationAcceptance({ plaintextToken: expiredToken, session: null }), { state: "expired", success: false });
   assert.deepEqual(await resolveCourseInvitationAcceptance({ plaintextToken: "fictional-invalid-token", session: null }), { state: "unavailable", success: false });
 
-  const [acceptPage, acceptClient, nextConfig, adminUi, adminDashboard, adminPage, signInPage] = await Promise.all([
+  const [acceptPage, acceptClient, nextConfig, adminUi, invitationForm, adminDashboard, adminPage, signInPage, organizationActions] = await Promise.all([
     readFile("src/app/(public)/course-invitations/accept/page.tsx", "utf8"),
     readFile("src/components/public/CourseInvitationAcceptance.tsx", "utf8"),
     readFile("next.config.ts", "utf8"),
     readFile("src/components/admin/AdminCourseInvitations.tsx", "utf8"),
+    readFile("src/components/admin/CourseInvitationActions.tsx", "utf8"),
     readFile("src/components/admin/AdminDashboard.tsx", "utf8"),
     readFile("src/app/(admin)/admin/[[...segments]]/page.tsx", "utf8"),
     readFile("src/app/(auth)/sign-in/page.tsx", "utf8"),
+    readFile("src/lib/admin-people-actions.ts", "utf8"),
   ]);
   assert(acceptPage.includes('referrer: "no-referrer"'));
   assert(acceptPage.includes('dynamic = "force-dynamic"'));
@@ -485,11 +490,23 @@ try {
   assert(nextConfig.includes('value: "no-referrer"'));
   assert(!adminUi.includes("tokenHash"));
   assert(adminUi.includes("Send the secure link privately"));
+  assert(adminUi.includes("Recent invitation status"));
+  assert(invitationForm.includes("All active pilot organizations are shown."));
+  assert(invitationForm.includes("The latest published version is selected automatically."));
+  assert(invitationForm.includes("/admin/organizations/new?returnTo="));
+  assert(invitationForm.includes("Create invitation"));
+  assert(!invitationForm.includes("Search organizations"));
+  assert(!invitationForm.includes('name="region"'));
+  assert(!invitationForm.includes('name="cohortId"'));
+  assert(invitationForm.includes('<input name="courseVersionId" type="hidden"'));
+  assert(!invitationForm.includes("Course version"));
+  assert(organizationActions.includes('value === "/admin/course-invitations/new"'));
+  assert(organizationActions.includes('revalidatePath("/admin/course-invitations/new")'));
   assert(adminDashboard.includes("DEC Administrator Portal"));
   assert(adminDashboard.includes("Sign in as administrator"));
   assert(adminDashboard.includes("/sign-in?next=%2Fadmin%2Fcourse-invitations"));
   assert(adminDashboard.includes("How to invite a learner"));
-  assert(adminDashboard.includes("Replace or cancel safely"));
+  assert(adminDashboard.includes("Create and deliver"));
   assert(adminPage.includes('actualRoute === "/admin"'));
   assert(adminPage.includes("<AdminPortalEntry />"));
   assert(signInPage.includes("isAdministratorSignIn"));

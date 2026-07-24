@@ -324,7 +324,7 @@ export const adminRoutes: Record<string, RouteDefinition> = {
   "/admin/course-invitations/new": {
     title: "Create Course Invitation",
     purpose:
-      "Validate an approved organization, learner, course version, and optional cohort before preparing delivery.",
+      "Invite one learner by selecting an active organization, governed course, and link expiry.",
   },
   "/admin/course-invitations/[invitationId]": {
     title: "Course Invitation Detail",

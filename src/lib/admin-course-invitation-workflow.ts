@@ -39,6 +39,12 @@ export type CourseInvitationDeliveryResult =
         id: string;
         status: CourseInvitationStatus;
       };
+      summary?: {
+        courseTitle: string;
+        invitedEmail: string;
+        invitedName: string;
+        organizationName: string;
+      };
       success: true;
     };
 
@@ -325,12 +331,26 @@ export async function createAdminCourseInvitation(input: {
   }
 
   await requireInvitationManager(input.session);
-  const organization = await prisma.organization.findFirst({
-    select: { region: true },
-    where: { id: input.organizationId, status: OrganizationStatus.ACTIVE },
-  });
+  const [organization, course] = await Promise.all([
+    prisma.organization.findFirst({
+      select: { name: true, region: true },
+      where: { id: input.organizationId, status: OrganizationStatus.ACTIVE },
+    }),
+    prisma.course.findFirst({
+      select: { title: true },
+      where: {
+        archivedAt: null,
+        id: input.courseId,
+        status: CourseStatus.PUBLISHED,
+        visibility: CourseVisibility.ASSIGNED_ONLY,
+      },
+    }),
+  ]);
   if (!organization) {
     return { code: "unknown-organization", success: false };
+  }
+  if (!course) {
+    return { code: "unknown-course", success: false };
   }
   const expectedRegion = organization.region && isControlledRegion(organization.region)
     ? organization.region
@@ -350,6 +370,12 @@ export async function createAdminCourseInvitation(input: {
   return {
     deliveryUrl: deliveryUrl(origin, result.plaintextToken),
     invitation: result.invitation,
+    summary: {
+      courseTitle: course.title,
+      invitedEmail: input.invitedEmail.trim().toLowerCase(),
+      invitedName: input.invitedName.trim(),
+      organizationName: organization.name,
+    },
     success: true,
   };
 }

@@ -39,6 +39,12 @@ function nullableFormString(formData: FormData, key: string) {
   return value.length > 0 ? value : null;
 }
 
+function safeOrganizationReturnPath(formData: FormData) {
+  const value = formString(formData, "returnTo");
+
+  return value === "/admin/course-invitations/new" ? value : null;
+}
+
 function redirectToUser(userId: string, notice: string): never {
   redirect(`/admin/users/${userId}?adminNotice=${notice}`);
 }
@@ -91,6 +97,7 @@ function revalidateOrganizationMutationPaths(result: AdminPeopleMutationResult) 
   revalidatePath("/admin/organizations");
   revalidatePath("/admin/cohorts");
   revalidatePath("/admin/audit-log");
+  revalidatePath("/admin/course-invitations/new");
 
   if (result.organizationId) {
     revalidatePath(`/admin/organizations/${result.organizationId}`);
@@ -225,6 +232,7 @@ export async function linkAdminUserContextAction(formData: FormData) {
 
 export async function createAdminOrganizationAction(formData: FormData) {
   const session = await getCurrentSession();
+  const returnTo = safeOrganizationReturnPath(formData);
   const result = await createAdminOrganization({
     focalPersonEmail: nullableFormString(formData, "focalPersonEmail"),
     focalPersonName: nullableFormString(formData, "focalPersonName"),
@@ -244,10 +252,21 @@ export async function createAdminOrganizationAction(formData: FormData) {
 
   if (result.success) {
     revalidateOrganizationMutationPaths(result);
+    if (returnTo) {
+      const params = new URLSearchParams({
+        adminNotice: result.code,
+        organizationId: result.organizationId ?? "",
+      });
+      redirect(`${returnTo}?${params.toString()}`);
+    }
     redirectToOrganization(result.organizationId ?? "", result.code);
   }
 
-  redirect(`/admin/organizations/new?adminNotice=${result.code}`);
+  const params = new URLSearchParams({ adminNotice: result.code });
+  if (returnTo) {
+    params.set("returnTo", returnTo);
+  }
+  redirect(`/admin/organizations/new?${params.toString()}`);
 }
 
 export async function updateAdminOrganizationAction(formData: FormData) {

@@ -82,6 +82,7 @@ type PageProps = {
     referenceCategory?: string;
     referenceSearch?: string;
     referenceStatus?: string;
+    returnTo?: string;
     role?: string;
     reviewNotice?: string;
     status?: string;
@@ -108,6 +109,7 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
     referenceCategory,
     referenceSearch,
     referenceStatus,
+    returnTo,
     role,
     reviewNotice,
     status,
@@ -198,9 +200,19 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
   }
 
   if (actualRoute === "/admin/course-invitations/new") {
-    const options = await getAdminCourseInvitationOptions(session);
+    const [options, recentInvitations] = await Promise.all([
+      getAdminCourseInvitationOptions(session),
+      getAdminCourseInvitationList(session, { created: "30d" }),
+    ]);
 
-    return <AdminCourseInvitationCreate options={options} />;
+    return (
+      <AdminCourseInvitationCreate
+        adminNotice={adminNotice}
+        options={options}
+        preferredOrganizationId={organizationId}
+        recentInvitations={recentInvitations}
+      />
+    );
   }
 
   if (segments.length === 2 && segments[0] === "course-invitations") {
@@ -232,6 +244,7 @@ export default async function AdminPage({ params, searchParams }: PageProps) {
         adminNotice={adminNotice}
         detail={null}
         operationOptions={operationOptions}
+        returnTo={returnTo}
       />
     );
   }

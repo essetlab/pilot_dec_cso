@@ -20,33 +20,23 @@ const quickActions = [
 const invitationSteps = [
   {
     description:
-      "Have the active organization, learner name and email, region, role, intended course and version, optional cohort, and expiry date ready.",
-    title: "Prepare the information",
+      "Open Create invitation. Active organizations and governed courses are loaded automatically.",
+    title: "Open the invitation page",
   },
   {
     description:
-      "Open Manage invitations, choose Create invitation, and select the CSO, learner, course, and expiry date.",
-    title: "Create the invitation",
+      "Enter the learner name and email, then confirm the organization, course, and expiry.",
+    title: "Enter learner details",
   },
   {
     description:
-      "Prepare the secure link, copy it when it appears, and send it privately to the intended learner. The link cannot be shown again later.",
-    title: "Copy and deliver the link",
+      "Select Create invitation, copy the secure link, and send it privately through the approved manual channel.",
+    title: "Create and deliver",
   },
   {
     description:
-      "Return to the invitation record and mark delivery only after the link has been sent through the agreed channel.",
-    title: "Mark delivery",
-  },
-  {
-    description:
-      "Use the invitation status and history to confirm whether it is draft, sent, activated, expired, cancelled, or replaced.",
-    title: "Monitor activation",
-  },
-  {
-    description:
-      "Prepare a replacement link when a sent link must be invalidated, or cancel the invitation when access is no longer required.",
-    title: "Replace or cancel safely",
+      "Confirm delivery, then use the invitation list to monitor activation or prepare a replacement link.",
+    title: "Monitor status",
   },
 ] as const;
 
@@ -79,8 +69,8 @@ function InvitationOperationsGuide() {
           </li>
         ))}
       </ol>
-      <ActionButton className="mt-6" href="/admin/course-invitations">
-        Manage invitations
+      <ActionButton className="mt-6" href="/admin/course-invitations/new">
+        Create invitation
       </ActionButton>
     </section>
   );
