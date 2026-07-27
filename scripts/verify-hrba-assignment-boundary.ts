@@ -25,7 +25,11 @@ for (const path of [
 assert.match(source("src/lib/course-data.ts"), /progress: 0,/);
 
 const catalogue = source("src/lib/public-course-catalogue.ts");
-assert.match(catalogue, /accessState: "invitation_required"/);
+assert.match(catalogue, /accessState: "available_open"/);
+const registration = source("src/lib/open-registration-workflow.ts");
+assert.match(registration, /HRBA_EXTERNAL_COURSE_VERSION_ID/);
+assert.match(registration, /courseId_targetUserId/);
+assert.match(registration, /assignmentType: "USER"/);
 const detail = source("src/components/public/CourseDetailPage.tsx");
 assert.match(detail, /Invitation required/);
 assert.match(detail, /Assigned/);

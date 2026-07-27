@@ -237,7 +237,7 @@ function comingSoonCourse(
 export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   {
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[0],
-    accessState: "invitation_required",
+    accessState: "available_open",
     assessmentStatus:
       "Existing final assessment; certificate eligibility requires a score of 80% or above.",
     availability: "available",

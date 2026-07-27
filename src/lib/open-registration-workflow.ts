@@ -1,4 +1,9 @@
-import { AuditActionType, RoleKey, UserStatus } from "../generated/prisma/enums";
+import {
+  AuditActionType,
+  CourseStatus,
+  RoleKey,
+  UserStatus,
+} from "../generated/prisma/enums";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hashPassword, validatePasswordPolicy } from "./auth/passwords";
 import {
@@ -8,6 +13,10 @@ import {
 } from "./controlled-options";
 import { prisma } from "./prisma";
 import { readSupabasePublicConfig } from "./supabase/config";
+import {
+  HRBA_EXTERNAL_COURSE_ID,
+  HRBA_EXTERNAL_COURSE_VERSION_ID,
+} from "./external-course-config";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -219,6 +228,52 @@ async function createOpenRegistrationProfile(input: {
       },
     });
 
+    const hrbaCourse = await tx.course.findFirst({
+      select: {
+        createdById: true,
+        id: true,
+        versions: {
+          select: { id: true },
+          where: {
+            id: HRBA_EXTERNAL_COURSE_VERSION_ID,
+            status: CourseStatus.PUBLISHED,
+          },
+        },
+      },
+      where: {
+        archivedAt: null,
+        id: HRBA_EXTERNAL_COURSE_ID,
+        status: CourseStatus.PUBLISHED,
+      },
+    });
+
+    const hrbaVersion = hrbaCourse?.versions[0];
+    if (!hrbaCourse || !hrbaVersion) {
+      throw new Error("HRBA_COURSE_UNAVAILABLE");
+    }
+
+    const hrbaAssignment = await tx.courseAssignment.upsert({
+      create: {
+        assignedById: hrbaCourse.createdById,
+        assignmentType: "USER",
+        courseId: hrbaCourse.id,
+        courseVersionId: hrbaVersion.id,
+        targetUserId: user.id,
+      },
+      update: {
+        assignedAt: new Date(),
+        assignedById: hrbaCourse.createdById,
+        courseVersionId: hrbaVersion.id,
+        isActive: true,
+      },
+      where: {
+        courseId_targetUserId: {
+          courseId: hrbaCourse.id,
+          targetUserId: user.id,
+        },
+      },
+    });
+
     await tx.auditLog.create({
       data: {
         actionType: AuditActionType.USER_CREATED,
@@ -228,6 +283,8 @@ async function createOpenRegistrationProfile(input: {
         entityType: "User",
         metadataJson: {
           consentAcknowledged: true,
+          hrbaAssignmentId: hrbaAssignment.id,
+          hrbaCourseVersionId: hrbaVersion.id,
           organizationLinkCreated: false,
           registrationChannel: "open-registration",
         },

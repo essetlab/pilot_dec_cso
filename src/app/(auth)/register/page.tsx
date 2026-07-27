@@ -187,7 +187,8 @@ function RegisterForm({
               placeholder="Enter your CSO or organization name"
             />
             <p className="mt-2 text-sm leading-6 text-muted-text">
-              This profile information does not grant access to invitation-only courses.
+              Registration includes access to the HRBA pilot course. Other
+              invitation-only courses still require a separate assignment.
             </p>
           </div>
         )}

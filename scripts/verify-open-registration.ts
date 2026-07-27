@@ -40,8 +40,13 @@ assert.match(workflow, /organizationId: null/);
 assert.doesNotMatch(workflow, /organization\.(create|upsert|findFirst|findUnique)/);
 assert.match(workflow, /registration-not-completed/);
 assert.match(workflow, /consentAcknowledged: true/);
+assert.match(workflow, /HRBA_EXTERNAL_COURSE_VERSION_ID/);
+assert.match(workflow, /courseId_targetUserId/);
+assert.match(workflow, /assignmentType: "USER"/);
+assert.match(workflow, /hrbaAssignmentId/);
 assert.match(page, /Create your CSO Learning Hub account/);
-assert.match(page, /does not grant access/);
+assert.match(page, /Registration includes access to the HRBA pilot course/);
+assert.match(page, /invitation-only courses still require a separate assignment/);
 assert.match(page, /Select your region/);
 assert.match(page, /Preferred language/);
 
