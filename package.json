@@ -46,6 +46,7 @@
     "verify:auth-recovery": "node --import jiti/register scripts/verify-auth-recovery.ts",
     "configure:pilot-readiness": "node --import jiti/register scripts/configure-pilot-readiness-reference-data.ts",
     "verify:pilot-readiness": "node --import jiti/register scripts/verify-pilot-readiness.ts",
+    "verify:kobo-feedback": "node --import jiti/register scripts/verify-kobo-feedback.ts",
     "verify:course-alignment": "node --import jiti/register scripts/verify-course-alignment.ts",
     "verify:build-studio-blocks": "node --import jiti/register scripts/verify-build-studio-blocks.ts",
     "verify:build-studio-block-editing": "node --import jiti/register scripts/verify-build-studio-block-editing.ts",

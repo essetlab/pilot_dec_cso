@@ -1,5 +1,8 @@
 import { ActionButton, MetricCard, SectionHeader, StatusBadge } from "@/components/ui";
 import type { LearnerCourseSummary } from "@/lib/course-types";
+import { HRBA_EXTERNAL_COURSE_SLUG } from "@/lib/external-course-config";
+
+const HRBA_PILOT_FEEDBACK_URL = "https://ee.kobotoolbox.org/x/8Plk5gtY";
 
 function getSummaryCards(courses: LearnerCourseSummary[]) {
   const completed = courses.filter((course) =>
@@ -176,6 +179,7 @@ function LearnerCourseCard({
   progress,
   secondaryAction,
   secondaryActionHref,
+  slug,
   statusLabel,
   description,
   title,
@@ -184,6 +188,9 @@ function LearnerCourseCard({
   const isInProgress = statusLabel === "In progress";
   const isCertificateIssued = statusLabel === "Certificate issued";
   const isFinalAssessment = statusLabel === "Final assessment available";
+  const showHrbaPilotFeedback =
+    slug === HRBA_EXTERNAL_COURSE_SLUG &&
+    (isCertificateIssued || statusLabel === "Completed");
   const statusTone = isCertificateIssued
     ? "gold"
     : isFinalAssessment
@@ -256,6 +263,17 @@ function LearnerCourseCard({
           {(progress > 0 || certificateCode) ? (
             <ActionButton href={feedbackHref} variant="outline">
               Give course feedback
+            </ActionButton>
+          ) : null}
+          {showHrbaPilotFeedback ? (
+            <ActionButton
+              forceDocumentNavigation
+              href={HRBA_PILOT_FEEDBACK_URL}
+              rel="noopener noreferrer"
+              target="_blank"
+              variant="outline"
+            >
+              Share pilot feedback
             </ActionButton>
           ) : null}
           <ActionButton
