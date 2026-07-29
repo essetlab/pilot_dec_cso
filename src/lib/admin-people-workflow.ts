@@ -421,6 +421,17 @@ function progressSummary(
   return `${completed}/${enrollments.length} completed · ${average}% average progress`;
 }
 
+function adminOrganizationLabel(
+  organizationName: string | null | undefined,
+  selfReportedOrganizationName: string | null | undefined,
+) {
+  return (
+    cleanPresentationText(organizationName) ||
+    cleanPresentationText(selfReportedOrganizationName) ||
+    "No organization"
+  );
+}
+
 async function queryUsers() {
   return prisma.user.findMany({
     orderBy: [{ fullName: "asc" }, { email: "asc" }],
@@ -456,6 +467,7 @@ async function queryUsers() {
         },
         orderBy: { assignedAt: "asc" },
       },
+      selfReportedOrganizationName: true,
       status: true,
     },
   });
@@ -475,7 +487,10 @@ function mapUser(record: UserRecord): AdminUserListItem {
     id: record.id,
     lastLogin: formatDate(record.lastLoginAt),
     name: cleanPresentationText(record.fullName),
-    organization: record.organization?.name ?? "No organization",
+    organization: adminOrganizationLabel(
+      record.organization?.name,
+      record.selfReportedOrganizationName,
+    ),
     roles: roleSummary(record.roleAssignments),
     status: userStatusLabels[record.status],
     statusTone: userStatusTones[record.status],
@@ -516,6 +531,7 @@ export async function getAdminUsersData(
       user.email,
       cleanPresentationEmail(user.email),
       user.organization?.name ?? "",
+      user.selfReportedOrganizationName ?? "",
       user.primaryCohort?.name ?? "",
       roleSummary(user.roleAssignments),
     ].join(" ").toLowerCase();
@@ -639,6 +655,7 @@ export async function getAdminUserDetail(
         },
         orderBy: { assignedAt: "asc" },
       },
+      selfReportedOrganizationName: true,
       status: true,
     },
     where: { id: userId },
@@ -670,7 +687,10 @@ export async function getAdminUserDetail(
     lastLogin: formatDate(user.lastLoginAt),
     name: cleanPresentationText(user.fullName),
     organizationId: user.organization?.id ?? "",
-    organization: user.organization?.name ?? "No organization",
+    organization: adminOrganizationLabel(
+      user.organization?.name,
+      user.selfReportedOrganizationName,
+    ),
     phone: user.phone ?? "Not recorded",
     primaryCohortId: user.primaryCohort?.id ?? "",
     region: user.region ?? "Not recorded",

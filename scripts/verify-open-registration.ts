@@ -25,6 +25,7 @@ assert.equal(data.selfReportedOrganizationName, "Self-reported CSO");
 assert.equal(data.passwordHash, null);
 
 const action = source("src/app/(auth)/register/actions.ts");
+const adminPeopleWorkflow = source("src/lib/admin-people-workflow.ts");
 const page = source("src/app/(auth)/register/page.tsx");
 const workflow = source("src/lib/open-registration-workflow.ts");
 for (const current of [action, page, workflow]) {
@@ -44,6 +45,11 @@ assert.match(workflow, /HRBA_EXTERNAL_COURSE_VERSION_ID/);
 assert.match(workflow, /courseId_targetUserId/);
 assert.match(workflow, /assignmentType: "USER"/);
 assert.match(workflow, /hrbaAssignmentId/);
+assert.match(adminPeopleWorkflow, /selfReportedOrganizationName: true/);
+assert.match(
+  adminPeopleWorkflow,
+  /cleanPresentationText\(selfReportedOrganizationName\)/,
+);
 assert.match(page, /Create your CSO Learning Hub account/);
 assert.match(page, /Registration includes access to the HRBA pilot course/);
 assert.match(page, /invitation-only courses still require a separate assignment/);
