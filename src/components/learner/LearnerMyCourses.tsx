@@ -26,13 +26,13 @@ function getSummaryCards(courses: LearnerCourseSummary[]) {
       value: notStarted.length,
     },
     {
-      helperText: "Completed learning will appear here.",
+      helperText: "Completed learning.",
       label: "Completed",
       tone: "green" as const,
       value: completed.length,
     },
     {
-      helperText: "Certificates unlock after course requirements are met.",
+      helperText: "Certificates unlocked.",
       label: "Certificates earned",
       tone: "orange" as const,
       value: certificates.length,
@@ -43,20 +43,20 @@ function getSummaryCards(courses: LearnerCourseSummary[]) {
 function ProgressBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4 text-sm">
-        <span className="font-medium text-dark-ink">{label}</span>
-        <span className="font-semibold text-deep-navy">{value}%</span>
+      <div className="flex items-center justify-between gap-4 text-xs font-semibold">
+        <span className="text-muted-text">{label}</span>
+        <span className="text-deep-navy font-bold">{value}%</span>
       </div>
       <div
         aria-label={`${label}: ${value}% complete`}
         aria-valuemax={100}
         aria-valuemin={0}
         aria-valuenow={value}
-        className="h-2.5 overflow-hidden rounded-full bg-soft-bg"
+        className="h-2 overflow-hidden rounded-full bg-soft-bg"
         role="progressbar"
       >
         <div
-          className="h-full rounded-full bg-dec-green"
+          className="h-full rounded-full bg-dec-green transition-all duration-300"
           style={{ width: `${value}%` }}
         />
       </div>
@@ -64,39 +64,38 @@ function ProgressBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-// Protected external launches use document navigation to avoid stale client auth state after Supabase sign-in.
 function shouldUseDocumentLaunch(href?: string) {
   return href?.startsWith("/learn/courses/") && href.endsWith("/external");
 }
 
 function PageHero({ course }: { course?: LearnerCourseSummary }) {
   return (
-    <section className="overflow-hidden rounded-[28px] bg-deep-navy p-6 text-white shadow-hero lg:p-8">
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-center">
+    <section className="relative overflow-hidden rounded-[24px] bg-deep-navy p-6 text-white shadow-hero lg:p-8">
+      <div aria-hidden="true" className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[24px] border-dec-blue/10" />
+      <div aria-hidden="true" className="absolute -left-10 bottom-10 h-48 w-48 rounded-full border-[16px] border-dec-green/5" />
+
+      <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-center relative z-10">
         <div>
           <StatusBadge label="My learning" tone="green" />
-          <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
+          <h1 className="mt-5 font-display text-3xl font-bold leading-tight sm:text-4xl">
             My Courses
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-white/75">
-            Track your active learning, continue courses, and review available
-            next steps.
+          <p className="mt-3 text-sm leading-normal text-slate-300 max-w-2xl">
+            Track your active learning, continue courses, and review available next steps.
           </p>
-          <p className="mt-5 max-w-3xl text-sm leading-6 text-white/70">
-            Your courses appear here when they are assigned to you or when you
-            begin learning.
+          <p className="mt-4 text-2xs leading-normal text-slate-400">
+            Your courses appear here when they are assigned to you or when you begin learning.
           </p>
         </div>
-        <div className="rounded-[24px] border border-white/15 bg-white/10 p-5 text-white">
-          <p className="text-sm font-semibold text-dec-green">Current focus</p>
-          <h2 className="mt-3 text-2xl font-semibold leading-tight">
+        <div className="rounded-card border border-white/15 bg-white/5 p-5 text-white backdrop-blur">
+          <p className="text-xs font-semibold text-dec-green">Current focus</p>
+          <h2 className="mt-2.5 text-lg font-bold leading-tight">
             {course ? `Continue ${course.shortTitle}` : "Continue learning"}
           </h2>
-          <p className="mt-3 text-sm leading-6 text-white/70">
-            Pick up from your current course and keep moving toward completion,
-            final assessment, and certificate.
+          <p className="mt-2 text-xs leading-normal text-slate-300">
+            Pick up from your current course and keep moving toward completion.
           </p>
-          <div className="mt-6 rounded-[18px] bg-white p-4">
+          <div className="mt-5">
             <ProgressBar label="Course progress" value={course?.progress ?? 0} />
           </div>
         </div>
@@ -109,31 +108,32 @@ function CourseFilterBar() {
   return (
     <section
       aria-label="Course search and filters"
-      className="rounded-[24px] border border-design-border bg-white-surface p-5 shadow-soft"
+      className="rounded-card border border-design-border bg-white p-5 shadow-soft"
     >
       <div className="flex flex-col gap-5 xl:flex-row xl:items-end">
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-deep-navy">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-deep-navy">
             Find a course
           </h2>
           <label
-            className="mt-4 block text-sm font-medium text-muted-text"
+            className="mt-3 block text-xs font-semibold text-muted-text"
             htmlFor="course-search"
           >
             Search courses
           </label>
           <input
-            className="mt-2 min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            className="mt-1.5 min-h-10 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
             id="course-search"
             name="course-search"
             type="search"
+            placeholder="Type course title..."
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:w-[620px]">
-          <label className="block text-sm font-medium text-muted-text">
+          <label className="block text-xs font-semibold text-muted-text">
             Status
             <select
-              className="mt-2 min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+              className="mt-1.5 min-h-10 w-full rounded-control border border-design-border bg-white px-4 text-sm font-semibold text-deep-navy outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
               defaultValue="All"
               name="status"
             >
@@ -143,10 +143,10 @@ function CourseFilterBar() {
               <option>Completed</option>
             </select>
           </label>
-          <label className="block text-sm font-medium text-muted-text sm:col-span-2 lg:col-span-2">
+          <label className="block text-xs font-semibold text-muted-text sm:col-span-2 lg:col-span-2">
             Capacity area
             <select
-              className="mt-2 min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+              className="mt-1.5 min-h-10 w-full rounded-control border border-design-border bg-white px-4 text-sm font-semibold text-deep-navy outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
               defaultValue="All"
               name="capacity-area"
             >
@@ -171,7 +171,6 @@ function LearnerCourseCard({
   duration,
   feedbackHref,
   feedbackStatus,
-  href,
   primaryAction,
   primaryActionHref,
   learnerHref,
@@ -202,26 +201,28 @@ function LearnerCourseCard({
           : "gray";
 
   return (
-    <article className="rounded-[24px] border border-design-border bg-white-surface p-6 shadow-soft">
+    <article className="rounded-card border border-design-border bg-white p-6 shadow-soft hover:shadow-card transition">
       <div className="grid gap-6 lg:grid-cols-[1fr_240px] lg:items-start">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <StatusBadge label={statusLabel} tone={statusTone} />
             <StatusBadge label={capacityArea} tone="blue" />
-            <StatusBadge label={certificateStatus} tone="gold" />
-            <StatusBadge
-              label={feedbackStatus}
-              tone={feedbackStatus === "Feedback submitted" ? "green" : "gray"}
-            />
+            {certificateStatus && <StatusBadge label={certificateStatus} tone="gold" />}
+            {feedbackStatus && (
+              <StatusBadge
+                label={feedbackStatus}
+                tone={feedbackStatus === "Feedback submitted" ? "green" : "gray"}
+              />
+            )}
           </div>
-          <h2 className="mt-4 text-2xl font-semibold leading-tight text-dark-ink">
+          <h2 className="mt-4 text-xl font-bold text-deep-navy leading-snug">
             {title}
           </h2>
-          <p className="mt-3 text-sm leading-7 text-muted-text">{description}</p>
-          <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
-            <div className="rounded-[18px] bg-soft-bg p-4">
-              <dt className="font-medium text-muted-text">Current lesson</dt>
-              <dd className="mt-1 font-semibold leading-6 text-dark-ink">
+          <p className="mt-2 text-xs text-muted-text leading-normal">{description}</p>
+          <dl className="mt-5 grid gap-4 text-xs sm:grid-cols-2">
+            <div className="rounded-control bg-light-bg p-4 border border-design-border/50">
+              <dt className="font-semibold text-muted-text uppercase text-3xs">Current lesson</dt>
+              <dd className="mt-1 font-bold text-deep-navy leading-normal">
                 {isCertificateIssued
                   ? "Course complete"
                   : isFinalAssessment
@@ -229,11 +230,11 @@ function LearnerCourseCard({
                     : currentLesson}
               </dd>
             </div>
-            <div className="rounded-[18px] bg-soft-bg p-4">
-              <dt className="font-medium text-muted-text">
+            <div className="rounded-control bg-light-bg p-4 border border-design-border/50">
+              <dt className="font-semibold text-muted-text uppercase text-3xs">
                 {certificateCode ? "Certificate code" : "Estimated time"}
               </dt>
-              <dd className="mt-1 font-semibold text-dark-ink">
+              <dd className="mt-1 font-mono font-bold text-deep-navy">
                 {certificateCode ?? duration}
               </dd>
             </div>
@@ -242,27 +243,28 @@ function LearnerCourseCard({
             <ProgressBar label={`${title} progress`} value={progress} />
           </div>
         </div>
-        <div className="flex flex-col gap-3 rounded-[20px] border border-design-border bg-soft-bg p-4">
+        <div className="flex flex-col gap-2.5 rounded-control border border-design-border bg-light-bg p-4">
           <ActionButton
             forceDocumentNavigation={shouldUseDocumentLaunch(primaryActionHref ?? learnerHref)}
             href={primaryActionHref ?? learnerHref}
             prefetch={shouldUseDocumentLaunch(primaryActionHref ?? learnerHref) ? false : undefined}
+            className="w-full text-center justify-center font-bold text-xs"
           >
             {primaryAction}
           </ActionButton>
           {certificateDownloadHref ? (
-            <ActionButton href={certificateDownloadHref} variant="success">
+            <ActionButton href={certificateDownloadHref} variant="success" className="w-full text-center justify-center font-bold text-xs">
               Download certificate
             </ActionButton>
           ) : null}
           {verifyCertificateHref ? (
-            <ActionButton href={verifyCertificateHref} variant="outline">
+            <ActionButton href={verifyCertificateHref} variant="outline" className="w-full text-center justify-center font-semibold text-xs">
               Verify certificate
             </ActionButton>
           ) : null}
-          {(progress > 0 || certificateCode) ? (
-            <ActionButton href={feedbackHref} variant="outline">
-              Give course feedback
+          {(progress > 0 || certificateCode) && feedbackHref ? (
+            <ActionButton href={feedbackHref} variant="outline" className="w-full text-center justify-center font-semibold text-xs">
+              Give feedback
             </ActionButton>
           ) : null}
           {showHrbaPilotFeedback ? (
@@ -272,22 +274,26 @@ function LearnerCourseCard({
               rel="noopener noreferrer"
               target="_blank"
               variant="outline"
+              className="w-full text-center justify-center font-semibold text-xs"
             >
               Share pilot feedback
             </ActionButton>
           ) : null}
-          <ActionButton
-            forceDocumentNavigation={shouldUseDocumentLaunch(secondaryActionHref ?? (isInProgress ? finalTestHref : href))}
-            href={secondaryActionHref ?? (isInProgress ? finalTestHref : href)}
-            prefetch={
-              shouldUseDocumentLaunch(secondaryActionHref ?? (isInProgress ? finalTestHref : href))
-                ? false
-                : undefined
-            }
-            variant="secondary"
-          >
-            {secondaryAction}
-          </ActionButton>
+          {secondaryActionHref || (isInProgress && finalTestHref) ? (
+            <ActionButton
+              forceDocumentNavigation={shouldUseDocumentLaunch(secondaryActionHref ?? finalTestHref)}
+              href={secondaryActionHref ?? finalTestHref}
+              prefetch={
+                shouldUseDocumentLaunch(secondaryActionHref ?? finalTestHref)
+                  ? false
+                  : undefined
+              }
+              variant="secondary"
+              className="w-full text-center justify-center font-semibold text-xs"
+            >
+              {secondaryAction || (isInProgress ? "Final test" : "View overview")}
+            </ActionButton>
+          ) : null}
         </div>
       </div>
     </article>
@@ -296,14 +302,13 @@ function LearnerCourseCard({
 
 function LearningSupportCard() {
   return (
-    <article className="rounded-[24px] border border-dec-blue/20 bg-dec-blue/10 p-6">
+    <article className="rounded-card border border-dec-blue/20 bg-dec-blue/5 p-6">
       <StatusBadge label="Learning support" tone="blue" />
-      <h2 className="mt-4 text-xl font-semibold text-deep-navy">
+      <h2 className="mt-4 text-base font-bold text-deep-navy">
         Need support with your assigned courses?
       </h2>
-      <p className="mt-3 text-sm leading-7 text-[#26536c]">
-        If a course is assigned through your organization or cohort, contact your
-        programme focal person for support.
+      <p className="mt-2 text-xs leading-relaxed text-[#26536c]">
+        If a course is assigned through your organization or cohort, contact your programme focal person for assistance.
       </p>
     </article>
   );
@@ -311,17 +316,16 @@ function LearningSupportCard() {
 
 function CompletedStatePreview() {
   return (
-    <article className="rounded-[24px] border border-dashed border-dec-green/45 bg-dec-green/10 p-6">
+    <article className="rounded-card border border-dashed border-dec-green/30 bg-dec-green/5 p-6">
       <StatusBadge label="Completed courses" tone="green" />
-      <h2 className="mt-4 text-xl font-semibold text-deep-navy">
-        Completed courses will appear here.
+      <h2 className="mt-4 text-base font-bold text-deep-navy">
+        Completed courses
       </h2>
-      <p className="mt-3 text-sm leading-7 text-[#426f1c]">
-        When you complete eligible courses and pass the final assessment, related
-        certificates will appear in Certificates.
+      <p className="mt-2 text-xs leading-relaxed text-[#426f1c]">
+        When you complete eligible courses and pass the final assessment, related certificates will appear in Certificates.
       </p>
       <div className="mt-5">
-        <ActionButton href="/learn/certificates" variant="secondary">
+        <ActionButton href="/learn/certificates" variant="secondary" size="sm" className="font-bold">
           View Certificates
         </ActionButton>
       </div>
@@ -341,12 +345,12 @@ export function LearnerMyCourses({
     <div className="space-y-8">
       <PageHero course={currentCourse} />
 
-      <section aria-label="Course summary" className="space-y-5">
+      <section aria-label="Course summary" className="space-y-4">
         <SectionHeader
           description="A quick view of your learning status across active and available courses."
           title="Course summary"
         />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {summaryCards.map((card) => (
             <MetricCard key={card.label} {...card} />
           ))}
@@ -355,20 +359,20 @@ export function LearnerMyCourses({
 
       <CourseFilterBar />
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-        <div className="space-y-5">
+      <section className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
+        <div className="space-y-4">
           <SectionHeader
             description="Continue an active course or review available course next steps."
             title="Your course list"
           />
-          <div className="space-y-5">
+          <div className="space-y-4">
             {courses.map((course) => (
               <LearnerCourseCard key={course.title} {...course} />
             ))}
           </div>
         </div>
 
-        <aside className="space-y-5">
+        <aside className="space-y-6">
           <LearningSupportCard />
           <CompletedStatePreview />
         </aside>

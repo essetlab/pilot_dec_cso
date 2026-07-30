@@ -61,23 +61,28 @@ export async function signInDemoUser(formData: FormData) {
     redirect("/sign-in?error=unknown-user");
   }
 
-  const dbUser = await prisma.user.findUnique({
-    select: {
-      email: true,
-      fullName: true,
-      id: true,
-      organization: { select: { status: true } },
-      roleAssignments: {
-        select: {
-          expiresAt: true,
-          isActive: true,
-          role: { select: { key: true } },
+  let dbUser = null;
+  try {
+    dbUser = await prisma.user.findUnique({
+      select: {
+        email: true,
+        fullName: true,
+        id: true,
+        organization: { select: { status: true } },
+        roleAssignments: {
+          select: {
+            expiresAt: true,
+            isActive: true,
+            role: { select: { key: true } },
+          },
         },
+        status: true,
       },
-      status: true,
-    },
-    where: { email: demoUser.email },
-  });
+      where: { email: demoUser.email },
+    });
+  } catch (err) {
+    console.warn("Database is offline, falling back to static demo session:", err);
+  }
 
   if (dbUser && dbUser.status !== UserStatus.ACTIVE) {
     redirect("/sign-in?error=inactive-user");

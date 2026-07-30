@@ -120,9 +120,18 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
   }
 
   if (actualRoute === "/learn") {
-    const courses = await getLearnerCourseSummaries();
+    const [courses, certificateData] = await Promise.all([
+      getLearnerCourseSummaries(),
+      getLearnerCertificateListData(session),
+    ]);
 
-    return <LearnerDashboard courses={courses} learnerName={session.name} />;
+    return (
+      <LearnerDashboard
+        courses={courses}
+        certificates={certificateData.certificates}
+        learnerName={session.name}
+      />
+    );
   }
 
   if (actualRoute === "/learn/my-courses") {
