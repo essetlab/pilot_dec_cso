@@ -27,19 +27,19 @@ export type ActionButtonProps = ActionButtonLinkProps | ActionButtonElementProps
 
 const variantClasses = {
   primary:
-    "border-dec-blue bg-dec-blue text-white shadow-[0_10px_24px_rgb(59_153_212_/_0.26)] hover:border-[#237fb8] hover:bg-[#237fb8]",
+    "border-dec-blue bg-dec-blue text-white shadow-soft hover:bg-[#2e82b7] hover:border-[#2e82b7]",
   secondary:
-    "border-design-border bg-white text-[#111827] shadow-soft hover:border-dec-blue hover:text-[#216f9d]",
+    "border-design-border bg-white text-deep-navy shadow-soft hover:border-dec-blue hover:text-dec-blue",
   outline:
-    "border-dec-blue bg-transparent text-[#216f9d] hover:bg-dec-blue/10 hover:text-[#145a85]",
+    "border-dec-blue bg-transparent text-[#216f9d] hover:bg-dec-blue/10 hover:text-dec-blue",
   ghost:
     "border-transparent bg-transparent text-current hover:border-dec-blue/25 hover:bg-dec-blue/10",
   danger:
-    "border-[#fecaca] bg-[#dc2626] text-white shadow-soft hover:bg-[#b91c1c]",
+    "border-red-600 bg-red-600 text-white shadow-soft hover:bg-red-700 hover:border-red-700",
   success:
-    "border-[#5d8a2f] bg-[#5d8a2f] text-white shadow-[0_10px_24px_rgb(93_138_47_/_0.25)] hover:bg-[#4a7024]",
+    "border-soft-teal bg-soft-teal text-white shadow-soft hover:opacity-90",
   warning:
-    "border-[#c2410c] bg-[#f97316] text-white shadow-[0_10px_24px_rgb(249_115_22_/_0.22)] hover:border-[#9a3412] hover:bg-[#c2410c]",
+    "border-restrained-amber bg-restrained-amber text-navy font-bold shadow-soft hover:opacity-90",
 };
 
 const sizeClasses = {
