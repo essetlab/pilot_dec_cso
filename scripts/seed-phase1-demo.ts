@@ -2140,6 +2140,33 @@ async function seedOnboardingInvitations() {
 }
 
 async function main() {
+  const allowSeed = process.env.ALLOW_DESTRUCTIVE_DEMO_SEED === "true";
+  const appEnv = process.env.APP_ENVIRONMENT;
+  const dbUrl = process.env.DATABASE_URL || "";
+
+  if (!allowSeed) {
+    console.error("Error: Seeding aborted. ALLOW_DESTRUCTIVE_DEMO_SEED is not set to true.");
+    process.exit(1);
+  }
+
+  if (appEnv !== "local-test") {
+    console.error(`Error: Seeding aborted. APP_ENVIRONMENT is set to '${appEnv}', but must be 'local-test'.`);
+    process.exit(1);
+  }
+
+  const protectedProjectIds = ["fgyxbzwdvngqlksyxuwa", "bhzyrthinbyqgsetnoph"];
+  const isProtected = protectedProjectIds.some(id => dbUrl.includes(id));
+  if (isProtected) {
+    console.error("Error: Seeding shared staging or production databases is prohibited.");
+    process.exit(1);
+  }
+
+  const isLocalHost = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1") || dbUrl.includes("file:") || dbUrl.includes("dev.db");
+  if (!isLocalHost) {
+    console.error("Error: Seeding aborted. DATABASE_URL host does not match an approved local pattern (localhost / 127.0.0.1).");
+    process.exit(1);
+  }
+
   await seedCsvReferenceData();
   await seedReferenceDataItems();
   const access = await seedAccessFoundation();

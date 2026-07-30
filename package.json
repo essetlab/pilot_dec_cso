@@ -8,6 +8,7 @@
     "prebuild": "prisma generate",
     "build": "next build",
     "db:seed": "node --import jiti/register scripts/seed-phase1-demo.ts",
+    "verify:seed-safety": "node --import jiti/register scripts/verify-seed-safety.ts",
     "verify:r17": "node --import jiti/register scripts/verify-r17.ts",
     "verify:r18c": "node --import jiti/register scripts/verify-r18c.ts",
     "verify:r19a": "node --import jiti/register scripts/verify-r19a.ts",

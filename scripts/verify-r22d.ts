@@ -65,8 +65,8 @@ async function main() {
   );
   console.log("PASS: certificate records exist and duplicate prevention key is respected.");
 
-  const issuedCertificate = certificates[0];
-  assert(issuedCertificate, "Expected a certificate for detail checks.");
+  const issuedCertificate = certificates.find(c => c.userId === completedSession.userId);
+  assert(issuedCertificate, "Expected a certificate for completedSession user for detail checks.");
   const displayCertificateCode = cleanPresentationText(issuedCertificate.certificateCode);
 
   const learnerList = await getLearnerCertificateListData(completedSession);
