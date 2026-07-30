@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/shell/BrandMark";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
 import { DEMO_USERS } from "@/lib/auth/demo-users";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -52,234 +51,176 @@ export default async function SignInPage({ searchParams }: PageProps) {
     : null;
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] border border-design-border bg-white-surface shadow-card">
-      <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-dec-blue/10 blur-3xl" aria-hidden="true" />
-      <div className="absolute bottom-0 left-10 h-64 w-64 rounded-full bg-dec-green/10 blur-3xl" aria-hidden="true" />
-
-      <div className="relative grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-        <div className="flex flex-col justify-between gap-10 bg-soft-bg px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
-          <div className="space-y-7">
-            <BrandMark />
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-dec-blue">
-                {isAdministratorSignIn ? "DEC administrator access" : "CSO Learning Hub"}
-              </p>
-              <h1 className="mt-4 font-display text-4xl font-semibold leading-tight text-deep-navy sm:text-5xl">
-                {isAdministratorSignIn
-                  ? "Sign in to the DEC Administrator Portal"
-                  : "Sign in to continue learning"}
-              </h1>
-              <p className="mt-5 text-base leading-8 text-muted-text sm:text-lg">
-                {isAdministratorSignIn
-                  ? "Use your authorized DEC staff account to manage participant invitations and pilot access."
-                  : "Access your courses, progress, certificates, and learner profile."}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-card border border-design-border bg-white p-5 shadow-soft">
-            <p className="text-sm font-semibold text-dark-ink">
-              {isAdministratorSignIn
-                ? "Administrator access is limited to authorized DEC staff accounts."
-                : "If your organization is part of an active cohort, use the access option provided by your programme team."}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-muted-text">
-              {isAdministratorSignIn
-                ? "Learner accounts cannot access administrator pages. Role permissions are checked after sign-in."
-                : "You can return to the course catalog at any time to explore available learning opportunities."}
-            </p>
-            <ActionButton
-              className="mt-4"
-              href={isAdministratorSignIn ? "/admin" : "/courses"}
-              variant="secondary"
-            >
-              {isAdministratorSignIn ? "Back to Administrator Portal" : "Back to Courses"}
-            </ActionButton>
-          </div>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-2xs font-extrabold uppercase tracking-wider text-dec-blue">
+            {isAdministratorSignIn ? "DEC Admin Access" : "Sign In"}
+          </span>
+          <StatusBadge label="Secure Session" tone="blue" />
         </div>
-
-        <div className="bg-white px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
-          <div className="mx-auto max-w-xl">
-            <div className="rounded-card border border-design-border bg-white-surface p-5 shadow-card sm:p-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-dec-blue">
-                    Sign in
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-deep-navy">
-                    {isAdministratorSignIn
-                      ? "Sign in as administrator"
-                      : "Use your learner credentials"}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-muted-text">
-                    {isAdministratorSignIn
-                      ? "The shared sign-in system will verify your administrator role and return you to invitation management."
-                      : "Sign in with the email and password created during learner registration."}
-                  </p>
-                </div>
-                <StatusBadge label="Secure session" tone="blue" />
-              </div>
-
-              {notice === "registration-complete" ? (
-                <div className="mt-5">
-                  <AlertMessage tone="success" title="Registration complete">
-                    Your password is ready. Sign in with your email and new password.
-                  </AlertMessage>
-                </div>
-              ) : null}
-
-              {notice === "pilot-registration-complete" ? (
-                <div className="mt-5">
-                  <AlertMessage tone="success" title="Learner account created">
-                    Your account is ready. Sign in with your email and password to
-                    open your learner dashboard.
-                  </AlertMessage>
-                </div>
-              ) : null}
-
-              {notice === "supabase-registration-created" ? (
-                <div className="mt-5">
-                  <AlertMessage tone="success" title="Learner account created">
-                    Your account is ready. Sign in with your email and password to
-                    open your learner dashboard.
-                  </AlertMessage>
-                </div>
-              ) : null}
-
-              {notice === "confirmation-email-sent" ? (
-                <div className="mt-5">
-                  <AlertMessage tone="success" title="Check your email">
-                    Follow the confirmation link sent to your email address, then
-                    return here to sign in. The link may take a few minutes to arrive.
-                  </AlertMessage>
-                </div>
-              ) : null}
-
-              {notice === "email-confirmed" ? (
-                <div className="mt-5">
-                  <AlertMessage tone="success" title="Email confirmed">
-                    Your email is confirmed. Sign in to continue.
-                  </AlertMessage>
-                </div>
-              ) : null}
-
-              {notice === "password-reset" ? (
-                <div className="mt-5">
-                  <AlertMessage tone="success" title="Password updated">
-                    Sign in with your new password.
-                  </AlertMessage>
-                </div>
-              ) : null}
-
-              <form action="/api/sign-in" className="mt-6 grid gap-3 rounded-card border border-design-border bg-soft-bg p-4" method="post">
-                <input name="next" type="hidden" value={next ?? ""} />
-                <label className="text-sm font-semibold text-dark-ink">
-                  Email
-                  <input className="mt-2 min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink" name="email" required type="email" />
-                </label>
-                <label className="text-sm font-semibold text-dark-ink">
-                  Password
-                  <input className="mt-2 min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink" name="password" required type="password" />
-                </label>
-                <ActionButton type="submit">Sign In</ActionButton>
-                {usesSupabaseSignIn ? (
-                  <Link
-                    className="text-sm font-semibold text-dec-blue underline-offset-4 hover:underline"
-                    href="/forgot-password"
-                  >
-                    Forgot your password?
-                  </Link>
-                ) : null}
-              </form>
-
-              {signInErrorMessage ? (
-                <div className="mt-5">
-                  <AlertMessage tone="error" title="Sign-in could not be completed">
-                    {signInErrorMessage}
-                  </AlertMessage>
-                </div>
-              ) : null}
-
-              {!usesSupabaseSignIn && !isAdministratorSignIn ? (
-                <>
-                  <div className="mt-6">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-text">
-                      Pilot learner access
-                    </p>
-                  </div>
-                  <div className="grid gap-3">
-                    {publicQuickAccessUsers.map((user) => {
-                      const roleLabel = user.roles.map((role) => ROLE_LABELS[role]).join(", ");
-                      const details = roleDetails[user.id];
-
-                      return (
-                        <form
-                          action={signInDemoUser}
-                          className="group rounded-card border border-design-border bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-dec-blue/40 hover:shadow-card"
-                          key={user.id}
-                        >
-                          <input name="userId" type="hidden" value={user.id} />
-                          <input name="next" type="hidden" value={next ?? ""} />
-                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-base font-semibold text-dark-ink">
-                                  {roleLabel}
-                                </h3>
-                                {details ? (
-                                  <StatusBadge label={details.access} tone={details.tone} />
-                                ) : null}
-                              </div>
-                              <p className="mt-2 text-sm leading-6 text-muted-text">
-                                {details?.focus ?? user.description}
-                              </p>
-                            </div>
-                            <ActionButton className="w-full sm:w-auto" type="submit">
-                              Continue as learner
-                            </ActionButton>
-                          </div>
-                        </form>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : null}
-            </div>
-
-            {isAdministratorSignIn ? (
-              <aside className="mt-6 rounded-card border border-dec-blue/25 bg-dec-blue/10 p-5">
-                <StatusBadge label="Administrator role required" tone="blue" />
-                <p className="mt-3 text-sm leading-6 text-[#26536c]">
-                  Successful authentication returns authorized staff directly to participant
-                  invitation management. Other accounts are denied administrator access.
-                </p>
-              </aside>
-            ) : null}
-
-            <p className="mt-6 text-center text-sm text-muted-text">
-              {isAdministratorSignIn ? "Need administrator access support? " : "Need help or want to browse first? "}
-              <Link
-                className="font-semibold text-dec-blue underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue"
-                href={isAdministratorSignIn ? "/support" : "/courses"}
-              >
-                {isAdministratorSignIn ? "Open support guidance" : "Explore courses"}
-              </Link>
-              {!isAdministratorSignIn ? (
-                <>
-                  {" "}or read the{" "}
-                  <Link
-                    className="font-semibold text-dec-blue underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue"
-                    href="/support"
-                  >
-                    support guidance
-                  </Link>
-                </>
-              ) : null}
-              .
-            </p>
-          </div>
-        </div>
+        <h1 className="mt-2 text-2xl font-bold text-deep-navy">
+          {isAdministratorSignIn ? "Sign in as administrator" : "Use your learner credentials"}
+        </h1>
+        <p className="mt-2 text-xs leading-5 text-muted-text">
+          {isAdministratorSignIn
+            ? "Staff credentials will return you directly to invitation management."
+            : "Sign in with the email and password created during learner registration."}
+        </p>
       </div>
-    </section>
+
+      {/* Notices */}
+      {notice === "registration-complete" && (
+        <AlertMessage tone="success" title="Registration complete">
+          Your password is ready. Sign in with your email and new password.
+        </AlertMessage>
+      )}
+
+      {notice === "pilot-registration-complete" && (
+        <AlertMessage tone="success" title="Learner account created">
+          Your account is ready. Sign in with your email and password to open your learner dashboard.
+        </AlertMessage>
+      )}
+
+      {notice === "supabase-registration-created" && (
+        <AlertMessage tone="success" title="Learner account created">
+          Your account is ready. Sign in with your email and password to open your learner dashboard.
+        </AlertMessage>
+      )}
+
+      {notice === "confirmation-email-sent" && (
+        <AlertMessage tone="success" title="Check your email">
+          Follow the confirmation link sent to your email address, then return here to sign in.
+        </AlertMessage>
+      )}
+
+      {notice === "email-confirmed" && (
+        <AlertMessage tone="success" title="Email confirmed">
+          Your email is confirmed. Sign in to continue.
+        </AlertMessage>
+      )}
+
+      {notice === "password-reset" && (
+        <AlertMessage tone="success" title="Password updated">
+          Sign in with your new password.
+        </AlertMessage>
+      )}
+
+      {/* Credentials Sign-In Form */}
+      <form
+        action="/api/sign-in"
+        className="grid gap-4 rounded-card border border-design-border bg-light-bg p-5"
+        method="post"
+      >
+        <input name="next" type="hidden" value={next ?? ""} />
+        
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
+          Email address
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="email"
+            required
+            type="email"
+            autoComplete="email"
+          />
+        </label>
+        
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
+          Password
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="password"
+            required
+            type="password"
+            autoComplete="current-password"
+          />
+        </label>
+
+        <ActionButton type="submit">Sign In</ActionButton>
+
+        {usesSupabaseSignIn && (
+          <Link
+            className="text-xs font-bold text-dec-blue underline hover:text-deep-navy inline-self-start"
+            href="/forgot-password"
+          >
+            Forgot your password?
+          </Link>
+        )}
+      </form>
+
+      {/* Error Summary */}
+      {signInErrorMessage && (
+        <AlertMessage tone="error" title="Sign-in could not be completed">
+          {signInErrorMessage}
+        </AlertMessage>
+      )}
+
+      {/* Quick Access Demo (Only when Supabase Auth is disabled/mock mode) */}
+      {!usesSupabaseSignIn && !isAdministratorSignIn && (
+        <div className="space-y-4">
+          <span className="text-2xs font-extrabold uppercase tracking-wider text-muted-text">
+            Quick access pilot learner
+          </span>
+          <div className="grid gap-3">
+            {publicQuickAccessUsers.map((user) => {
+              const roleLabel = user.roles.map((role) => ROLE_LABELS[role]).join(", ");
+              const details = roleDetails[user.id];
+
+              return (
+                <form
+                  action={signInDemoUser}
+                  className="rounded-card border border-design-border bg-white p-4 shadow-soft hover:border-dec-blue/30 hover:shadow-card transition"
+                  key={user.id}
+                >
+                  <input name="userId" type="hidden" value={user.id} />
+                  <input name="next" type="hidden" value={next ?? ""} />
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-deep-navy">{roleLabel}</h3>
+                        {details && <StatusBadge label={details.access} tone={details.tone} />}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-text">
+                        {details?.focus ?? user.description}
+                      </p>
+                    </div>
+                    <ActionButton className="w-full sm:w-auto" type="submit" size="sm">
+                      Continue
+                    </ActionButton>
+                  </div>
+                </form>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Disclaimer */}
+      {isAdministratorSignIn && (
+        <div className="rounded-card bg-light-bg border border-design-border p-4 text-xs leading-normal text-muted-text">
+          <strong className="text-deep-navy font-bold">Role access required:</strong> Learner profiles are denied admin permissions. Success redirect sends you to the participant tables.
+        </div>
+      )}
+
+      {/* Alternative actions */}
+      <div className="border-t border-design-border pt-4 text-center text-xs text-muted-text">
+        {!isAdministratorSignIn ? (
+          <p>
+            New learner?{" "}
+            <Link className="font-bold text-dec-blue underline hover:text-deep-navy" href="/register">
+              Create an account
+            </Link>
+          </p>
+        ) : (
+          <p>
+            Are you a learner?{" "}
+            <Link className="font-bold text-dec-blue underline hover:text-deep-navy" href="/sign-in">
+              Learner sign-in
+            </Link>
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

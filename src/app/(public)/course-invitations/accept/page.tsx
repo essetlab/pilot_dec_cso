@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { BrandMark } from "@/components/shell/BrandMark";
 import { CourseInvitationAcceptance } from "@/components/public/CourseInvitationAcceptance";
 import { StatusBadge } from "@/components/ui";
 import { getCurrentSession } from "@/lib/auth/server";
 import { resolveCourseInvitationAcceptance } from "@/lib/course-invitation-workflow";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,32 +32,58 @@ export default async function CourseInvitationAcceptPage({ searchParams }: PageP
       resolution.authentication !== "mismatch");
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] border border-design-border bg-white shadow-card">
-      <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-dec-blue/10 blur-3xl" aria-hidden="true" />
-      <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-dec-green/10 blur-3xl" aria-hidden="true" />
-      <div className="relative grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-        <div className="bg-deep-navy px-6 py-8 text-white sm:px-8 lg:px-10 lg:py-12">
-          <BrandMark />
-          <div className="mt-10 max-w-xl">
-            <StatusBadge label="Secure course invitation" tone="green" />
-            <h1 className="mt-5 font-display text-4xl font-semibold leading-tight sm:text-5xl">
-              Continue your learning invitation
-            </h1>
-            <p className="mt-5 text-base leading-8 text-white/75">
-              Confirm the invited course and use the exact learner account that received the private link. Opening this page alone does not assign access.
+    <div className="min-h-screen bg-light-bg flex flex-col lg:flex-row">
+      {/* Left panel - Identity and Guidance */}
+      <section className="hidden lg:flex lg:w-5/12 bg-deep-navy text-white p-12 flex-col justify-between relative overflow-hidden shrink-0">
+        <div aria-hidden="true" className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[24px] border-dec-blue/15" />
+        <div aria-hidden="true" className="absolute -left-10 bottom-10 h-48 w-48 rounded-full border-[16px] border-dec-green/10" />
+
+        <div className="relative z-10">
+          <Link href="/" className="text-sm font-black uppercase tracking-[0.2em] text-[#72bee8] hover:text-white transition">
+            CSO Learning Hub
+          </Link>
+          <h1 className="mt-16 font-display text-4xl font-bold leading-tight">
+            Accept your course invitation
+          </h1>
+          <p className="mt-6 text-sm leading-7 text-slate-200">
+            Confirm the invited course and sign in using the exact learner account that received the private link.
+          </p>
+        </div>
+
+        <div className="relative z-10 border-t border-white/10 pt-8 space-y-4">
+          <div className="flex gap-3 text-xs leading-5 text-slate-300">
+            <span className="h-2 w-2 rounded-full bg-dec-green mt-1.5 shrink-0" />
+            <p>
+              <strong className="text-white font-bold">Keep this link private:</strong> Do not forward it or share it publicly.
             </p>
           </div>
-          <div className="mt-10 rounded-[22px] border border-white/15 bg-white/10 p-5 text-sm leading-7 text-white/75">
-            <p className="font-semibold text-white">Keep this link private</p>
-            <p className="mt-2">Do not forward it or share it publicly. If the invitation was unexpected, leave the page and contact support.</p>
-          </div>
         </div>
-        <div className="px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
-          <div className="mx-auto max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-dec-blue">CSO Learning Hub</p>
-            <h2 className="mt-3 text-3xl font-semibold text-deep-navy">Accept invitation</h2>
-            <p className="mt-3 text-sm leading-7 text-muted-text">Your account and invitation email must match before one individual course assignment can be created.</p>
-            <div className="mt-7">
+      </section>
+
+      {/* Right panel - Form Area */}
+      <main className="flex-1 flex flex-col justify-center items-center px-4 py-12 sm:px-8">
+        <div className="w-full max-w-xl bg-white border border-design-border rounded-card p-6 sm:p-8 shadow-soft">
+          <div className="mb-6 lg:hidden text-center">
+            <Link href="/" className="text-xs font-black uppercase tracking-[0.16em] text-dec-blue">
+              CSO Learning Hub
+            </Link>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-2xs font-extrabold uppercase tracking-wider text-dec-blue">
+                  Course Invitation
+                </span>
+                <StatusBadge label="Secure Invite" tone="green" />
+              </div>
+              <h2 className="mt-2 text-2xl font-bold text-deep-navy">Accept invitation</h2>
+              <p className="mt-2 text-xs leading-5 text-muted-text">
+                Your account and invitation email must match before course access can be granted.
+              </p>
+            </div>
+
+            <div className="mt-6">
               <CourseInvitationAcceptance
                 authentication={resolution.success && resolution.state === "available" ? resolution.authentication : undefined}
                 context={showContext && resolution.success ? {
@@ -72,7 +98,16 @@ export default async function CourseInvitationAcceptPage({ searchParams }: PageP
             </div>
           </div>
         </div>
-      </div>
-    </section>
+
+        <footer className="mt-8 text-center text-2xs text-muted-text max-w-md">
+          <p>
+            Need assistance accepting your invitation?{" "}
+            <Link href="/support" className="font-semibold text-dec-blue underline hover:text-deep-navy">
+              Open support guidance
+            </Link>
+          </p>
+        </footer>
+      </main>
+    </div>
   );
 }

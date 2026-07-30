@@ -107,23 +107,23 @@ export function RecoveryPasswordForm({
       ) : null}
 
       {state === "ready" ? (
-        <form action={updatePasswordAction} className="mt-6 grid gap-4">
-          <label className="text-sm font-semibold text-dark-ink" htmlFor="password">
+        <form action={updatePasswordAction} className="mt-6 space-y-4">
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy" htmlFor="password">
             New password
             <input
               autoComplete="new-password"
-              className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+              className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
               id="password"
               name="password"
               required
               type="password"
             />
           </label>
-          <label className="text-sm font-semibold text-dark-ink" htmlFor="confirmPassword">
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy" htmlFor="confirmPassword">
             Confirm new password
             <input
               autoComplete="new-password"
-              className="mt-2 min-h-12 w-full rounded-control border border-design-border bg-white px-4 text-sm text-dark-ink outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+              className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
               id="confirmPassword"
               name="confirmPassword"
               required

@@ -20,7 +20,7 @@ export default async function StaffRegisterPage({ searchParams }: PageProps) {
   const { token = "", error } = await searchParams;
   if (!token) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="space-y-4">
         <AlertMessage title="Invalid invitation" tone="error">
           This invite link is missing a token.
         </AlertMessage>
@@ -31,7 +31,7 @@ export default async function StaffRegisterPage({ searchParams }: PageProps) {
   const validation = await validateStaffInvitationToken(token);
   if (!validation.ok) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="space-y-4">
         <AlertMessage title="Invitation unavailable" tone="error">
           {errorMessage[validation.code]}
         </AlertMessage>
@@ -40,48 +40,93 @@ export default async function StaffRegisterPage({ searchParams }: PageProps) {
   }
 
   return (
-    <section className="mx-auto max-w-3xl rounded-[24px] border border-design-border bg-white-surface p-6 shadow-card">
-      <h1 className="text-3xl font-semibold text-deep-navy">Finish your staff registration</h1>
-      <p className="mt-2 text-sm text-muted-text">
-        Complete your details for <strong>{validation.email}</strong> and create your password.
-      </p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <span className="text-2xs font-extrabold uppercase tracking-wider text-dec-blue">
+          DEC Staff Access
+        </span>
+        <h1 className="mt-2 text-2xl font-bold text-deep-navy">Finish staff registration</h1>
+        <p className="mt-2 text-xs leading-5 text-muted-text">
+          Complete your staff details for <strong className="text-deep-navy font-bold">{validation.email}</strong> and create your password.
+        </p>
+      </div>
 
-      {error ? (
-        <div className="mt-4">
-          <AlertMessage title="Registration issue" tone="warning">
-            {errorMessage[error] ?? "We could not complete your registration."}
-          </AlertMessage>
-        </div>
-      ) : null}
+      {error && (
+        <AlertMessage title="Registration issue" tone="warning">
+          {errorMessage[error] ?? "We could not complete your registration."}
+        </AlertMessage>
+      )}
 
-      <form action={completeStaffRegistrationAction} className="mt-6 grid gap-4">
+      <form action={completeStaffRegistrationAction} className="space-y-4">
         <input name="token" type="hidden" value={token} />
-        <label className="text-sm font-semibold text-dark-ink">
+
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
           Full name
-          <input className="mt-2 min-h-11 w-full rounded-control border border-design-border px-4" name="fullName" required />
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="fullName"
+            required
+            autoComplete="name"
+          />
         </label>
-        <label className="text-sm font-semibold text-dark-ink">
-          Phone
-          <input className="mt-2 min-h-11 w-full rounded-control border border-design-border px-4" name="phone" required />
+
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
+          Phone number
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="phone"
+            required
+            type="tel"
+            autoComplete="tel"
+          />
         </label>
-        <label className="text-sm font-semibold text-dark-ink">
+
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
           Job title
-          <input className="mt-2 min-h-11 w-full rounded-control border border-design-border px-4" name="jobTitle" required />
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="jobTitle"
+            required
+            autoComplete="organization-title"
+          />
         </label>
-        <label className="text-sm font-semibold text-dark-ink">
+
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
           Department
-          <input className="mt-2 min-h-11 w-full rounded-control border border-design-border px-4" name="department" required />
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="department"
+            required
+          />
         </label>
-        <label className="text-sm font-semibold text-dark-ink">
+
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
           New password
-          <input className="mt-2 min-h-11 w-full rounded-control border border-design-border px-4" name="password" required type="password" />
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="password"
+            required
+            type="password"
+            autoComplete="new-password"
+          />
         </label>
-        <label className="text-sm font-semibold text-dark-ink">
+
+        <label className="flex flex-col gap-1.5 text-xs font-bold text-deep-navy">
           Confirm new password
-          <input className="mt-2 min-h-11 w-full rounded-control border border-design-border px-4" name="confirmPassword" required type="password" />
+          <input
+            className="min-h-11 w-full rounded-control border border-design-border bg-white px-4 text-sm text-deep-navy shadow-soft outline-none focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            name="confirmPassword"
+            required
+            type="password"
+            autoComplete="new-password"
+          />
         </label>
-        <ActionButton type="submit">Complete Registration</ActionButton>
+
+        <ActionButton type="submit" className="w-full">
+          Complete Registration
+        </ActionButton>
       </form>
-    </section>
+    </div>
   );
 }
