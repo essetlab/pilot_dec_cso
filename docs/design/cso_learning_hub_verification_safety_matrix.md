@@ -16,6 +16,7 @@ This safety matrix classifies all project script commands by mutation risk and d
 | `npm run verify:s5-signin` | `scripts/verify-s5-supabase-signin.ts` | **Read-Only** (API / Auth) | Verifies Supabase authentication endpoints. | All (Requires API connection) |
 | `npm run verify:r22d` | `scripts/verify-r22d.ts` | **Read-Only** (Database) | Asserts certificate metrics and scopes. | All (Requires seeded data) |
 | `npm run db:seed` | `scripts/seed-phase1-demo.ts` | **Mutating** (Writes/Updates) | Bulk upserts demo data (organizations, users). | **Local-Test Sandbox Only** |
+| Ad hoc script | `scripts/restore-uat-certificates.ts` | **Mutating / Remediation** | Inserts specific UAT certificates (One-time only). | Staging (Authorized Remediation ONLY) |
 
 ---
 

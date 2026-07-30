@@ -1,6 +1,12 @@
 import fs from "node:fs";
 import dotenv from "dotenv";
 
+const allowRestoration = process.env.ALLOW_EXPLICIT_UAT_CERTIFICATE_RESTORATION === "true";
+if (!allowRestoration) {
+  console.error("Error: Ad hoc UAT restoration script aborted. ALLOW_EXPLICIT_UAT_CERTIFICATE_RESTORATION is not set to true. Access is blocked by default.");
+  process.exit(1);
+}
+
 // 1. Load env dynamically from the secure secrets directory to avoid command-line or log exposure
 const secretsPath = "d:/CSO_Learning_Hub_Secrets/phase1-staging.env";
 if (!fs.existsSync(secretsPath)) {
