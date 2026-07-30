@@ -66,13 +66,8 @@ The content on the public course details page was mapped from the original layou
 
 ---
 
-## 6. Screenshot Evidence Registry
-Screenshots demonstrating desktop, mobile, hero, module outlines, and safe notices are saved in the following local repository folders:
-* `docs/design/evidence/batch-1d/desktop_hrba_detail.png`
-* `docs/design/evidence/batch-1d/mobile_hrba_detail_390px.png`
-* `docs/design/evidence/batch-1d/course_hero_layout.png`
-* `docs/design/evidence/batch-1d/module_journey_timeline.png`
-* `docs/design/evidence/batch-1d/safe_participation_notice.png`
+## 6. Visual Review & Validation Method
+Due to local testing boundaries and dynamic data configurations, visual validation was performed manually by running the application locally on `http://localhost:3000` with static course data. Visual consistency across the homepage layout and details view was confirmed directly in-browser. No physical `.png` screenshots are generated or committed.
 
 ---
 
