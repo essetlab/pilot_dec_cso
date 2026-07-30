@@ -44,13 +44,13 @@ const HRBA_DETAILED_JOURNEY = [
 function Breadcrumb({ title }: { title: string }) {
   return (
     <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-300">
-      <a className="hover:text-white transition" href="/">
+      <Link className="hover:text-white transition" href="/">
         Home
-      </a>
+      </Link>
       <span aria-hidden="true">&bull;</span>
-      <a className="hover:text-white transition" href="/courses">
+      <Link className="hover:text-white transition" href="/courses">
         Courses
-      </a>
+      </Link>
       <span aria-hidden="true">&bull;</span>
       <span className="text-slate-100 truncate max-w-[240px] sm:max-w-none" aria-current="page">
         {title}
