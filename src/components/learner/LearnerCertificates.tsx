@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ActionButton, EmptyState, MetricCard, SectionHeader, StatusBadge } from "@/components/ui";
+import { ActionButton, AlertMessage, EmptyState, MetricCard, SectionHeader, StatusBadge } from "@/components/ui";
 import type {
   LearnerCertificateDetailData,
   LearnerCertificateListData,
@@ -229,6 +229,12 @@ export function LearnerCertificates({
     <div className="space-y-8">
       <CertificateHeaderCard />
 
+      {data.error ? (
+        <AlertMessage tone="warning" title="Certificate records temporarily unavailable">
+          {data.error.message} Please refresh or contact support if the problem continues.
+        </AlertMessage>
+      ) : null}
+
       <section aria-label="Certificate status summary" className="space-y-4">
         <SectionHeader
           description="A quick view of certificate progress across your learning."
@@ -300,6 +306,12 @@ export function LearnerCertificateDetail({
 
   return (
     <div className="space-y-8">
+      {certificate.error ? (
+        <AlertMessage tone="warning" title="Certificate record temporarily unavailable">
+          {certificate.error.message} Please refresh or contact support if the problem continues.
+        </AlertMessage>
+      ) : null}
+
       <section className="relative overflow-hidden rounded-[24px] bg-deep-navy p-6 text-white shadow-hero lg:p-8">
         <div aria-hidden="true" className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[24px] border-dec-blue/10" />
         <div aria-hidden="true" className="absolute -left-10 bottom-10 h-48 w-48 rounded-full border-[16px] border-dec-green/5" />

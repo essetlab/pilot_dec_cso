@@ -49,6 +49,22 @@ export async function signInDemoUser(formData: FormData) {
     redirect("/sign-in?error=demo-unavailable");
   }
 
+  const isLocalTest = process.env.APP_ENVIRONMENT === "local-test";
+  const allowDemoAuth = process.env.ALLOW_LOCAL_DEMO_AUTH === "true";
+  const dbUrl = process.env.DATABASE_URL || "";
+
+  const protectedProjectIds = ["fgyxbzwdvngqlksyxuwa", "bhzyrthinbyqgsetnoph"];
+  const isProtected = protectedProjectIds.some((id) => dbUrl.includes(id));
+  const isLocalHost =
+    dbUrl.includes("localhost") ||
+    dbUrl.includes("127.0.0.1") ||
+    dbUrl.includes("file:") ||
+    dbUrl.includes("dev.db");
+
+  if (!isLocalTest || !allowDemoAuth || isProtected || !isLocalHost) {
+    redirect("/sign-in?error=demo-unavailable");
+  }
+
   const userId = formData.get("userId");
 
   if (typeof userId !== "string") {
@@ -81,7 +97,8 @@ export async function signInDemoUser(formData: FormData) {
       where: { email: demoUser.email },
     });
   } catch (err) {
-    console.warn("Database is offline, falling back to static demo session:", err);
+    console.error("Database lookup failed in signInDemoUser:", err);
+    redirect("/sign-in?error=service-unavailable");
   }
 
   if (dbUser && dbUser.status !== UserStatus.ACTIVE) {

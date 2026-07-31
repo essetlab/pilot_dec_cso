@@ -129,6 +129,7 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
       <LearnerDashboard
         courses={courses}
         certificates={certificateData.certificates}
+        certificateError={certificateData.error}
         learnerName={session.name}
       />
     );

@@ -38,6 +38,8 @@ const signInErrorMessages: Record<string, string> = {
   "missing-credentials": "Enter your email and password to continue.",
   "missing-roles":
     "Your account is missing a Learning Hub role. Contact your programme team for help.",
+  "service-unavailable":
+    "The learning service is temporarily unavailable. Please refresh or contact support if the problem continues.",
   "too-many-attempts":
     "Too many sign-in attempts. Wait a few minutes, then try again.",
 };

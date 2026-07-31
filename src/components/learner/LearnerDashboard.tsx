@@ -334,10 +334,12 @@ function TechnicalFeedbackCard() {
 export function LearnerDashboard({
   courses,
   certificates = [],
+  certificateError,
   learnerName,
 }: {
   courses: LearnerCourseSummary[];
   certificates?: LearnerCertificateSummary[];
+  certificateError?: { code: string; message: string };
   learnerName: string;
 }) {
   // Priority: 1) In progress, 2) Partially started (>0 progress), 3) Not started entitled course, 4) Fallback to first course
@@ -431,7 +433,14 @@ export function LearnerDashboard({
         <div className="space-y-6">
           <section aria-label="My earned certificates" className="space-y-4">
             <SectionHeader title="Certificates" />
-            {certificates.length > 0 ? (
+            {certificateError ? (
+              <div className="rounded-card border border-amber-200 bg-amber-50/60 p-5 shadow-soft">
+                <p className="text-xs font-bold text-deep-navy">Certificates temporarily unavailable</p>
+                <p className="mt-1 text-xs text-muted-text leading-relaxed">
+                  {certificateError.message} Please refresh or contact support if the problem continues.
+                </p>
+              </div>
+            ) : certificates.length > 0 ? (
               <div className="space-y-4">
                 {certificates.slice(0, 3).map((certificate) => (
                   <DashboardCertificateCard key={certificate.certificateCode} certificate={certificate} />

@@ -37,6 +37,10 @@ export type LearnerCertificateListData = {
     inProgress: number;
     requiredPassScore: string;
   };
+  error?: {
+    code: string;
+    message: string;
+  };
 };
 
 export type LearnerCertificateDetailData = {
@@ -53,6 +57,10 @@ export type LearnerCertificateDetailData = {
   passThresholdLabel: string;
   passThresholdRule: string;
   status: CertificateRecordStatus;
+  error?: {
+    code: string;
+    message: string;
+  };
 };
 
 export type AdminCertificateRow = {
@@ -335,14 +343,33 @@ export async function getLearnerCertificateListData(
       },
     };
   } catch (error) {
-    console.warn("getLearnerCertificateListData database error, using static fallback:", error);
+    console.error("getLearnerCertificateListData database error:", error);
+    const isLocalTest = process.env.APP_ENVIRONMENT === "local-test";
+    const allowDemoAuth = process.env.ALLOW_LOCAL_DEMO_AUTH === "true";
+
+    if (isLocalTest && allowDemoAuth) {
+      return {
+        certificates: [],
+        metrics: {
+          earned: 0,
+          eligible: 1,
+          inProgress: 1,
+          requiredPassScore: CERTIFICATE_PASS_THRESHOLD_LABEL,
+        },
+      };
+    }
+
     return {
       certificates: [],
       metrics: {
         earned: 0,
-        eligible: 1,
-        inProgress: 1,
+        eligible: 0,
+        inProgress: 0,
         requiredPassScore: CERTIFICATE_PASS_THRESHOLD_LABEL,
+      },
+      error: {
+        code: "DATABASE_UNAVAILABLE",
+        message: "Your certificate records are temporarily unavailable.",
       },
     };
   }
@@ -446,21 +473,46 @@ export async function getLearnerCertificateDetailData(
       status: "Locked",
     };
   } catch (error) {
-    console.warn("getLearnerCertificateDetailData database error, using mock fallback:", error);
+    console.error("getLearnerCertificateDetailData database error:", error);
+    const isLocalTest = process.env.APP_ENVIRONMENT === "local-test";
+    const allowDemoAuth = process.env.ALLOW_LOCAL_DEMO_AUTH === "true";
+
+    if (isLocalTest && allowDemoAuth) {
+      return {
+        certificateCode: null,
+        completionDate: null,
+        courseHref: `/learn/courses/human-rights-based-approach-practice`,
+        courseSlug: "human-rights-based-approach-practice",
+        courseTitle: "Human Rights-Based Approach in Practice",
+        downloadHref: null,
+        finalTestHref: `/learn/courses/human-rights-based-approach-practice/final-test`,
+        issuedAt: null,
+        issuerName: "DEC / WHH CSF+ CSO Learning Hub",
+        participantName: "Learner",
+        passThresholdLabel: CERTIFICATE_PASS_THRESHOLD_LABEL,
+        passThresholdRule: formatCertificateThresholdRule(),
+        status: "Locked",
+      };
+    }
+
     return {
       certificateCode: null,
       completionDate: null,
-      courseHref: `/learn/courses/human-rights-based-approach-practice`,
-      courseSlug: "human-rights-based-approach-practice",
-      courseTitle: "Human Rights-Based Approach in Practice",
+      courseHref: "",
+      courseSlug: "",
+      courseTitle: "Certificate Unavailable",
       downloadHref: null,
-      finalTestHref: `/learn/courses/human-rights-based-approach-practice/final-test`,
+      finalTestHref: "",
       issuedAt: null,
       issuerName: "DEC / WHH CSF+ CSO Learning Hub",
       participantName: "Learner",
       passThresholdLabel: CERTIFICATE_PASS_THRESHOLD_LABEL,
       passThresholdRule: formatCertificateThresholdRule(),
       status: "Locked",
+      error: {
+        code: "DATABASE_UNAVAILABLE",
+        message: "This certificate record is temporarily unavailable.",
+      },
     };
   }
 }
