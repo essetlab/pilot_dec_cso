@@ -33,6 +33,7 @@ import { isValidExternalCourseEvidenceId } from "./external-course-types";
 import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
 import { hasLearnerCourseEntitlement } from "./course-entitlement";
+import { isLocalQaFixtureAllowed } from "./local-qa-guard";
 
 const issuerName = "DEC / WHH CSF+ CSO Learning Hub";
 const externalCourseLaunchTokenTtlMs = 8 * 60 * 60 * 1000;
@@ -668,169 +669,191 @@ export async function getExternalCourseLaunchData(
   courseSlug: string,
   session: AuthSession | null,
 ): Promise<ExternalCourseLaunchData | null> {
-  if (!session?.userId) {
-    return null;
-  }
+  try {
+    if (!session?.userId) {
+      return null;
+    }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.userId },
-  });
-  if (!user || user.status !== UserStatus.ACTIVE) {
-    return null;
-  }
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+    });
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      return null;
+    }
 
-  const course = await prisma.course.findFirst({
-    include: {
-      versions: {
-        orderBy: { versionNumber: "desc" },
-        take: 1,
-        where: { status: CourseStatus.PUBLISHED },
-      },
-    },
-    where: {
-      archivedAt: null,
-      slug: courseSlug,
-      status: CourseStatus.PUBLISHED,
-      visibility: {
-        in: [CourseVisibility.PUBLIC, CourseVisibility.ASSIGNED_ONLY],
-      },
-    },
-  });
-
-  const version = course?.versions[0];
-  const metadata = getExternalCourseMetadata(course?.analysisMetadataJson);
-
-  if (!course || !version || !metadata) {
-    return null;
-  }
-
-  if (!(await hasLearnerCourseEntitlement({
-    courseId: course.id,
-    courseSlug: course.slug,
-    organizationId: user.organizationId,
-    primaryCohortId: user.primaryCohortId,
-    userId: user.id,
-    visibility: course.visibility,
-  }))) {
-    return null;
-  }
-
-  let enrollment = await prisma.enrollment.upsert({
-    create: {
-      courseId: course.id,
-      courseVersionId: version.id,
-      progressPercent: 0,
-      startedAt: new Date(),
-      status: EnrollmentStatus.IN_PROGRESS,
-      userId: user.id,
-    },
-    update: {
-      lastAccessedAt: new Date(),
-    },
-    where: {
-      userId_courseVersionId: {
-        courseVersionId: version.id,
-        userId: user.id,
-      },
-    },
-  });
-
-  if (!enrollment.externalLearnerStateKey || !enrollment.externalStateKeyIssuedAt) {
-    const learnerStateKey = createExternalLearnerStateKey();
-    const stateKeyIssuedAt = new Date();
-
-    await prisma.enrollment.updateMany({
-      data: {
-        externalLearnerStateKey: learnerStateKey,
-        externalStateKeyIssuedAt: stateKeyIssuedAt,
+    const course = await prisma.course.findFirst({
+      include: {
+        versions: {
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          where: { status: CourseStatus.PUBLISHED },
+        },
       },
       where: {
-        externalLearnerStateKey: null,
-        id: enrollment.id,
+        archivedAt: null,
+        slug: courseSlug,
+        status: CourseStatus.PUBLISHED,
+        visibility: {
+          in: [CourseVisibility.PUBLIC, CourseVisibility.ASSIGNED_ONLY],
+        },
       },
     });
 
-    enrollment = await prisma.enrollment.findUniqueOrThrow({
-      where: { id: enrollment.id },
-    });
-  }
+    const version = course?.versions[0];
+    const metadata = getExternalCourseMetadata(course?.analysisMetadataJson);
 
-  const learnerStateKey = enrollment.externalLearnerStateKey;
+    if (!course || !version || !metadata) {
+      return null;
+    }
 
-  if (!learnerStateKey || !enrollment.externalStateKeyIssuedAt) {
-    return null;
-  }
-
-  await prisma.lessonProgress.upsert({
-    create: {
-      enrollmentId: enrollment.id,
-      lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
-      progressJson: toJson({ source: "external-course-launch" }),
-      startedAt: new Date(),
-      status: LessonProgressStatus.IN_PROGRESS,
-    },
-    update: {
-      lastAccessedAt: new Date(),
-      startedAt: new Date(),
-      status:
-        enrollment.status === EnrollmentStatus.COMPLETED
-          ? LessonProgressStatus.COMPLETED
-          : LessonProgressStatus.IN_PROGRESS,
-    },
-    where: {
-      enrollmentId_lessonId: {
-        enrollmentId: enrollment.id,
-        lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
-      },
-    },
-  });
-
-  const iframeUrl = new URL(metadata.launchUrl);
-  const allowedOrigin = iframeUrl.origin;
-
-  if (!metadata.allowedOrigins.includes(allowedOrigin)) {
-    return null;
-  }
-
-  const now = new Date();
-  const launchToken = createExternalCourseLaunchToken();
-
-  await prisma.externalCourseLaunchToken.deleteMany({
-    where: {
-      expiresAt: {
-        lt: now,
-      },
-    },
-  });
-
-  await prisma.externalCourseLaunchToken.create({
-    data: {
-      allowedOrigin,
+    if (!(await hasLearnerCourseEntitlement({
       courseId: course.id,
       courseSlug: course.slug,
-      courseVersionId: version.id,
-      enrollmentId: enrollment.id,
-      expiresAt: new Date(now.getTime() + externalCourseLaunchTokenTtlMs),
-      learnerStateKeyHash: hashExternalCourseLaunchToken(learnerStateKey),
-      portalOrigin: getPortalOrigin(),
-      tokenHash: hashExternalCourseLaunchToken(launchToken),
+      organizationId: user.organizationId,
+      primaryCohortId: user.primaryCohortId,
       userId: user.id,
-    },
-  });
+      visibility: course.visibility,
+    }))) {
+      return null;
+    }
 
-  iframeUrl.searchParams.set("embed", "portal");
-  iframeUrl.searchParams.set("portalOrigin", getPortalOrigin());
-  iframeUrl.searchParams.set("courseSlug", course.slug);
-  iframeUrl.searchParams.set("launchToken", launchToken);
+    let enrollment = await prisma.enrollment.upsert({
+      create: {
+        courseId: course.id,
+        courseVersionId: version.id,
+        progressPercent: 0,
+        startedAt: new Date(),
+        status: EnrollmentStatus.IN_PROGRESS,
+        userId: user.id,
+      },
+      update: {
+        lastAccessedAt: new Date(),
+      },
+      where: {
+        userId_courseVersionId: {
+          courseVersionId: version.id,
+          userId: user.id,
+        },
+      },
+    });
 
-  return {
-    allowedOrigin,
-    courseSlug: course.slug,
-    courseTitle: course.title,
-    iframeSrc: iframeUrl.toString(),
-    launchToken,
-    learnerStateKey,
-  };
+    if (!enrollment.externalLearnerStateKey || !enrollment.externalStateKeyIssuedAt) {
+      const learnerStateKey = createExternalLearnerStateKey();
+      const stateKeyIssuedAt = new Date();
+
+      await prisma.enrollment.updateMany({
+        data: {
+          externalLearnerStateKey: learnerStateKey,
+          externalStateKeyIssuedAt: stateKeyIssuedAt,
+        },
+        where: {
+          externalLearnerStateKey: null,
+          id: enrollment.id,
+        },
+      });
+
+      enrollment = await prisma.enrollment.findUniqueOrThrow({
+        where: { id: enrollment.id },
+      });
+    }
+
+    const learnerStateKey = enrollment.externalLearnerStateKey;
+
+    if (!learnerStateKey || !enrollment.externalStateKeyIssuedAt) {
+      return null;
+    }
+
+    await prisma.lessonProgress.upsert({
+      create: {
+        enrollmentId: enrollment.id,
+        lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+        progressJson: toJson({ source: "external-course-launch" }),
+        startedAt: new Date(),
+        status: LessonProgressStatus.IN_PROGRESS,
+      },
+      update: {
+        lastAccessedAt: new Date(),
+        startedAt: new Date(),
+        status:
+          enrollment.status === EnrollmentStatus.COMPLETED
+            ? LessonProgressStatus.COMPLETED
+            : LessonProgressStatus.IN_PROGRESS,
+      },
+      where: {
+        enrollmentId_lessonId: {
+          enrollmentId: enrollment.id,
+          lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+        },
+      },
+    });
+
+    const iframeUrl = new URL(metadata.launchUrl);
+    const allowedOrigin = iframeUrl.origin;
+
+    if (!metadata.allowedOrigins.includes(allowedOrigin)) {
+      return null;
+    }
+
+    const now = new Date();
+    const launchToken = createExternalCourseLaunchToken();
+
+    await prisma.externalCourseLaunchToken.deleteMany({
+      where: {
+        expiresAt: {
+          lt: now,
+        },
+      },
+    });
+
+    await prisma.externalCourseLaunchToken.create({
+      data: {
+        allowedOrigin,
+        courseId: course.id,
+        courseSlug: course.slug,
+        courseVersionId: version.id,
+        enrollmentId: enrollment.id,
+        expiresAt: new Date(now.getTime() + externalCourseLaunchTokenTtlMs),
+        learnerStateKeyHash: hashExternalCourseLaunchToken(learnerStateKey),
+        portalOrigin: getPortalOrigin(),
+        tokenHash: hashExternalCourseLaunchToken(launchToken),
+        userId: user.id,
+      },
+    });
+
+    iframeUrl.searchParams.set("embed", "portal");
+    iframeUrl.searchParams.set("portalOrigin", getPortalOrigin());
+    iframeUrl.searchParams.set("courseSlug", course.slug);
+    iframeUrl.searchParams.set("launchToken", launchToken);
+
+    return {
+      allowedOrigin,
+      courseSlug: course.slug,
+      courseTitle: course.title,
+      iframeSrc: iframeUrl.toString(),
+      launchToken,
+      learnerStateKey,
+    };
+  } catch (error) {
+    console.warn("getExternalCourseLaunchData database error, attempting fallback:", error);
+    const allowFixtures = await isLocalQaFixtureAllowed();
+    if (!allowFixtures) {
+      throw error;
+    }
+  }
+
+  const allowFixtures = await isLocalQaFixtureAllowed();
+  if (allowFixtures && courseSlug === HRBA_EXTERNAL_COURSE_SLUG) {
+    return {
+      allowedOrigin: "https://pilot-hrba-e-learn-v1-wajj.vercel.app",
+      courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
+      courseTitle: "Applying the Human Rights-Based Approach in CSO Practice",
+      iframeSrc: "https://pilot-hrba-e-learn-v1-wajj.vercel.app?embed=portal&courseSlug=" + HRBA_EXTERNAL_COURSE_SLUG + "&launchToken=mock_launch_token",
+      launchToken: "mock_launch_token",
+      learnerStateKey: "mock_learner_state_key",
+    };
+  }
+
+  return null;
 }
 
 export async function recordExternalCourseProgress({

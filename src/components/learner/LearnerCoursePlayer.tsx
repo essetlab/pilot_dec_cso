@@ -9,6 +9,7 @@ import {
 } from "@/components/learner/KnowledgeCheckInteraction";
 import { ReflectionInteraction } from "@/components/learner/ReflectionInteraction";
 import { LessonNavigationControls } from "@/components/learner/LessonNavigationControls";
+import { CourseOutlineDrawer } from "@/components/learner/CourseOutlineDrawer";
 import type {
   LearnerContentBlock,
   LearnerCourseDetail,
@@ -460,27 +461,7 @@ function getCourseResourceCount(course: LearnerCourseDetail) {
     .length;
 }
 
-function ResponsivePill({
-  label,
-  tone = "blue",
-}: {
-  label: string;
-  tone?: "blue" | "green" | "gray";
-}) {
-  const toneClasses = {
-    blue: "border-[#145a85]/25 bg-[#dceef8] text-[#145a85]",
-    green: "border-[#3a6118]/25 bg-[#e8f5d6] text-[#3a6118]",
-    gray: "border-slate-200 bg-slate-50 text-slate-600",
-  };
 
-  return (
-    <span
-      className={`inline-flex min-h-7 max-w-full items-center rounded-full border px-3 py-1 text-left text-xs font-semibold leading-snug ${toneClasses[tone]}`}
-    >
-      {label}
-    </span>
-  );
-}
 
 function ProgressBar({
   inverted = false,
@@ -521,92 +502,9 @@ function ProgressBar({
   );
 }
 
-function LearnerInstitutionalHeader({ previewMode = false }: { previewMode?: boolean }) {
-  return (
-    <header className="overflow-hidden rounded-[24px] border border-deep-navy/10 bg-white-surface shadow-soft">
-      <div className="flex flex-col gap-3 border-b border-design-border bg-deep-navy px-4 py-3 text-white sm:flex-row sm:items-center sm:justify-between lg:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-control bg-dec-blue text-sm font-bold">
-            DEC
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">CSO Learning Hub</p>
-            <p className="truncate text-xs text-white/65">
-              Participant learning environment
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-white/75">
-          {previewMode ? (
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
-              Creator preview
-            </span>
-          ) : null}
-          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
-            DEC branded course player
-          </span>
-        </div>
-      </div>
-    </header>
-  );
-}
 
-function CoursePlayerHeader({ course }: { course: LearnerCourseDetail }) {
-  const chrome = getTemplateChrome(course.template.templateId);
 
-  return (
-    <section className={`overflow-hidden rounded-[28px] border shadow-card ${chrome.header}`}>
-      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="p-6 lg:p-8">
-          <div className="flex flex-wrap gap-2">
-            <ResponsivePill label={course.capacityArea} tone="blue" />
-            <StatusBadge label={course.statusLabel} tone="green" />
-            <StatusBadge label={course.template.templateLabel} tone="gray" />
-          </div>
-          <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight text-deep-navy sm:text-4xl">
-            {course.title}
-          </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-muted-text">
-            {course.description}
-          </p>
-          <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
-            <div className="rounded-card border border-dec-blue/15 bg-white/80 p-4 shadow-soft">
-              <dt className="font-semibold text-dark-ink">Current module</dt>
-              <dd className="mt-1 text-muted-text">{course.currentModule}</dd>
-            </div>
-            <div className="rounded-card border border-dec-green/20 bg-white/80 p-4 shadow-soft">
-              <dt className="font-semibold text-dark-ink">Current lesson</dt>
-              <dd className="mt-1 text-muted-text">
-                {course.currentLesson}
-              </dd>
-            </div>
-          </dl>
-        </div>
-        <div className={`border-t p-6 lg:border-l lg:border-t-0 lg:p-8 ${chrome.progress}`}>
-          <p className="text-xs font-semibold uppercase text-dec-blue">
-            Learning journey
-          </p>
-          <ProgressBar label="Course progress" value={course.progress} />
-          <p className={`mt-4 text-sm leading-6 ${chrome.accentText}`}>
-            {course.template.templateSummary}. Continue through the course
-            lessons and complete each activity at a steady pace.
-          </p>
-          <div className="mt-5 flex flex-col gap-3">
-            <ActionButton href="#lesson-content" size="lg" variant="primary">
-              Continue learning
-            </ActionButton>
-            <p className="text-xs leading-5 text-muted-text">
-              Lessons are completed at lesson level; individual blocks remain part
-              of the learning flow.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CourseOutline({
+export function CourseOutline({
   baseHref,
   className = "",
   course,
@@ -662,53 +560,74 @@ function CourseOutline({
                 const isCurrent = lesson.id === displayedLessonId;
                 const isCompleted = lesson.status === "Completed";
                 const isActualCurrent = lesson.status === "Current";
+                const isLocked = lesson.status === "Next";
 
                 return (
                   <li key={lesson.id}>
-                    <a
-                      aria-current={isCurrent ? "step" : undefined}
-                      className={[
-                        "group block rounded-control border p-3 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue",
-                        isCurrent
-                          ? "border-dec-blue bg-white text-dark-ink shadow-soft"
-                          : "border-transparent bg-white/80 text-muted-text hover:border-dec-blue/30 hover:text-dark-ink",
-                      ].join(" ")}
-                      href={
-                        lesson.id === "final-test"
-                          ? finalTestHref
-                          : `${baseHref}?lessonId=${lesson.id}`
-                      }
-                    >
-                      <span className="flex items-start gap-3">
-                        <span
-                          className={[
-                            "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold",
-                            isCompleted
-                              ? "border-dec-green bg-dec-green text-white"
-                              : isActualCurrent
-                                ? "border-dec-blue bg-dec-blue text-white"
-                                : "border-design-border bg-white text-muted-text group-hover:border-dec-blue/40",
-                          ].join(" ")}
-                        >
-                          {isCompleted ? "✓" : lessonIndex + 1}
+                    {isLocked && !isCurrent ? (
+                      <div
+                        className="flex items-start gap-3 rounded-control border border-slate-100 bg-slate-50/50 p-3 text-sm text-slate-400 cursor-not-allowed select-none"
+                        aria-disabled="true"
+                        title="Complete previous lessons first"
+                      >
+                        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[11px] font-semibold text-slate-400">
+                          <svg className="size-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
                         </span>
                         <span className="min-w-0">
                           <span className="block font-medium leading-6">{lesson.title}</span>
-                          <span
-                            className={[
-                              "mt-1 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold",
-                              isCompleted
-                                ? "bg-dec-green/15 text-[#426f1c]"
-                                : isActualCurrent
-                                  ? "bg-dec-blue/10 text-[#216f9d]"
-                                  : "bg-white text-muted-text",
-                            ].join(" ")}
-                          >
-                            {lesson.status}
+                          <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                            Locked
                           </span>
                         </span>
-                      </span>
-                    </a>
+                      </div>
+                    ) : (
+                      <a
+                        aria-current={isCurrent ? "step" : undefined}
+                        className={[
+                          "group block rounded-control border p-3 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue",
+                          isCurrent
+                            ? "border-dec-blue bg-white text-dark-ink shadow-soft"
+                            : "border-transparent bg-white/80 text-muted-text hover:border-dec-blue/30 hover:text-dark-ink",
+                        ].join(" ")}
+                        href={
+                          lesson.id === "final-test"
+                            ? finalTestHref
+                            : `${baseHref}?lessonId=${lesson.id}`
+                        }
+                      >
+                        <span className="flex items-start gap-3">
+                          <span
+                            className={[
+                              "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold",
+                              isCompleted
+                                ? "border-dec-green bg-dec-green text-white"
+                                : isActualCurrent
+                                  ? "border-dec-blue bg-dec-blue text-white"
+                                  : "border-design-border bg-white text-muted-text group-hover:border-dec-blue/40",
+                            ].join(" ")}
+                          >
+                            {isCompleted ? "✓" : lessonIndex + 1}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block font-medium leading-6">{lesson.title}</span>
+                            <span
+                              className={[
+                                "mt-1 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold",
+                                isCompleted
+                                  ? "bg-dec-green/15 text-[#426f1c]"
+                                  : isActualCurrent
+                                    ? "bg-dec-blue/10 text-[#216f9d]"
+                                    : "bg-white text-muted-text",
+                              ].join(" ")}
+                            >
+                              {lesson.status}
+                            </span>
+                          </span>
+                        </span>
+                      </a>
+                    )}
                   </li>
                 );
               })}
@@ -2035,38 +1954,52 @@ export function LearnerCoursePlayer({
 
   return (
     <div className="space-y-6">
-      <LearnerInstitutionalHeader previewMode={previewMode} />
-      <CoursePlayerHeader course={course} />
+      {/* Skip to Content Accessibility Link */}
+      <a
+        href="#lesson-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:text-dec-blue focus:px-4 focus:py-2 focus:border focus:border-dec-blue focus:rounded-lg focus:m-4 focus:font-semibold"
+      >
+        Skip to lesson content
+      </a>
 
-      <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
-        <details className="overflow-hidden rounded-[24px] border border-design-border bg-white-surface shadow-soft lg:hidden">
-          <summary className="cursor-pointer bg-deep-navy px-5 py-4 text-sm font-semibold text-white">
-            Course outline
-          </summary>
+      {/* Responsive Workspace Grid */}
+      <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start w-full">
+        
+        {/* Left Side: Desktop Outline Sidebar / Mobile Outline Drawer Toggle */}
+        <div className="w-full md:w-80 md:shrink-0 md:sticky md:top-24 space-y-4">
+          {/* Mobile Contents Drawer */}
+          <div className="md:hidden">
+            <CourseOutlineDrawer
+              course={course}
+              baseHref={resolvedBaseHref}
+              displayedLessonId={displayedLesson?.id}
+              finalTestHref={resolvedFinalTestHref}
+            />
+          </div>
+
+          {/* Desktop Outline Sidebar */}
           <CourseOutline
             baseHref={resolvedBaseHref}
-            className="rounded-none border-0 shadow-none"
+            className="hidden md:block w-full"
             course={course}
             displayedLessonId={displayedLesson?.id}
             finalTestHref={resolvedFinalTestHref}
           />
-        </details>
-        <CourseOutline
-          baseHref={resolvedBaseHref}
-          className="hidden lg:block"
-          course={course}
-          displayedLessonId={displayedLesson?.id}
-          finalTestHref={resolvedFinalTestHref}
-        />
-        <LessonContent
-          baseHref={resolvedBaseHref}
-          course={course}
-          displayedLessonId={displayedLesson?.id}
-          finalTestHref={resolvedFinalTestHref}
-          previewMode={previewMode}
-        />
+        </div>
+
+        {/* Right Side: Main Lesson Workspace */}
+        <div className="flex-grow w-full min-w-0">
+          <LessonContent
+            baseHref={resolvedBaseHref}
+            course={course}
+            displayedLessonId={displayedLesson?.id}
+            finalTestHref={resolvedFinalTestHref}
+            previewMode={previewMode}
+          />
+        </div>
       </div>
 
+      {/* Course Completion Path Banner Card */}
       <section
         className="rounded-[28px] border border-design-border bg-white-surface p-6 shadow-soft"
         id={previewMode ? "final-test-preview" : undefined}

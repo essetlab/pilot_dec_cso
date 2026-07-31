@@ -28,6 +28,7 @@ import {
 import { prisma } from "./prisma";
 import { hasLearnerCourseEntitlement } from "./course-entitlement";
 import { getCurrentSession } from "./auth/server";
+import { isLocalQaFixtureAllowed } from "./local-qa-guard";
 import { cleanPresentationText } from "./presentation-text";
 import {
   getCatalogueCourseDefinition,
@@ -129,7 +130,7 @@ function getDemoCourseBySlug(slug: string) {
   return DEMO_COURSES.find((course) => course.slug === slug) ?? DEMO_PROPOSAL_COURSE;
 }
 
-function getDemoDetail(slug: string): PublicCourseDetail {
+export function getDemoDetail(slug: string): PublicCourseDetail {
   const course = getDemoCourseBySlug(slug);
 
   if (HRBA_PUBLIC_SLUGS.has(course.slug)) {
@@ -593,7 +594,7 @@ function getDatabaseFinalTestQuestions(
   }));
 }
 
-function getLearnerDetail(course: PublicCourseDetail): LearnerCourseDetail {
+export function getLearnerDetail(course: PublicCourseDetail): LearnerCourseDetail {
   return {
     ...course,
     certificateHref: `/learn/certificates/${course.slug}`,
@@ -1353,10 +1354,18 @@ export async function getLearnerCourseBySlug(
     }
   } catch (error) {
     logCourseDataFallback("getLearnerCourseBySlug", error);
+    const allowFixtures = await isLocalQaFixtureAllowed();
+    if (!allowFixtures) {
+      throw error;
+    }
   }
 
-  if (slug === DEMO_PROPOSAL_COURSE.slug) {
-    return getLearnerDetail(getDemoDetail(slug));
+  const allowFixtures = await isLocalQaFixtureAllowed();
+  if (allowFixtures) {
+    const isDemoSlug = DEMO_COURSES.some((c) => c.slug === slug);
+    if (isDemoSlug) {
+      return getLearnerDetail(getDemoDetail(slug));
+    }
   }
 
   return null;
