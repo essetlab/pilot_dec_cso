@@ -2,6 +2,8 @@
 
 import { UserStatus } from "@/generated/prisma/enums";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
 import { getDemoUserById, toAuthSession } from "@/lib/auth/demo-users";
 import { canUsePilotAccount, resolveSupabaseHubSession } from "@/lib/auth/hub-session";
 import { verifyPassword } from "@/lib/auth/passwords";
@@ -49,12 +51,27 @@ export async function signInDemoUser(formData: FormData) {
     redirect("/sign-in?error=demo-unavailable");
   }
 
+  if (process.env.NODE_ENV === "production") {
+    redirect("/sign-in?error=demo-unavailable");
+  }
+
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+  const isLocalHostRequest = host.includes("localhost") || host.includes("127.0.0.1");
+  if (!isLocalHostRequest) {
+    redirect("/sign-in?error=demo-unavailable");
+  }
+
   const isLocalTest = process.env.APP_ENVIRONMENT === "local-test";
   const allowDemoAuth = process.env.ALLOW_LOCAL_DEMO_AUTH === "true";
   const dbUrl = process.env.DATABASE_URL || "";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
   const protectedProjectIds = ["fgyxbzwdvngqlksyxuwa", "bhzyrthinbyqgsetnoph"];
-  const isProtected = protectedProjectIds.some((id) => dbUrl.includes(id));
+  const isProtected = protectedProjectIds.some(
+    (id) => dbUrl.includes(id) || supabaseUrl.includes(id) || supabaseKey.includes(id)
+  );
   const isLocalHost =
     dbUrl.includes("localhost") ||
     dbUrl.includes("127.0.0.1") ||
@@ -98,7 +115,11 @@ export async function signInDemoUser(formData: FormData) {
     });
   } catch (err) {
     console.error("Database lookup failed in signInDemoUser:", err);
-    redirect("/sign-in?error=service-unavailable");
+    if (isLocalTest && allowDemoAuth) {
+      console.warn("Local sandbox database query failed. Falling back to local mock session.");
+    } else {
+      redirect("/sign-in?error=service-unavailable");
+    }
   }
 
   if (dbUser && dbUser.status !== UserStatus.ACTIVE) {

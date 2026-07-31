@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
-import { DEMO_USERS } from "@/lib/auth/demo-users";
-import { ROLE_LABELS } from "@/lib/auth/roles";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
-import { signInDemoUser } from "./actions";
-
 type PageProps = {
   searchParams: Promise<{
     next?: string;
@@ -13,17 +9,6 @@ type PageProps = {
   }>;
 };
 
-const roleDetails: Record<string, { focus: string; access: string; tone: "blue" | "green" | "gray" | "purple" | "gold" }> = {
-  participant: {
-    access: "Learning area",
-    focus: "Access courses, progress, certificates, and your learning profile.",
-    tone: "green",
-  },
-};
-
-const publicQuickAccessUsers = DEMO_USERS.filter((user) =>
-  user.roles.includes("PARTICIPANT"),
-);
 
 const signInErrorMessages: Record<string, string> = {
   "confirmation-required":
@@ -158,45 +143,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
         </AlertMessage>
       )}
 
-      {/* Quick Access Demo (Only when Supabase Auth is disabled/mock mode) */}
-      {!usesSupabaseSignIn && !isAdministratorSignIn && (
-        <div className="space-y-4">
-          <span className="text-2xs font-extrabold uppercase tracking-wider text-muted-text">
-            Quick access pilot learner
-          </span>
-          <div className="grid gap-3">
-            {publicQuickAccessUsers.map((user) => {
-              const roleLabel = user.roles.map((role) => ROLE_LABELS[role]).join(", ");
-              const details = roleDetails[user.id];
 
-              return (
-                <form
-                  action={signInDemoUser}
-                  className="rounded-card border border-design-border bg-white p-4 shadow-soft hover:border-dec-blue/30 hover:shadow-card transition"
-                  key={user.id}
-                >
-                  <input name="userId" type="hidden" value={user.id} />
-                  <input name="next" type="hidden" value={next ?? ""} />
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-deep-navy">{roleLabel}</h3>
-                        {details && <StatusBadge label={details.access} tone={details.tone} />}
-                      </div>
-                      <p className="mt-1 text-xs text-muted-text">
-                        {details?.focus ?? user.description}
-                      </p>
-                    </div>
-                    <ActionButton className="w-full sm:w-auto" type="submit" size="sm">
-                      Continue
-                    </ActionButton>
-                  </div>
-                </form>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Admin Disclaimer */}
       {isAdministratorSignIn && (
