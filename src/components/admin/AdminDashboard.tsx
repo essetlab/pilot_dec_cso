@@ -1,4 +1,4 @@
-import { ActionButton, EmptyState, MetricCard, StatusBadge } from "@/components/ui";
+import { ActionButton, EmptyState, MetricCard } from "@/components/ui";
 import type {
   AdminDashboardActivity,
   AdminDashboardAttentionCourse,
@@ -8,6 +8,7 @@ import type {
 import { isPhaseOneAdminSurfaceRoute } from "@/lib/routes";
 import type { ReactNode } from "react";
 import { BrandMark } from "@/components/shell/BrandMark";
+import { cx } from "@/components/ui/utils";
 
 const quickActions = [
   ["Manage invitations", "/admin/course-invitations"],
@@ -44,34 +45,38 @@ function InvitationOperationsGuide() {
   return (
     <section
       aria-labelledby="administrator-invitation-guide"
-      className="rounded-[24px] border border-dec-blue/25 bg-dec-blue/10 p-6 shadow-soft"
+      className="rounded-[20px] border border-dec-blue/20 bg-dec-blue/5 p-6 shadow-soft"
     >
       <div className="max-w-3xl">
-        <StatusBadge label="Administrator guide" tone="blue" />
+        <span className="inline-flex items-center rounded-full bg-dec-blue/10 px-2.5 py-0.5 text-xs font-semibold text-dec-blue">
+          Administrator Guide
+        </span>
         <h2
-          className="mt-4 text-2xl font-semibold leading-tight text-deep-navy"
+          className="mt-4 text-2xl font-bold leading-tight text-deep-navy"
           id="administrator-invitation-guide"
         >
           How to invite a learner
         </h2>
-        <p className="mt-2 text-sm leading-6 text-[#26536c]">
+        <p className="mt-2 text-sm leading-relaxed text-muted-text">
           Follow these steps to prepare, send, and monitor one learner invitation.
         </p>
       </div>
-      <ol className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <ol className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {invitationSteps.map((step, index) => (
-          <li className="rounded-[18px] border border-dec-blue/15 bg-white p-4" key={step.title}>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-dec-blue">
+          <li className="rounded-[16px] border border-design-border bg-white-surface p-5 shadow-soft hover:border-dec-blue/30 transition-colors" key={step.title}>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-dec-blue">
               Step {index + 1}
             </p>
-            <h3 className="mt-2 text-base font-semibold text-dark-ink">{step.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-muted-text">{step.description}</p>
+            <h3 className="mt-2 text-base font-bold text-dark-ink leading-snug">{step.title}</h3>
+            <p className="mt-2.5 text-xs leading-relaxed text-muted-text">{step.description}</p>
           </li>
         ))}
       </ol>
-      <ActionButton className="mt-6" href="/admin/course-invitations/new">
-        Create invitation
-      </ActionButton>
+      <div className="mt-6">
+        <ActionButton href="/admin/course-invitations/new" className="shadow-soft">
+          Create invitation
+        </ActionButton>
+      </div>
     </section>
   );
 }
@@ -79,15 +84,19 @@ function InvitationOperationsGuide() {
 export function AdminPortalEntry() {
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-design-border bg-deep-navy p-6 text-white shadow-hero lg:p-8">
-        <div className="mb-7 inline-flex rounded-[18px] bg-white p-3">
+      <section className="overflow-hidden rounded-[24px] border border-design-border bg-deep-navy p-6 text-white shadow-hero lg:p-8">
+        <div className="mb-7 inline-flex rounded-xl bg-white p-2">
           <BrandMark compact />
         </div>
-        <StatusBadge label="DEC staff access" tone="blue" />
-        <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl">
+        <div className="mb-4">
+          <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-[#72bee8]">
+            DEC Staff Access
+          </span>
+        </div>
+        <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
           DEC Administrator Portal
         </h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-white/80">
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-200">
           Use this area to manage participating CSOs, invite learners, select courses,
           monitor invitation status, replace or cancel invitations, and support pilot access.
         </p>
@@ -114,11 +123,11 @@ function Panel({
   title: string;
 }) {
   return (
-    <section className="rounded-[24px] border border-design-border bg-white-surface p-6 shadow-soft">
+    <section className="rounded-[20px] border border-design-border bg-white-surface p-6 shadow-soft hover:shadow-card transition-shadow duration-200">
       <div className="max-w-3xl">
-        <h2 className="text-2xl font-semibold leading-tight text-dark-ink">{title}</h2>
+        <h2 className="text-xl font-bold leading-tight text-dark-ink">{title}</h2>
         {description ? (
-          <p className="mt-2 text-sm leading-6 text-muted-text">{description}</p>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-text">{description}</p>
         ) : null}
       </div>
       <div className="mt-6">{children}</div>
@@ -134,29 +143,37 @@ function MetricIcon({
   tone: "blue" | "green" | "gray" | "orange" | "red";
 }) {
   const classes = {
-    blue: "text-[#216f9d]",
-    gray: "text-muted-text",
-    green: "text-[#426f1c]",
-    orange: "text-orange-700",
-    red: "text-red-700",
+    blue: "text-dec-blue bg-dec-blue/10",
+    gray: "text-muted-text bg-slate-100",
+    green: "text-[#426f1c] bg-[#426f1c]/10",
+    orange: "text-orange-700 bg-orange-50",
+    red: "text-red-700 bg-red-50",
   };
 
-  return <span className={`text-sm font-bold ${classes[tone]}`}>{children}</span>;
+  return (
+    <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold ${classes[tone]}`}>
+      {children}
+    </span>
+  );
 }
 
 function DashboardHeader({ data }: { data: AdminDashboardData }) {
   return (
-    <section className="overflow-hidden rounded-[28px] border border-design-border bg-deep-navy p-6 text-white shadow-hero lg:p-8">
+    <section className="overflow-hidden rounded-[24px] border border-design-border bg-deep-navy p-6 text-white shadow-hero lg:p-8">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-center">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge label="Operations" tone="blue" />
-            <StatusBadge label="Platform overview" tone="green" />
+            <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-[#72bee8]">
+              Operations
+            </span>
+            <span className="inline-flex items-center rounded-full bg-dec-green/10 px-2.5 py-0.5 text-xs font-semibold text-dec-green">
+              Platform overview
+            </span>
           </div>
-          <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-5xl">
+          <h1 className="mt-5 font-display text-3xl font-bold leading-tight sm:text-4xl tracking-tight">
             DEC Administrator Portal
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-white/75">
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-300">
             This area is for authorized DEC staff managing participant invitations,
             pilot access, learners, organizations, assignments, and learning records.
           </p>
@@ -165,41 +182,41 @@ function DashboardHeader({ data }: { data: AdminDashboardData }) {
               Manage Invitations
             </ActionButton>
             <ActionButton
-              className="bg-white text-deep-navy hover:text-dec-blue"
+              className="border-white/20 bg-transparent text-white hover:bg-white/10"
               href="/admin/courses"
               size="lg"
-              variant="secondary"
+              variant="outline"
             >
-              <span className="text-deep-navy">Manage Courses</span>
+              Manage Courses
             </ActionButton>
           </div>
         </div>
 
-        <article className="rounded-[24px] border border-white/15 bg-white/10 p-5">
-          <p className="text-sm font-semibold text-dec-green">Today&apos;s focus</p>
-          <h2 className="mt-3 text-2xl font-semibold leading-tight">
+        <article className="rounded-[20px] border border-white/10 bg-white/5 p-5">
+          <p className="text-xs font-bold uppercase tracking-wider text-dec-green">Today&apos;s focus</p>
+          <h2 className="mt-2.5 text-lg font-bold leading-snug text-white">
             Keep assignments, certificates, and learner records moving.
           </h2>
-          <p className="mt-3 text-sm leading-6 text-white/70">
+          <p className="mt-2 text-xs leading-relaxed text-slate-300">
             Follow up on course assignments, certificate activity, and recent
             platform events that need administrator awareness.
           </p>
-          <dl className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3 xl:grid-cols-1">
-            <div className="rounded-[16px] bg-white/10 p-3">
-              <dt className="text-white/65">Ready items</dt>
-              <dd className="mt-1 text-2xl font-semibold text-white">
+          <dl className="mt-5 grid grid-cols-1 gap-3.5 text-sm sm:grid-cols-3 xl:grid-cols-1">
+            <div className="flex items-center justify-between rounded-[12px] bg-white/10 p-3">
+              <dt className="text-xs text-slate-300">Ready items</dt>
+              <dd className="text-lg font-bold text-white">
                 {data.focus.readyItems}
               </dd>
             </div>
-            <div className="rounded-[16px] bg-white/10 p-3">
-              <dt className="text-white/65">Awaiting review</dt>
-              <dd className="mt-1 text-2xl font-semibold text-white">
+            <div className="flex items-center justify-between rounded-[12px] bg-white/10 p-3">
+              <dt className="text-xs text-slate-300">Awaiting review</dt>
+              <dd className="text-lg font-bold text-white">
                 {data.focus.coursesAwaitingReview}
               </dd>
             </div>
-            <div className="rounded-[16px] bg-white/10 p-3">
-              <dt className="text-white/65">Certificates</dt>
-              <dd className="mt-1 text-2xl font-semibold text-white">
+            <div className="flex items-center justify-between rounded-[12px] bg-white/10 p-3">
+              <dt className="text-xs text-slate-300">Certificates</dt>
+              <dd className="text-lg font-bold text-white">
                 {data.focus.certificatesIssued}
               </dd>
             </div>
@@ -214,10 +231,10 @@ function KpiGrid({ data }: { data: AdminDashboardData }) {
   return (
     <section aria-labelledby="admin-kpi-heading" className="space-y-4">
       <div>
-        <h2 className="text-2xl font-semibold leading-tight text-dark-ink" id="admin-kpi-heading">
+        <h2 className="text-xl font-bold leading-tight text-dark-ink" id="admin-kpi-heading">
           Operational summary
         </h2>
-        <p className="mt-2 text-sm leading-6 text-muted-text">
+        <p className="mt-1 text-xs text-muted-text">
           A concise view of current platform records and learning operations.
         </p>
       </div>
@@ -252,23 +269,32 @@ function CoursesNeedingAttentionCard({
       title="Courses needing attention"
     >
       {courses.length > 0 ? (
-        <ol className="space-y-4">
+        <ol className="space-y-3.5">
           {courses.map((course) => (
             <li
-              className="flex flex-col gap-4 rounded-[20px] border border-design-border bg-soft-bg p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-4 rounded-[16px] border border-design-border bg-soft-bg p-4.5 sm:flex-row sm:items-center sm:justify-between hover:border-dec-blue/25 transition-colors"
               key={course.id}
             >
               <div className="min-w-0">
-                <p className="text-sm font-semibold leading-6 text-dark-ink">
+                <p className="text-sm font-bold leading-snug text-dark-ink">
                   {course.title}
                 </p>
-                <p className="mt-1 text-sm leading-6 text-muted-text">{course.detail}</p>
+                <p className="mt-1.5 text-xs text-muted-text leading-relaxed">{course.detail}</p>
                 <div className="mt-3">
-                  <StatusBadge label={course.status} tone={course.tone} />
+                  <span className={cx(
+                    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border",
+                    course.tone === "purple" && "bg-purple-50 text-purple-700 border-purple-100",
+                    course.tone === "green" && "bg-dec-green/10 text-emerald-800 border-dec-green/20",
+                    course.tone === "orange" && "bg-orange-50 text-orange-700 border-orange-100",
+                    course.tone === "red" && "bg-red-50 text-red-700 border-red-100",
+                    course.tone === "blue" && "bg-dec-blue/10 text-dec-blue border-dec-blue/20"
+                  )}>
+                    {course.status}
+                  </span>
                 </div>
               </div>
               {isPhaseOneAdminSurfaceRoute(course.href) ? (
-                <ActionButton href={course.href} size="sm" variant="secondary">
+                <ActionButton href={course.href} size="sm" variant="secondary" className="sm:shrink-0 text-xs">
                   {course.action}
                 </ActionButton>
               ) : null}
@@ -301,38 +327,49 @@ function RecentActivityCard({
       title="Recent platform activity"
     >
       {activityItems.length > 0 ? (
-        <ul className="space-y-4">
+        <ul className="space-y-3.5">
           {activityItems.map((item, index) => (
-            <li className="rounded-[18px] bg-soft-bg p-4" key={item.id}>
+            <li className="rounded-[16px] border border-design-border bg-soft-bg/40 p-4.5" key={item.id}>
               <div className="flex gap-3">
                 <span
                   aria-hidden="true"
-                  className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-dec-blue/10 text-xs font-bold text-[#216f9d]"
+                  className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-dec-blue/10 text-xs font-bold text-dec-blue"
                 >
                   {index + 1}
                 </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge label={item.action} tone={item.tone} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className={cx(
+                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border",
+                      item.tone === "purple" && "bg-purple-50 text-purple-700 border-purple-100",
+                      item.tone === "green" && "bg-dec-green/10 text-emerald-800 border-dec-green/20",
+                      item.tone === "orange" && "bg-orange-50 text-orange-700 border-orange-100",
+                      item.tone === "red" && "bg-red-50 text-red-700 border-red-100",
+                      item.tone === "blue" && "bg-dec-blue/10 text-dec-blue border-dec-blue/20"
+                    )}>
+                      {item.action}
+                    </span>
                     <span className="text-xs font-semibold text-muted-text">
                       {item.timestamp}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm font-medium leading-6 text-dark-ink">
+                  <p className="mt-2 text-sm font-semibold leading-relaxed text-dark-ink">
                     {item.description}
                   </p>
-                  <p className="mt-1 text-xs font-medium text-muted-text">
+                  <p className="mt-1 text-xs text-muted-text">
                     Recorded by {item.actor}
                   </p>
                   {item.href && isPhaseOneAdminSurfaceRoute(item.href) ? (
-                    <ActionButton
-                      className="mt-3"
-                      href={item.href}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      Open record
-                    </ActionButton>
+                    <div className="mt-3">
+                      <ActionButton
+                        href={item.href}
+                        size="sm"
+                        variant="secondary"
+                        className="text-xs"
+                      >
+                        Open record
+                      </ActionButton>
+                    </div>
                   ) : null}
                 </div>
               </div>
@@ -358,7 +395,7 @@ function QuickActionsCard() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         {quickActions.map(([label, href]) => (
           <ActionButton
-            className="w-full justify-start"
+            className="w-full justify-start text-xs font-bold"
             href={href}
             key={label}
             variant="secondary"
@@ -385,36 +422,40 @@ function RecentCertificatesCard({
         <div className="space-y-4">
           {certificates.map((certificate) => (
             <article
-              className="rounded-[22px] border border-dec-green/30 bg-dec-green/15 p-5"
+              className="rounded-[16px] border border-dec-green/20 bg-[#f4faf5] p-5 shadow-soft"
               key={certificate.id}
             >
-              <StatusBadge label={certificate.status} tone={certificate.tone} />
-              <h3 className="mt-4 text-lg font-semibold leading-tight text-deep-navy">
+              <div className="mb-3">
+                <span className="inline-flex items-center rounded-full bg-dec-green/10 border border-dec-green/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                  {certificate.status}
+                </span>
+              </div>
+              <h3 className="text-base font-bold leading-snug text-deep-navy">
                 {certificate.participantName}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-muted-text">
+              <p className="mt-1 text-xs text-muted-text leading-relaxed">
                 {certificate.courseTitle}
               </p>
-              <dl className="mt-5 grid gap-3">
-                <div className="rounded-[16px] bg-white/80 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-text">
+              <dl className="mt-4.5 space-y-2.5">
+                <div className="rounded-[12px] bg-white-surface border border-design-border p-3.5">
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-text">
                     Certificate code
                   </dt>
-                  <dd className="mt-2 break-words text-sm font-semibold text-dark-ink">
+                  <dd className="mt-1 break-words text-xs font-semibold text-dark-ink">
                     {certificate.certificateCode}
                   </dd>
                 </div>
-                <div className="rounded-[16px] bg-white/80 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-text">
+                <div className="rounded-[12px] bg-white-surface border border-design-border p-3.5">
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-text">
                     Issue date
                   </dt>
-                  <dd className="mt-2 text-sm font-semibold text-dark-ink">
+                  <dd className="mt-1 text-xs font-semibold text-dark-ink">
                     {certificate.issuedAt}
                   </dd>
                 </div>
               </dl>
               <ActionButton
-                className="mt-4"
+                className="mt-4 w-full justify-center text-xs"
                 href={certificate.href}
                 size="sm"
                 variant="secondary"
@@ -441,9 +482,11 @@ function RecentCertificatesCard({
 
 function GuidanceNote() {
   return (
-    <aside className="rounded-[24px] border border-dec-blue/25 bg-dec-blue/10 p-6 shadow-soft">
-      <StatusBadge label="Admin guidance" tone="blue" />
-      <p className="mt-4 text-sm leading-7 text-[#26536c]">
+    <aside className="rounded-[20px] border border-dec-blue/20 bg-dec-blue/5 p-5 shadow-soft">
+      <span className="inline-flex items-center rounded-full bg-dec-blue/10 px-2.5 py-0.5 text-xs font-semibold text-dec-blue">
+        Admin guidance
+      </span>
+      <p className="mt-3.5 text-xs leading-relaxed text-[#26536c]">
         Use this dashboard to manage daily Phase One learning operations and
         identify courses, organizations, and learners that need attention.
       </p>
