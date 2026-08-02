@@ -48,7 +48,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
           <StatusBadge label="Secure Session" tone="blue" />
         </div>
         <h1 className="mt-2 text-2xl font-bold text-deep-navy">
-          {isAdministratorSignIn ? "Sign in as administrator" : "Use your learner credentials"}
+          {isAdministratorSignIn ? "Sign in as administrator" : "Use your credentials"}
         </h1>
         <p className="mt-2 text-xs leading-5 text-muted-text">
           {isAdministratorSignIn

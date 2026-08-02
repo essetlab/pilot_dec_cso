@@ -122,12 +122,12 @@ export default async function RegisterPage({ searchParams }: PageProps) {
       <div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-2xs font-extrabold uppercase tracking-wider text-dec-blue">
-            Open Registration
+            Registration
           </span>
           <StatusBadge label="Individual Account" tone="green" />
         </div>
         <h1 className="mt-2 text-2xl font-bold text-deep-navy">
-          Create your CSO Learning Hub account
+          Create your account
         </h1>
         <p className="mt-2 text-xs leading-5 text-muted-text">
           {invitation
@@ -135,7 +135,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
             : "Register with your email address, confirm your account, and explore available learning opportunities."}
         </p>
         <p className="mt-2 text-2xs leading-normal text-muted-text">
-          Registration includes access to the HRBA pilot course. Please note that invitation-only courses still require a separate assignment from DEC.
+          Registration includes access to available courses. Please note that some courses may require invitation or assignment from DEC.
         </p>
       </div>
 
