@@ -50,9 +50,12 @@ assert.match(
   adminPeopleWorkflow,
   /cleanPresentationText\(selfReportedOrganizationName\)/,
 );
-assert.match(page, /Create your CSO Learning Hub account/);
-assert.match(page, /Registration includes access to the HRBA pilot course/);
-assert.match(page, /invitation-only courses still require a separate assignment/);
+assert.match(page, /Create your account/);
+assert.match(page, /Registration includes access to available courses\./);
+assert.match(
+  page,
+  /Please note that some courses may require invitation or assignment from DEC\./,
+);
 assert.match(page, /Select your region/);
 assert.match(page, /Preferred language/);
 
