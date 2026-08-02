@@ -36,6 +36,10 @@ assert.doesNotMatch(action, /accessCode/);
 assert.match(action, /open-register:\$\{email\}/);
 assert.match(action, /value\.startsWith\("\/"\)/);
 assert.match(action, /!value\.startsWith\("\/\/"\)/);
+assert.match(
+  action,
+  /DATABASE_CONNECTIVITY_ERROR_CODES[\s\S]*"P1003"[\s\S]*DATABASE_CONNECTIVITY_ERROR_CODES\.has\(errorCode\)[\s\S]*\? "service-unavailable"/,
+);
 assert.match(workflow, /selfReportedOrganizationName/);
 assert.match(workflow, /organizationId: null/);
 assert.doesNotMatch(workflow, /organization\.(create|upsert|findFirst|findUnique)/);

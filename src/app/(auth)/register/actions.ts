@@ -13,6 +13,7 @@ const DATABASE_CONNECTIVITY_ERROR_CODES = new Set([
   "ECONNREFUSED",
   "P1001",
   "P1002",
+  "P1003",
   "P1008",
   "P1017",
 ]);
