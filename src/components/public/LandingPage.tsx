@@ -106,7 +106,7 @@ const displayTitles: Record<string, string> = {
 };
 
 const featuredCourseSlugs = [
-  "human-rights-based-approach-practice",
+  "applying-human-rights-based-approach-in-cso-practice",
   "project-management-local-grassroots-csos",
 ] as const;
 
