@@ -227,6 +227,7 @@ function PublicCourseCard({ course }: { course: PublicCatalogueCourseSummary }) 
           compact
           imageAlt={course.imageAlt}
           imageUrl={course.imageUrl}
+          showTextOverlay={false}
           title={course.title}
           tone={course.tone}
         />
@@ -237,30 +238,30 @@ function PublicCourseCard({ course }: { course: PublicCatalogueCourseSummary }) 
           />
         </div>
       </div>
-      <div className="flex flex-1 flex-col p-6">
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
         <span
           className={cx(
-            "inline-self-start rounded-full px-2.5 py-0.5 text-2xs font-extrabold uppercase tracking-wider",
+            "inline-flex self-start rounded-full px-3 py-1 text-xs font-semibold leading-4",
             accent.badgeBg,
             accent.badgeText
           )}
         >
           {course.primaryCapacityArea.name}
         </span>
-        <h3 className="mt-3 text-lg font-bold leading-tight text-deep-navy">
+        <h3 className="mt-4 text-xl font-bold leading-snug text-deep-navy">
           {displayTitle}
         </h3>
         {displayTitle !== course.title && (
-          <p className="mt-2 text-2xs leading-5 text-muted-text italic">
+          <p className="mt-2 text-xs italic leading-5 text-muted-text">
             Official title: {course.title}
           </p>
         )}
-        <p className="mt-3 flex-1 text-xs leading-6 text-muted-text">
+        <p className="mt-3 flex-1 text-sm leading-6 text-muted-text">
           {course.shortDescription}
         </p>
 
         {/* Dynamic, clean metadata display */}
-        <div className="mt-5 border-t border-design-border pt-4 text-2xs space-y-2 text-muted-text">
+        <div className="mt-5 space-y-2 border-t border-design-border pt-4 text-xs leading-5 text-muted-text">
           <p>
             <strong className="text-deep-navy font-bold">Format:</strong> {formattedFormat}
           </p>
@@ -279,7 +280,7 @@ function PublicCourseCard({ course }: { course: PublicCatalogueCourseSummary }) 
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-4 border-t border-design-border pt-4">
-          <span className="text-2xs font-black uppercase tracking-wider text-muted-text">
+          <span className="text-xs font-bold uppercase tracking-[0.08em] text-muted-text">
             {requiresInvitation
               ? "Invitation only"
               : isAvailable

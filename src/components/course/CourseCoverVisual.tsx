@@ -32,6 +32,7 @@ export function CourseCoverVisual({
   compact = false,
   imageAlt,
   imageUrl,
+  showTextOverlay = true,
   title,
   tone,
 }: {
@@ -39,6 +40,7 @@ export function CourseCoverVisual({
   compact?: boolean;
   imageAlt: string;
   imageUrl?: string | null;
+  showTextOverlay?: boolean;
   title: string;
   tone: CourseTone;
 }) {
@@ -64,22 +66,24 @@ export function CourseCoverVisual({
       ) : (
         <div className="absolute inset-0 bg-gradient-to-t from-deep-navy/70 via-deep-navy/10 to-transparent" />
       )}
-      <div className="relative z-10 flex h-full flex-col justify-between gap-16">
-        <StatusBadge label={capacityArea} tone={badgeToneByCourseTone[tone]} />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
-            CSO Learning
-          </p>
-          <p
-            className={cx(
-              "mt-3 font-semibold leading-tight text-white",
-              compact ? "text-xl" : "max-w-md text-3xl",
-            )}
-          >
-            {title}
-          </p>
+      {showTextOverlay ? (
+        <div className="relative z-10 flex h-full flex-col justify-between gap-16">
+          <StatusBadge label={capacityArea} tone={badgeToneByCourseTone[tone]} />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+              CSO Learning
+            </p>
+            <p
+              className={cx(
+                "mt-3 font-semibold leading-tight text-white",
+                compact ? "text-xl" : "max-w-md text-3xl",
+              )}
+            >
+              {title}
+            </p>
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
