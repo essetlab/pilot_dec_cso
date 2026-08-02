@@ -373,7 +373,7 @@ export function PublicFooter() {
           <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#3f5061]" id="partner-acknowledgement-title">
             Our partners &amp; donors
           </h2>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-[0.95fr_1.05fr_2.3fr_1.35fr_0.75fr] lg:gap-4">
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-[0.9fr_1.05fr_2.55fr_1.15fr_0.75fr] lg:gap-3">
             <div>
               <p className="text-xs font-bold text-[#3f5061]">Funded by the European Union</p>
               <div className="mt-2 flex items-center">
