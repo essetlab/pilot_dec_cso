@@ -94,7 +94,7 @@ const displayTitles: Record<string, string> = {
   "Project Management for Local and Grassroots CSOs": "Plan and Manage Local CSO Projects with Greater Clarity",
 };
 
-function CataloguePageHeader({ count }: { count: number }) {
+function CataloguePageHeader() {
   return (
     <section className="grid gap-8 py-12 lg:grid-cols-[1fr_1.1fr] lg:items-end lg:py-16">
       <div>
@@ -110,7 +110,7 @@ function CataloguePageHeader({ count }: { count: number }) {
       </div>
       <div className="max-w-2xl lg:pb-2">
         <p className="text-base leading-8 text-muted-text">
-          Explore {count} courses built for the operational realities of local and grassroots civil society organizations in Ethiopia. HRBA is open for learning, with additional courses coming soon.
+          Explore courses built for the operational realities of local and grassroots civil society organizations in Ethiopia.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <StatusBadge label="Available now" tone="green" />
@@ -303,7 +303,7 @@ export function CataloguePage({
 
   return (
     <div className="flex flex-col bg-light-bg pb-20">
-      <CataloguePageHeader count={courses.length} />
+      <CataloguePageHeader />
       <CatalogueFilterBar filters={filters} />
 
       {/* Screen Reader Result Announcements */}
