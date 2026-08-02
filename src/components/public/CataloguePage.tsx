@@ -316,45 +316,13 @@ export function CataloguePage({
       </div>
 
       {courses.length > 0 ? (
-        <div className="mt-12 space-y-16">
-          {/* Available Learning Section */}
-          {availableCourses.length > 0 && (
-            <section aria-labelledby="available-title">
-              <div className="border-b border-design-border pb-4">
-                <h2 id="available-title" className="font-display text-2xl font-bold text-deep-navy">
-                  Available learning
-                </h2>
-                <p className="mt-1 text-xs text-muted-text">
-                  Start these self-paced courses directly by creating or signing in to your account.
-                </p>
-              </div>
-              <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {availableCourses.map((course) => (
-                  <PublicCourseCard course={course} key={course.slug} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Forthcoming Learning Section */}
-          {forthcomingCourses.length > 0 && (
-            <section aria-labelledby="upcoming-title">
-              <div className="border-b border-design-border pb-4">
-                <h2 id="upcoming-title" className="font-display text-2xl font-bold text-deep-navy">
-                  Forthcoming learning
-                </h2>
-                <p className="mt-1 text-xs text-muted-text">
-                  Upcoming capacity development topics. Browse overviews and structure to prepare.
-                </p>
-              </div>
-              <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {forthcomingCourses.map((course) => (
-                  <PublicCourseCard course={course} key={course.slug} />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
+        <section aria-label="Course catalogue results" className="mt-12">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:auto-rows-fr lg:grid-cols-3">
+            {courses.map((course) => (
+              <PublicCourseCard course={course} key={course.slug} />
+            ))}
+          </div>
+        </section>
       ) : (
         <div className="mt-12">
           <EmptyState
