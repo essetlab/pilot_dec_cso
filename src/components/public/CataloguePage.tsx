@@ -96,7 +96,7 @@ const displayTitles: Record<string, string> = {
 
 function CataloguePageHeader() {
   return (
-    <section className="grid gap-8 py-12 lg:grid-cols-[1fr_1.1fr] lg:items-end lg:py-16">
+    <section className="grid gap-8 py-10 sm:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:py-14">
       <div>
         <div className="flex items-center gap-3">
           <span className="h-1 w-12 rounded-full bg-dec-blue" />
@@ -104,15 +104,15 @@ function CataloguePageHeader() {
             CSO Learning Hub
           </p>
         </div>
-        <h1 className="mt-5 font-display text-4xl font-bold leading-tight text-deep-navy sm:text-5xl lg:text-6xl">
+        <h1 className="mt-4 max-w-[18ch] font-display text-4xl font-bold leading-[1.08] text-deep-navy sm:text-5xl lg:text-5xl">
           Practical learning catalogue
         </h1>
       </div>
-      <div className="max-w-2xl lg:pb-2">
-        <p className="text-base leading-8 text-muted-text">
+      <div className="max-w-xl">
+        <p className="text-base leading-7 text-muted-text">
           Explore courses built for the operational realities of local and grassroots civil society organizations in Ethiopia.
         </p>
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <StatusBadge label="Available now" tone="green" />
           <StatusBadge label="Coming soon" tone="gray" />
         </div>
