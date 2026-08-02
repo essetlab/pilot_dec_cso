@@ -251,11 +251,6 @@ function PublicCourseCard({ course }: { course: PublicCatalogueCourseSummary }) 
         <h3 className="mt-4 text-xl font-bold leading-snug text-deep-navy">
           {displayTitle}
         </h3>
-        {displayTitle !== course.title && (
-          <p className="mt-2 text-xs italic leading-5 text-muted-text">
-            Official title: {course.title}
-          </p>
-        )}
         <p className="mt-3 flex-1 text-sm leading-6 text-muted-text">
           {course.shortDescription}
         </p>
