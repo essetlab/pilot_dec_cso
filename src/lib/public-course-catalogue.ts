@@ -429,7 +429,7 @@ export function toPublicCatalogueSummary(
     featured: definition.featured,
     href: `/courses/${existingSlug}`,
     imageAlt: existingHrba?.imageAlt ?? definition.imageAlt,
-    imageUrl: definition.imageUrl ?? existingHrba?.imageUrl,
+    imageUrl: definition.imageUrl ?? existingHrba?.imageUrl ?? null,
     integrationStatus: definition.integrationStatus,
     language: isAvailable
       ? existingHrba?.language ?? definition.language
