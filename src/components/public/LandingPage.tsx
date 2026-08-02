@@ -225,7 +225,7 @@ function LearningPathway() {
   ];
 
   return (
-    <section className="border-y border-design-border bg-light-bg py-16 sm:py-20" aria-labelledby="pathway-title">
+    <section id="how-the-hub-works" className="border-y border-design-border bg-light-bg py-16 sm:py-20" aria-labelledby="pathway-title">
       <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
         <div className="text-center max-w-2xl mx-auto">
           <SectionEyebrow>How learning works</SectionEyebrow>
