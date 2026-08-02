@@ -368,26 +368,76 @@ export function PublicFooter() {
           &copy; {currentYear} Development Expertise Center (DEC). All rights reserved.
         </p>
       </div>
-      <div className="border-t border-[#cad5df] bg-white py-8">
+      <section aria-labelledby="partner-acknowledgement-title" className="border-t border-[#cad5df] bg-white py-7 sm:py-8">
         <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-          <p className="mb-6 text-xs font-black uppercase tracking-[0.15em] text-[#3f5061]">
+          <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#3f5061]" id="partner-acknowledgement-title">
             Our partners &amp; donors
-          </p>
-          <div className="overflow-x-auto" role="region" aria-label="Partner and donor acknowledgement">
-            <div className="min-w-[760px]">
-              <Image
-                alt="Funding and programme partner logos: European Union, Welthungerhilfe, CoSAP, Development Expertise Center, Pastoralist Forum Ethiopia and Civil Peace Service."
-                className="h-auto w-full"
-                height={188}
-                loading="lazy"
-                sizes="(min-width: 1200px) 1200px, 100vw"
-                src="/images/landing/partner-logo-strip.png"
-                width={1429}
-              />
+          </h2>
+          <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-[0.9fr_1fr_1.6fr_1fr_0.9fr] lg:gap-5">
+            <div>
+              <p className="text-xs font-bold text-[#3f5061]">Funded by the European Union</p>
+              <div className="mt-3 flex min-h-10 items-center">
+                <Image
+                  alt="European Union"
+                  className="h-10 w-auto object-contain"
+                  height={870}
+                  loading="lazy"
+                  src="/logos/eu-logo.png"
+                  width={1807}
+                />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#3f5061]">Coordinated by Welthungerhilfe</p>
+              <div className="mt-3 flex min-h-10 items-center">
+                <Image
+                  alt="Welthungerhilfe"
+                  className="h-10 w-auto object-contain"
+                  height={887}
+                  loading="lazy"
+                  src="/logos/whh-logo.png"
+                  width={1774}
+                />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#3f5061]">In partnership with</p>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-3">
+                <Image alt="CoSAP" className="h-10 w-auto object-contain" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
+                <Image alt="Development Expertise Center" className="h-10 w-auto object-contain" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
+                <Image alt="Pastoralist Forum Ethiopia" className="h-10 w-auto object-contain" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#3f5061]">With technical support of</p>
+              <div className="mt-3 flex min-h-10 items-center">
+                <Image
+                  alt="Civil Peace Service / ZFD"
+                  className="h-10 w-auto object-contain"
+                  height={724}
+                  loading="lazy"
+                  src="/logos/zfd-logo.png"
+                  width={2172}
+                />
+              </div>
+            </div>
+            <div className="border-t border-[#cad5df] pt-5 sm:border-t-0 sm:pt-0 lg:border-l lg:pl-5">
+              <p className="text-[11px] font-semibold leading-4 text-[#66788a]">Platform and technical support by</p>
+              <div className="mt-2 flex items-center gap-2">
+                <Image
+                  alt="Medab Solutions"
+                  className="h-8 w-auto object-contain"
+                  height={876}
+                  loading="lazy"
+                  src="/logos/medab-solutions-logo.png"
+                  width={589}
+                />
+                <p className="text-xs font-semibold text-[#66788a]">Medab Solutions</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </footer>
   );
 }
