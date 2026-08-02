@@ -368,12 +368,12 @@ export function PublicFooter() {
           &copy; {currentYear} Development Expertise Center (DEC). All rights reserved.
         </p>
       </div>
-      <section aria-labelledby="partner-acknowledgement-title" className="border-t border-[#cad5df] bg-white py-6 sm:py-7">
+      <section aria-labelledby="partner-acknowledgement-title" className="border-t border-[#cad5df] bg-white py-5 sm:py-7">
         <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
           <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#3f5061]" id="partner-acknowledgement-title">
             Our partners &amp; donors
           </h2>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-[1.25fr_1.05fr_2.4fr_1.15fr_0.75fr] lg:gap-3">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-[1.25fr_1.05fr_2.4fr_1.15fr_0.75fr] lg:gap-3">
             <div>
               <p className="whitespace-nowrap text-center text-xs font-bold text-[#3f5061]">Funded by the European Union</p>
               <div className="mt-2 flex items-center justify-center">
@@ -392,7 +392,7 @@ export function PublicFooter() {
               <div className="mt-2 flex items-center justify-center">
                 <Image
                   alt="Welthungerhilfe"
-                  className="h-14 w-auto object-contain"
+                  className="h-12 w-auto object-contain sm:h-14"
                   height={887}
                   loading="lazy"
                   src="/logos/whh-logo.png"
@@ -403,9 +403,9 @@ export function PublicFooter() {
             <div>
               <p className="text-center text-xs font-bold text-[#3f5061]">In Partnership with</p>
               <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4 xl:flex-nowrap xl:gap-x-2">
-                <Image alt="CoSAP" className="h-12 w-auto object-contain" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
-                <Image alt="Development Expertise Center" className="h-12 w-auto object-contain" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
-                <Image alt="Pastoralist Forum Ethiopia" className="h-14 w-auto object-contain" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
+                <Image alt="CoSAP" className="h-10 w-auto object-contain sm:h-12" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
+                <Image alt="Development Expertise Center" className="h-10 w-auto object-contain sm:h-12" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
+                <Image alt="Pastoralist Forum Ethiopia" className="h-12 w-auto object-contain sm:h-14" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
               </div>
             </div>
             <div>
@@ -413,7 +413,7 @@ export function PublicFooter() {
               <div className="mt-2 flex items-center justify-center">
                 <Image
                   alt="Civil Peace Service / ZFD"
-                  className="h-14 w-auto object-contain"
+                  className="h-12 w-auto object-contain sm:h-14"
                   height={724}
                   loading="lazy"
                   src="/logos/zfd-logo.png"
@@ -422,8 +422,8 @@ export function PublicFooter() {
               </div>
             </div>
             <div>
-              <p className="text-[11px] font-semibold leading-4 text-[#66788a]">Platform and technical support by</p>
-              <div className="mt-2 flex items-center gap-2">
+              <p className="text-center text-[11px] font-semibold leading-4 text-[#66788a]">Platform and technical support by</p>
+              <div className="mt-2 flex items-center justify-center gap-2">
                 <Image
                   alt="Medab Solutions"
                   className="h-8 w-auto object-contain"
