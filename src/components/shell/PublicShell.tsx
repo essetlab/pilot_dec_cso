@@ -401,16 +401,16 @@ export function PublicFooter() {
               </div>
             </div>
             <div>
-              <p className="text-xs font-bold text-[#3f5061]">In Partnership with</p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4">
+              <p className="text-center text-xs font-bold text-[#3f5061]">In Partnership with</p>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
                 <Image alt="CoSAP" className="h-12 w-auto object-contain" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
                 <Image alt="Development Expertise Center" className="h-12 w-auto object-contain" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
                 <Image alt="Pastoralist Forum Ethiopia" className="h-14 w-auto object-contain" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
               </div>
             </div>
             <div>
-              <p className="text-xs font-bold text-[#3f5061]">With Technical Support of</p>
-              <div className="mt-2 flex items-center">
+              <p className="text-center text-xs font-bold text-[#3f5061]">With Technical Support of</p>
+              <div className="mt-2 flex items-center justify-center">
                 <Image
                   alt="Civil Peace Service / ZFD"
                   className="h-14 w-auto object-contain"
