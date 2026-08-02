@@ -106,7 +106,7 @@ const displayTitles: Record<string, string> = {
 };
 
 const featuredCourseSlugs = [
-  "applying-human-rights-based-approach-in-cso-practice",
+  "human-rights-based-approach-practice",
   "project-management-local-grassroots-csos",
 ] as const;
 
@@ -185,7 +185,13 @@ function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCours
 }
 
 function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[] }) {
-  const shown = featuredCourseSlugs.flatMap((slug) => courses.filter((course) => course.slug === slug));
+  const shown = featuredCourseSlugs
+    .map((slug) => courses.find((course) => course.slug === slug))
+    .filter((course): course is PublicCatalogueCourseSummary => Boolean(course));
+
+  if (process.env.NODE_ENV !== "production" && shown.length !== featuredCourseSlugs.length) {
+    throw new Error("Featured learning requires both configured course summaries.");
+  }
 
   return (
     <section className="bg-white py-14 sm:py-16" aria-labelledby="featured-learning-title">
