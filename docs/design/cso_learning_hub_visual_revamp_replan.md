@@ -97,23 +97,22 @@ This section presents the final visual review assessment after the successful ex
 | **My Learning (Courses Grid)** | **Complete** | Visual grids map active progress bars and category tabs cleanly. |
 | **Certificates Lists** | **Complete** | Locked cells appear as restrained grey frames rather than disabled elements; active badges map correctly. |
 | **Course Player Shell** | **Complete** | Focus-visible mobile outline drawer handles scrolling and viewport scaling without clipping content. |
-| **Administrator Shell** | **Complete** | Front-end implementation complete; lint and build verified; visual rendering not independently reviewed because the local administrator route requires an unavailable database connection. |
-| **Administrator Dashboard** | **Complete** | Front-end implementation complete; lint and build verified; visual rendering not independently reviewed because the local administrator route requires an unavailable database connection. |
+| **Administrator Shell** | **Front-End Complete; Visual Review Not Completed** | Front-end implementation complete; lint and build verified; visual rendering was not independently reviewed because the local administrator route requires an unavailable database connection. |
+| **Administrator Dashboard** | **Front-End Complete; Visual Review Not Completed** | Front-end implementation complete; lint and build verified; visual rendering was not independently reviewed because the local administrator route requires an unavailable database connection. |
 
 ### 5.2 Verification Limitations
 Because the local administrator route requires an active database connection that is offline in the sandbox workspace, the administrator pages could not be rendered for layout capture. 
 
 This rendering limitation is fully recognized and **does not justify**:
-- starting WSL services or Docker Desktop;
-- connecting to staging, pilot, or production PostgreSQL databases;
-- adding mock administrator credentials or records;
-- modifying database queries or Prisma models;
-- introducing new backend error/fallback systems;
+- starting Docker, WSL, or PostgreSQL solely for visual confirmation;
+- accessing any staging, pilot, or production database for this task;
+- creating mock administrator data, a fallback system, or a QA route;
+- modifying backend logic, database queries, Prisma models, or routes;
 - making further code or implementation changes.
 
 ### 5.3 Stopping Point Recommendation
 - **Next Batch Justification**: **No additional visual implementation batch is currently justified.**
-- **Implementation Status**: All planned front-end components have been successfully implemented, and the workspace typechecks and builds cleanly.
-- **Remaining Scope**: Remaining work is limited to optional future visual verification of the admin screens in an already authorized, online deployment environment.
-- **Out of Scope**: Certificate-verification interfaces and course Creator tools remain outside the scope of Phase 1 revamp priorities.
+- **Implementation Status**: All planned front-end components have been implemented, and lint and build verification passed.
+- **Remaining Scope**: Remaining work is limited to optional future visual confirmation of the administrator screens in an already authorised environment.
+- **Out of Scope**: Certificate-verification redesign is not a current priority. Creator and course-authoring tools remain outside the Phase 1 visual-revamp scope.
 - **Database Administration**: Staging database credential rotation remains an external administrative task for project owners and is not linked to these visual tasks.
