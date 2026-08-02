@@ -137,6 +137,7 @@ function CourseHero({
             imageUrl={course.imageUrl}
             title={course.title}
             tone={course.tone}
+            variant="detail"
           />
         </div>
       </div>

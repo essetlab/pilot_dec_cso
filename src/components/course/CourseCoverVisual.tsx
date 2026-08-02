@@ -16,14 +16,20 @@ const badgeToneByCourseTone: Record<CourseTone, "blue" | "green" | "gold"> = {
   navy: "blue",
 };
 
-function safeBackgroundUrl(imageUrl: string | null | undefined) {
+function safeBackgroundUrl(
+  imageUrl: string | null | undefined,
+  variant: "default" | "detail",
+) {
   const value = imageUrl?.trim();
   if (!value) {
     return undefined;
   }
 
   return {
-    backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.48)), url("${value.replaceAll('"', "%22")}")`,
+    backgroundImage:
+      variant === "detail"
+        ? `url("${value.replaceAll('"', "%22")}")`
+        : `linear-gradient(135deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.48)), url("${value.replaceAll('"', "%22")}")`,
   };
 }
 
@@ -35,6 +41,7 @@ export function CourseCoverVisual({
   showTextOverlay = true,
   title,
   tone,
+  variant = "default",
 }: {
   capacityArea: string;
   compact?: boolean;
@@ -43,8 +50,10 @@ export function CourseCoverVisual({
   showTextOverlay?: boolean;
   title: string;
   tone: CourseTone;
+  variant?: "default" | "detail";
 }) {
-  const imageStyle = safeBackgroundUrl(imageUrl);
+  const imageStyle = safeBackgroundUrl(imageUrl, variant);
+  const isDetailVariant = variant === "detail";
 
   return (
     <div
@@ -63,10 +72,10 @@ export function CourseCoverVisual({
           <div className="absolute bottom-10 left-8 h-24 w-40 rotate-[-7deg] rounded-[28px] border border-white/25 bg-white/10" />
           <div className="absolute bottom-20 right-10 h-28 w-44 rotate-[8deg] rounded-[28px] border border-white/25 bg-white/15" />
         </>
-      ) : (
+      ) : !isDetailVariant ? (
         <div className="absolute inset-0 bg-gradient-to-t from-deep-navy/70 via-deep-navy/10 to-transparent" />
-      )}
-      {showTextOverlay ? (
+      ) : null}
+      {showTextOverlay && !isDetailVariant ? (
         <div className="relative z-10 flex h-full flex-col justify-between gap-16">
           <StatusBadge label={capacityArea} tone={badgeToneByCourseTone[tone]} />
           <div>
