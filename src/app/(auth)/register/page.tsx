@@ -29,6 +29,8 @@ const errorMessage: Record<string, string> = {
   "registration-not-completed":
     "Registration could not be completed with these details. Try signing in or contact support.",
   "rate-limited": "Too many registration attempts. Please wait and try again.",
+  "service-unavailable":
+    "Registration is temporarily unavailable because the service could not be reached. Please try again shortly.",
   "supabase-registration-failed":
     "Registration could not be completed with the sign-in service. Please try again later.",
   "terms-required": "Please accept the Terms and Privacy statement.",
