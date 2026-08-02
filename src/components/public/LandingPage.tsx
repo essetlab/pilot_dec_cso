@@ -105,6 +105,11 @@ const displayTitles: Record<string, string> = {
   "Project Management for Local and Grassroots CSOs": "Plan and Manage Local CSO Projects with Greater Clarity",
 };
 
+const featuredCourseSlugs = [
+  "applying-human-rights-based-approach-in-cso-practice",
+  "project-management-local-grassroots-csos",
+] as const;
+
 function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCourseSummary; featured: boolean }) {
   const isAvailable = course.availability === "available";
   const requiresInvitation = course.accessState === "invitation_required";
@@ -180,12 +185,10 @@ function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCours
 }
 
 function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[] }) {
-  const available = courses.find((course) => course.availability === "available");
-  const comingSoon = courses.filter((course) => course.availability === "coming_soon").slice(0, 3);
-  const shown = [...(available ? [available] : []), ...comingSoon];
+  const shown = featuredCourseSlugs.flatMap((slug) => courses.filter((course) => course.slug === slug));
 
   return (
-    <section className="bg-white py-16 sm:py-20" aria-labelledby="featured-learning-title">
+    <section className="bg-white py-14 sm:py-16" aria-labelledby="featured-learning-title">
       <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
@@ -202,11 +205,11 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
           </ActionButton>
         </div>
         
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {shown.map((course, index) => (
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          {shown.map((course) => (
             <FeaturedCourseCard
               course={course}
-              featured={index === 0 && course.availability === "available"}
+              featured={course.slug === featuredCourseSlugs[0]}
               key={course.slug}
             />
           ))}
@@ -225,7 +228,7 @@ function LearningPathway() {
   ];
 
   return (
-    <section id="how-the-hub-works" className="border-y border-design-border bg-light-bg py-16 sm:py-20" aria-labelledby="pathway-title">
+    <section id="how-the-hub-works" className="border-y border-design-border bg-light-bg py-14 sm:py-16" aria-labelledby="pathway-title">
       <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
         <div className="text-center max-w-2xl mx-auto">
           <SectionEyebrow>How learning works</SectionEyebrow>
@@ -234,7 +237,7 @@ function LearningPathway() {
           </h2>
         </div>
 
-        <ol className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {stages.map((stage, idx) => (
             <li className="relative flex flex-col items-start" key={stage.title}>
               <div className="flex w-full items-center gap-4">
@@ -271,9 +274,9 @@ function CsoRealities() {
   ];
 
   return (
-    <section className="bg-soft-bg py-16 sm:py-20" aria-labelledby="realities-title">
+    <section className="bg-soft-bg py-14 sm:py-16" aria-labelledby="realities-title">
       <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <SectionEyebrow>Designed around CSO realities</SectionEyebrow>
             <h2 id="realities-title" className="mt-4 font-display text-3xl font-bold leading-tight text-deep-navy">
@@ -313,9 +316,9 @@ function OrgPracticeProgression() {
   ];
 
   return (
-    <section className="bg-white py-16 sm:py-20" aria-labelledby="org-practice-title">
+    <section className="bg-white py-14 sm:py-16" aria-labelledby="org-practice-title">
       <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
           <div>
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-light-bg text-dec-blue shadow-soft">
               <PeopleIcon className="h-7 w-7" />
@@ -362,9 +365,9 @@ function SafetyAccessibilityPanel() {
   ];
 
   return (
-    <section className="bg-light-bg border-y border-design-border py-16 sm:py-20" aria-labelledby="safety-assurance-title">
+    <section className="bg-light-bg border-y border-design-border py-14 sm:py-16" aria-labelledby="safety-assurance-title">
       <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
           <div>
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-soft-teal shadow-soft">
               <ShieldIcon className="h-7 w-7" />
@@ -399,10 +402,10 @@ function SafetyAccessibilityPanel() {
 
 function HomepageCTA() {
   return (
-    <section className="bg-white px-5 py-16 sm:px-7 sm:py-20 lg:px-10" aria-labelledby="cta-section-title">
-      <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-card bg-deep-navy px-6 py-12 text-white sm:px-10 lg:px-12">
+    <section className="bg-white px-5 py-14 sm:px-7 sm:py-16 lg:px-10" aria-labelledby="cta-section-title">
+      <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-card bg-deep-navy px-6 py-10 text-white sm:px-10 lg:px-12">
         <div aria-hidden="true" className="absolute -right-20 -top-28 h-72 w-72 rounded-full border-[28px] border-dec-blue/20" />
-        <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <span className="text-xs font-black uppercase tracking-[0.16em] text-[#72bee8]">
               Ready to begin?
