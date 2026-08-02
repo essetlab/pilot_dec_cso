@@ -189,6 +189,7 @@ function comingSoonCourse(
   definition: Pick<
     CatalogueCourseDefinition,
     | "displayOrder"
+    | "imageUrl"
     | "integrationStatus"
     | "legacyAliases"
     | "primaryCapacityAreaId"
@@ -213,7 +214,7 @@ function comingSoonCourse(
     featured: false,
     fullDescription: COMING_SOON_OVERVIEW,
     imageAlt: `Course cover for ${definition.title}`,
-    imageUrl: null,
+    imageUrl: definition.imageUrl,
     integrationStatus: definition.integrationStatus,
     intendedLearners: COMING_SOON_AUDIENCE,
     language: COMING_SOON_LANGUAGE,
@@ -258,7 +259,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
     featured: true,
     fullDescription: HRBA_COURSE_OVERVIEW,
     imageAlt: "Local CSO practitioners reviewing advocacy notes during a planning session.",
-    imageUrl: "/assets/demo/hrba-advocacy-course-thumbnail.svg",
+    imageUrl: "/images/courses/thumbnails/hrba-cso-practice.webp",
     integrationStatus: "integrated",
     intendedLearners:
       "Local and grassroots CSO staff, focal persons, facilitators, and programme teams applying HRBA in practical project work.",
@@ -289,6 +290,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   },
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[1],
+    imageUrl: "/images/courses/thumbnails/governance-leadership.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Governance", "Organizational Development"],
     shortDescription:
@@ -298,6 +300,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[2],
     externalCourse: comingSoonExternalCourse("external_link"),
+    imageUrl: "/images/courses/thumbnails/project-management-local-csos.webp",
     integrationStatus: "integration_pending",
     legacyAliases: ["Project Cycle Management", "Project Management"],
     shortDescription:
@@ -306,6 +309,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[3],
+    imageUrl: "/images/courses/thumbnails/meal-reporting-to-learning.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["MEAL", "Monitoring and Evaluation"],
     shortDescription:
@@ -314,6 +318,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[4],
+    imageUrl: "/images/courses/thumbnails/financial-management-compliance.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Financial Management", "Compliance"],
     shortDescription:
@@ -322,6 +327,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[5],
+    imageUrl: "/images/courses/thumbnails/strategic-planning-sustainability.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Organizational Development", "Strategic Planning"],
     shortDescription:
@@ -330,6 +336,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[6],
+    imageUrl: "/images/courses/thumbnails/people-inclusion-safeguarding.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Safeguarding", "Human Resources", "Inclusion"],
     shortDescription:
@@ -338,6 +345,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[7],
+    imageUrl: "/images/courses/thumbnails/digital-security-data-protection.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Digital Skills", "Data Use"],
     shortDescription:
@@ -346,6 +354,7 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[8],
+    imageUrl: "/images/courses/thumbnails/partnerships-networks-collective-action.webp",
     integrationStatus: "content_preparation",
     legacyAliases: [
       "Partnership and Networking",
@@ -420,7 +429,7 @@ export function toPublicCatalogueSummary(
     featured: definition.featured,
     href: `/courses/${existingSlug}`,
     imageAlt: existingHrba?.imageAlt ?? definition.imageAlt,
-    imageUrl: existingHrba?.imageUrl ?? definition.imageUrl,
+    imageUrl: definition.imageUrl ?? existingHrba?.imageUrl,
     integrationStatus: definition.integrationStatus,
     language: isAvailable
       ? existingHrba?.language ?? definition.language
