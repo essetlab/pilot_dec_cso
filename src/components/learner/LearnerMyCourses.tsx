@@ -40,9 +40,17 @@ function getSummaryCards(courses: LearnerCourseSummary[]) {
   ];
 }
 
-function ProgressBar({ label, value }: { label: string; value: number }) {
+function ProgressBar({
+  compact = false,
+  label,
+  value,
+}: {
+  compact?: boolean;
+  label: string;
+  value: number;
+}) {
   return (
-    <div className="space-y-2">
+    <div className={compact ? "space-y-1.5" : "space-y-2"}>
       <div className="flex items-center justify-between gap-4 text-xs font-semibold">
         <span className="text-muted-text">{label}</span>
         <span className="text-deep-navy font-bold">{value}%</span>
@@ -52,7 +60,7 @@ function ProgressBar({ label, value }: { label: string; value: number }) {
         aria-valuemax={100}
         aria-valuemin={0}
         aria-valuenow={value}
-        className="h-2 overflow-hidden rounded-full bg-soft-bg"
+        className={`${compact ? "h-1.5" : "h-2"} overflow-hidden rounded-full bg-soft-bg`}
         role="progressbar"
       >
         <div
@@ -201,28 +209,39 @@ function LearnerCourseCard({
           : "gray";
 
   return (
-    <article className="rounded-card border border-design-border bg-white p-6 shadow-soft hover:shadow-card transition">
-      <div className="grid gap-6 lg:grid-cols-[1fr_240px] lg:items-start">
+    <article className="rounded-card border border-design-border bg-white p-4 shadow-soft transition hover:shadow-card sm:p-5">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_210px] md:items-start">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <StatusBadge label={statusLabel} tone={statusTone} />
             <StatusBadge label={capacityArea} tone="blue" />
-            {certificateStatus && <StatusBadge label={certificateStatus} tone="gold" />}
+            {certificateStatus ? (
+              <span className="inline-flex min-h-6 items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-3xs font-semibold leading-none text-amber-800">
+                {certificateStatus}
+              </span>
+            ) : null}
             {feedbackStatus && (
-              <StatusBadge
-                label={feedbackStatus}
-                tone={feedbackStatus === "Feedback submitted" ? "green" : "gray"}
-              />
+              <span
+                className={`inline-flex min-h-6 items-center rounded-full border px-2.5 py-1 text-3xs font-semibold leading-none ${
+                  feedbackStatus === "Feedback submitted"
+                    ? "border-[#3a6118]/25 bg-[#e8f5d6] text-[#3a6118]"
+                    : "border-slate-200 bg-slate-50 text-slate-600"
+                }`}
+              >
+                {feedbackStatus}
+              </span>
             )}
           </div>
-          <h2 className="mt-4 text-xl font-bold text-deep-navy leading-snug">
+          <h2 className="mt-3 text-lg font-bold leading-snug text-deep-navy sm:text-xl">
             {title}
           </h2>
-          <p className="mt-2 text-xs text-muted-text leading-normal">{description}</p>
-          <dl className="mt-5 grid gap-4 text-xs sm:grid-cols-2">
-            <div className="rounded-control bg-light-bg p-4 border border-design-border/50">
+          <p className="mt-1.5 line-clamp-2 max-w-3xl text-xs leading-normal text-muted-text">
+            {description}
+          </p>
+          <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+            <div className="min-w-0 rounded-control border border-design-border/50 bg-light-bg px-3 py-2.5">
               <dt className="font-semibold text-muted-text uppercase text-3xs">Current lesson</dt>
-              <dd className="mt-1 font-bold text-deep-navy leading-normal">
+              <dd className="mt-0.5 font-bold leading-normal text-deep-navy">
                 {isCertificateIssued
                   ? "Course complete"
                   : isFinalAssessment
@@ -230,20 +249,20 @@ function LearnerCourseCard({
                     : currentLesson}
               </dd>
             </div>
-            <div className="rounded-control bg-light-bg p-4 border border-design-border/50">
+            <div className="min-w-0 rounded-control border border-design-border/50 bg-light-bg px-3 py-2.5">
               <dt className="font-semibold text-muted-text uppercase text-3xs">
                 {certificateCode ? "Certificate code" : "Estimated time"}
               </dt>
-              <dd className="mt-1 font-mono font-bold text-deep-navy">
+              <dd className="mt-0.5 break-words font-mono font-bold text-deep-navy">
                 {certificateCode ?? duration}
               </dd>
             </div>
           </dl>
-          <div className="mt-5">
-            <ProgressBar label={`${title} progress`} value={progress} />
+          <div className="mt-4">
+            <ProgressBar compact label={`${title} progress`} value={progress} />
           </div>
         </div>
-        <div className="flex flex-col gap-2.5 rounded-control border border-design-border bg-light-bg p-4">
+        <div className="rounded-control border border-design-border bg-light-bg/70 p-3">
           <ActionButton
             forceDocumentNavigation={shouldUseDocumentLaunch(primaryActionHref ?? learnerHref)}
             href={primaryActionHref ?? learnerHref}
@@ -252,48 +271,52 @@ function LearnerCourseCard({
           >
             {primaryAction}
           </ActionButton>
-          {certificateDownloadHref ? (
-            <ActionButton href={certificateDownloadHref} variant="success" className="w-full text-center justify-center font-bold text-xs">
-              Download certificate
-            </ActionButton>
-          ) : null}
-          {verifyCertificateHref ? (
-            <ActionButton href={verifyCertificateHref} variant="outline" className="w-full text-center justify-center font-semibold text-xs">
-              Verify certificate
-            </ActionButton>
-          ) : null}
-          {(progress > 0 || certificateCode) && feedbackHref ? (
-            <ActionButton href={feedbackHref} variant="outline" className="w-full text-center justify-center font-semibold text-xs">
-              Give feedback
-            </ActionButton>
-          ) : null}
-          {showHrbaPilotFeedback ? (
-            <ActionButton
-              forceDocumentNavigation
-              href={HRBA_PILOT_FEEDBACK_URL}
-              rel="noopener noreferrer"
-              target="_blank"
-              variant="outline"
-              className="w-full text-center justify-center font-semibold text-xs"
-            >
-              Share pilot feedback
-            </ActionButton>
-          ) : null}
-          {secondaryActionHref || (isInProgress && finalTestHref) ? (
-            <ActionButton
-              forceDocumentNavigation={shouldUseDocumentLaunch(secondaryActionHref ?? finalTestHref)}
-              href={secondaryActionHref ?? finalTestHref}
-              prefetch={
-                shouldUseDocumentLaunch(secondaryActionHref ?? finalTestHref)
-                  ? false
-                  : undefined
-              }
-              variant="secondary"
-              className="w-full text-center justify-center font-semibold text-xs"
-            >
-              {secondaryAction || (isInProgress ? "Final test" : "View overview")}
-            </ActionButton>
-          ) : null}
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 md:grid-cols-1">
+            {certificateDownloadHref ? (
+              <ActionButton href={certificateDownloadHref} size="sm" variant="success" className="w-full text-center justify-center font-bold text-xs">
+                Download certificate
+              </ActionButton>
+            ) : null}
+            {verifyCertificateHref ? (
+              <ActionButton href={verifyCertificateHref} size="sm" variant="outline" className="w-full text-center justify-center font-semibold text-xs">
+                Verify certificate
+              </ActionButton>
+            ) : null}
+            {(progress > 0 || certificateCode) && feedbackHref ? (
+              <ActionButton href={feedbackHref} size="sm" variant="outline" className="w-full text-center justify-center font-semibold text-xs">
+                Give feedback
+              </ActionButton>
+            ) : null}
+            {showHrbaPilotFeedback ? (
+              <ActionButton
+                forceDocumentNavigation
+                href={HRBA_PILOT_FEEDBACK_URL}
+                rel="noopener noreferrer"
+                size="sm"
+                target="_blank"
+                variant="outline"
+                className="w-full text-center justify-center font-semibold text-xs"
+              >
+                Share pilot feedback
+              </ActionButton>
+            ) : null}
+            {secondaryActionHref || (isInProgress && finalTestHref) ? (
+              <ActionButton
+                forceDocumentNavigation={shouldUseDocumentLaunch(secondaryActionHref ?? finalTestHref)}
+                href={secondaryActionHref ?? finalTestHref}
+                prefetch={
+                  shouldUseDocumentLaunch(secondaryActionHref ?? finalTestHref)
+                    ? false
+                    : undefined
+                }
+                size="sm"
+                variant="secondary"
+                className="w-full text-center justify-center font-semibold text-xs"
+              >
+                {secondaryAction || (isInProgress ? "Final test" : "View overview")}
+              </ActionButton>
+            ) : null}
+          </div>
         </div>
       </div>
     </article>
