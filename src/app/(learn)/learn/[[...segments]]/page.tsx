@@ -24,6 +24,7 @@ import {
 } from "@/lib/course-data";
 import { getExternalCourseLaunchData } from "@/lib/external-course-workflow";
 import { getCourseFeedbackState } from "@/lib/feedback-workflow";
+import { getHrbaLegacyLearnerLaunchRedirect } from "@/lib/hrba-learner-route";
 import { getLearnerProfileData } from "@/lib/learner-profile-workflow";
 import { isComingSoonCatalogueSlug } from "@/lib/public-course-catalogue";
 import {
@@ -84,6 +85,12 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
 
   if (!definition) {
     notFound();
+  }
+
+  const hrbaLegacyLaunchRedirect =
+    getHrbaLegacyLearnerLaunchRedirect(segments);
+  if (hrbaLegacyLaunchRedirect) {
+    redirect(hrbaLegacyLaunchRedirect);
   }
 
   if (

@@ -56,6 +56,7 @@
     "import:hrba-advocacy-course": "node --import jiti/register scripts/import-hrba-advocacy-course.ts",
     "register:hrba-external-course": "node --import jiti/register scripts/register-hrba-external-course.ts",
     "verify:hrba-external-course": "node --import jiti/register scripts/verify-hrba-external-course.ts",
+    "verify:hrba-legacy-learner-route": "node --import jiti/register scripts/verify-hrba-legacy-learner-route.ts",
     "verify:hrba-course-import": "node --import jiti/register scripts/verify-hrba-course-import.ts",
     "verify:course-thumbnail": "node --import jiti/register scripts/verify-course-thumbnail.ts",
     "start": "next start",
