@@ -1,15 +1,22 @@
 import { ActionButton, SectionHeader, StatusBadge } from "@/components/ui";
 import type { LearnerCertificateSummary } from "@/lib/certificate-workflow";
 import type { LearnerCourseSummary } from "@/lib/course-types";
+import {
+  isAssessmentReady,
+  selectDashboardAttention,
+  selectDashboardNextAction,
+  type DashboardNextAction,
+} from "./learner-dashboard-state";
 
 type MetricTone = "blue" | "green" | "gray" | "orange";
 
 function getSummaryCards(courses: LearnerCourseSummary[], certificatesCount: number) {
   const inProgress = courses.filter((course) => course.statusLabel === "In progress").length;
+  const assessmentReady = courses.filter(isAssessmentReady).length;
   const completed = courses.filter((course) =>
+    !isAssessmentReady(course) &&
     ["Completed", "Certificate issued"].includes(course.statusLabel),
   ).length;
-  const available = courses.filter((course) => course.statusLabel === "Not started").length;
 
   return [
     {
@@ -18,19 +25,19 @@ function getSummaryCards(courses: LearnerCourseSummary[], certificatesCount: num
       value: inProgress,
     },
     {
+      label: "Assessment ready",
+      tone: "orange" as const,
+      value: assessmentReady,
+    },
+    {
       label: "Completed",
       tone: "green" as const,
       value: completed,
     },
     {
       label: "Certificates earned",
-      tone: "orange" as const,
-      value: certificatesCount,
-    },
-    {
-      label: "Not started",
       tone: "gray" as const,
-      value: available,
+      value: certificatesCount,
     },
   ];
 }
@@ -115,45 +122,46 @@ function DashboardIntroduction({ learnerName }: { learnerName: string }) {
   );
 }
 
-function getNextActionHeading(course: LearnerCourseSummary) {
-  if (course.statusLabel === "Certificate issued") {
-    return "Your certificate is ready";
-  }
-  if (course.statusLabel === "Completed") {
-    return "Course completed";
-  }
-  if (course.statusLabel === "Final assessment available") {
-    return "Complete your final assessment";
-  }
-  if (course.statusLabel === "In progress" || course.progress > 0) {
-    return "Continue your learning";
-  }
-  return "Start your learning";
+function getNextActionHeading(action: DashboardNextAction) {
+  if (action.kind === "assessment") return "Complete your final assessment";
+  if (action.kind === "in-progress") return "Continue your learning";
+  if (action.kind === "feedback") return "Share course feedback";
+  if (action.kind === "certificate") return "Your certificate is ready";
+  if (action.kind === "not-started") return "Start your next course";
+  return action.kind === "my-courses" ? "Review your learning" : "Learning support";
 }
 
-function getNextActionContext(course: LearnerCourseSummary) {
-  if (course.statusLabel === "Certificate issued") {
+function getNextActionContext(action: DashboardNextAction) {
+  if (action.kind === "assessment") {
+    return "You have completed the course learning and are ready for the final assessment.";
+  }
+  if (action.kind === "in-progress") {
+    return `Current lesson: ${action.course?.currentLesson || "Continue from your latest lesson"}`;
+  }
+  if (action.kind === "feedback") {
+    return "Your course is complete. Share your experience to finish this learning step.";
+  }
+  if (action.kind === "certificate") {
     return "Your learning is complete and your certificate is available.";
   }
-  if (course.statusLabel === "Completed") {
-    return "You completed this course. You can review the learning or share feedback.";
-  }
-  if (course.statusLabel === "Final assessment available") {
-    return "Your course progress is ready for the final assessment.";
-  }
-  if (course.statusLabel === "In progress" || course.progress > 0) {
-    return `Current lesson: ${course.currentLesson || "Continue from your latest lesson"}`;
-  }
-  return "This course is ready when you are.";
+  if (action.kind === "not-started") return "This course is ready when you are.";
+  if (action.kind === "my-courses") return "Open My Courses to review your available learning.";
+  return "Contact support for help accessing your learning.";
 }
 
-function NextActionCard({ course }: { course: LearnerCourseSummary }) {
-  const isCompleted = ["Completed", "Certificate issued"].includes(course.statusLabel);
-  const showProgress = course.progress > 0 || isCompleted;
-  const secondaryHref = course.certificateDownloadHref ?? course.secondaryActionHref;
-  const secondaryLabel = course.certificateDownloadHref
-    ? "Download certificate"
-    : course.secondaryAction;
+function NextActionCard({ action }: { action: DashboardNextAction }) {
+  const { course } = action;
+  const showProgress = course
+    ? action.kind === "assessment" || action.kind === "in-progress" || course.progress > 0
+    : false;
+  const secondaryHref = course
+    ? course.certificateDownloadHref ?? course.secondaryActionHref
+    : undefined;
+  const secondaryLabel = course
+    ? course.certificateDownloadHref
+      ? "Download certificate"
+      : course.secondaryAction
+    : undefined;
 
   return (
     <section aria-labelledby="next-action-heading" className="rounded-[20px] border border-design-border bg-white p-5 shadow-soft sm:p-6">
@@ -163,21 +171,25 @@ function NextActionCard({ course }: { course: LearnerCourseSummary }) {
             <span className="inline-flex min-h-7 items-center rounded-full bg-dec-blue/10 px-3 py-1 text-xs font-bold text-dec-blue">
               Next action
             </span>
-            <StatusBadge
-              label={course.statusLabel}
-              tone={course.certificateCode ? "gold" : course.progress > 0 ? "green" : "gray"}
-            />
+            {course ? (
+              <StatusBadge
+                label={action.kind === "assessment" ? "Assessment ready" : course.statusLabel}
+                tone={course.certificateCode ? "gold" : course.progress > 0 ? "green" : "gray"}
+              />
+            ) : null}
           </div>
           <h2 id="next-action-heading" className="mt-3 text-xl font-bold text-deep-navy">
-            {getNextActionHeading(course)}
+            {getNextActionHeading(action)}
           </h2>
-          <h3 className="mt-1.5 text-lg font-semibold leading-snug text-dark-ink">
-            {course.title}
-          </h3>
+          {course ? (
+            <h3 className="mt-1.5 text-lg font-semibold leading-snug text-dark-ink">
+              {course.title}
+            </h3>
+          ) : null}
           <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-text">
-            {getNextActionContext(course)}
+            {getNextActionContext(action)}
           </p>
-          {showProgress ? (
+          {showProgress && course ? (
             <div className="mt-4 max-w-2xl">
               <ProgressBar label="Course progress" value={course.progress} />
             </div>
@@ -186,15 +198,15 @@ function NextActionCard({ course }: { course: LearnerCourseSummary }) {
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row lg:w-[210px] lg:flex-col">
           <ActionButton
-            aria-label={`${course.primaryAction}: ${course.title}`}
-            forceDocumentNavigation={shouldUseDocumentLaunch(course.primaryActionHref)}
-            href={course.primaryActionHref}
-            prefetch={shouldUseDocumentLaunch(course.primaryActionHref) ? false : undefined}
+            aria-label={course ? `${action.actionLabel}: ${course.title}` : action.actionLabel}
+            forceDocumentNavigation={shouldUseDocumentLaunch(action.actionHref)}
+            href={action.actionHref}
+            prefetch={shouldUseDocumentLaunch(action.actionHref) ? false : undefined}
             className="min-h-11 w-full text-center font-bold"
           >
-            {course.primaryAction}
+            {action.actionLabel}
           </ActionButton>
-          {secondaryHref ? (
+          {course && secondaryHref && secondaryLabel && secondaryHref !== action.actionHref ? (
             <ActionButton
               aria-label={`${secondaryLabel}: ${course.title}`}
               forceDocumentNavigation={shouldUseDocumentLaunch(secondaryHref)}
@@ -214,14 +226,14 @@ function NextActionCard({ course }: { course: LearnerCourseSummary }) {
 }
 
 function ActiveCourseCard({ course }: { course: LearnerCourseSummary }) {
-  const isCompleted = ["Completed", "Certificate issued"].includes(course.statusLabel);
+  const assessmentReady = isAssessmentReady(course);
 
   return (
     <article className="rounded-card border border-design-border bg-white p-4 shadow-soft">
       <div className="flex flex-wrap items-center gap-1.5">
         <StatusBadge
-          label={course.statusLabel}
-          tone={course.certificateCode ? "gold" : course.progress > 0 ? "green" : "gray"}
+          label={assessmentReady ? "Assessment ready" : course.statusLabel}
+          tone={assessmentReady ? "orange" : course.progress > 0 ? "green" : "gray"}
         />
         {course.capacityArea ? (
           <span className="text-xs font-semibold text-dec-blue">{course.capacityArea}</span>
@@ -229,7 +241,9 @@ function ActiveCourseCard({ course }: { course: LearnerCourseSummary }) {
       </div>
       <h3 className="mt-3 text-base font-bold leading-snug text-deep-navy">{course.title}</h3>
       <p className="mt-1.5 line-clamp-1 text-xs text-muted-text">
-        {isCompleted ? "Course complete" : `Current lesson: ${course.currentLesson}`}
+        {assessmentReady
+          ? "Course learning complete — final assessment ready"
+          : `Current lesson: ${course.currentLesson}`}
       </p>
       <div className="mt-3">
         <ProgressBar label="Progress" value={course.progress} />
@@ -241,7 +255,7 @@ function ActiveCourseCard({ course }: { course: LearnerCourseSummary }) {
           href={course.primaryActionHref}
           prefetch={shouldUseDocumentLaunch(course.primaryActionHref) ? false : undefined}
           size="sm"
-          variant={isCompleted ? "secondary" : "primary"}
+          variant="primary"
           className="min-h-11 w-full text-center text-xs sm:w-auto"
         >
           {course.primaryAction}
@@ -251,31 +265,20 @@ function ActiveCourseCard({ course }: { course: LearnerCourseSummary }) {
   );
 }
 
-function AttentionCard({ course }: { course: LearnerCourseSummary }) {
-  const isAssessment = course.statusLabel === "Final assessment available";
-  const isFeedback =
-    ["Completed", "Certificate issued"].includes(course.statusLabel) &&
-    course.feedbackStatus === "Feedback not submitted";
-  const heading = isAssessment
+function AttentionCard({ action }: { action: DashboardNextAction }) {
+  const { course } = action;
+  if (!course) return null;
+
+  const heading = action.kind === "assessment"
     ? "Final assessment ready"
-    : isFeedback
+    : action.kind === "feedback"
       ? "Course feedback is waiting"
       : "Certificate ready";
-  const description = isAssessment
+  const description = action.kind === "assessment"
     ? `Complete the final assessment for ${course.title}.`
-    : isFeedback
+    : action.kind === "feedback"
       ? `Share feedback on ${course.title}.`
       : `Your certificate for ${course.title} is available.`;
-  const actionHref = isAssessment
-    ? course.primaryActionHref
-    : isFeedback
-      ? course.feedbackHref
-      : course.primaryActionHref;
-  const actionLabel = isAssessment
-    ? course.primaryAction
-    : isFeedback
-      ? "Give feedback"
-      : course.primaryAction;
 
   return (
     <article className="rounded-card border border-amber-200 bg-amber-50/60 p-4 shadow-soft">
@@ -284,15 +287,15 @@ function AttentionCard({ course }: { course: LearnerCourseSummary }) {
       <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-text">{description}</p>
       <div className="mt-3">
         <ActionButton
-          aria-label={`${actionLabel}: ${course.title}`}
-          forceDocumentNavigation={shouldUseDocumentLaunch(actionHref)}
-          href={actionHref}
-          prefetch={shouldUseDocumentLaunch(actionHref) ? false : undefined}
+          aria-label={`${action.actionLabel}: ${course.title}`}
+          forceDocumentNavigation={shouldUseDocumentLaunch(action.actionHref)}
+          href={action.actionHref}
+          prefetch={shouldUseDocumentLaunch(action.actionHref) ? false : undefined}
           size="sm"
           variant="warning"
           className="min-h-11 w-full text-center text-xs sm:w-auto"
         >
-          {actionLabel}
+          {action.actionLabel}
         </ActionButton>
       </div>
     </article>
@@ -403,20 +406,15 @@ export function LearnerDashboard({
   certificateError?: { code: string; message: string };
   learnerName: string;
 }) {
-  // Preserve the existing Phase 1 current-focus selection exactly.
-  const primaryCourse =
-    courses.find((course) => course.statusLabel === "In progress") ??
-    courses.find((course) => course.progress > 0) ??
-    courses.find((course) => course.statusLabel === "Not started") ??
-    courses[0];
-
+  const primaryAction = selectDashboardNextAction(courses);
+  const primaryCourse = primaryAction.course;
   const summaryCards = getSummaryCards(courses, certificates.length);
-  const activeAndCompletedCourses = courses.filter((course) =>
-    ["In progress", "Completed", "Certificate issued"].includes(course.statusLabel),
+  const activeLearningCourses = courses.filter(
+    (course) => course.statusLabel === "In progress" || isAssessmentReady(course),
   );
   const availableCourses = courses.filter((course) => course.statusLabel === "Not started");
 
-  const activeCoursesWithoutFocus = activeAndCompletedCourses.filter(
+  const activeCoursesWithoutFocus = activeLearningCourses.filter(
     (course) => course.id !== primaryCourse?.id,
   );
   const activeCoursePreview = activeCoursesWithoutFocus.slice(0, 2);
@@ -425,34 +423,20 @@ export function LearnerDashboard({
   );
   const availableCoursePreview = availableCoursesWithoutFocus.slice(0, 3);
 
-  const finalAssessmentAttention = courses.find(
-    (course) =>
-      course.id !== primaryCourse?.id && course.statusLabel === "Final assessment available",
-  );
-  const feedbackAttention = courses.find(
-    (course) =>
-      ["Completed", "Certificate issued"].includes(course.statusLabel) &&
-      course.feedbackStatus === "Feedback not submitted",
-  );
-  const certificateAttention = courses.find(
-    (course) =>
-      course.id !== primaryCourse?.id && course.statusLabel === "Certificate issued",
-  );
-  const attentionCourse =
-    finalAssessmentAttention ?? feedbackAttention ?? certificateAttention;
+  const attentionAction = selectDashboardAttention(courses, primaryAction);
   const recentAchievement = certificates.find(
-    (certificate) => certificate.certificateCode !== primaryCourse?.certificateCode,
+    (certificate) => certificate.certificateCode !== primaryCourse?.certificateCode || primaryAction.kind === "feedback",
   );
 
   return (
     <div className="space-y-6 lg:space-y-8">
       <DashboardIntroduction learnerName={learnerName} />
 
-      {courses.length === 0 || !primaryCourse ? (
+      {courses.length === 0 ? (
         <EmptyDashboardState />
       ) : (
         <>
-          <NextActionCard course={primaryCourse} />
+          <NextActionCard action={primaryAction} />
 
           <section aria-labelledby="progress-summary-heading" className="space-y-3">
             <SectionHeader
@@ -490,9 +474,9 @@ export function LearnerDashboard({
             </section>
           ) : null}
 
-          {attentionCourse || recentAchievement || certificateError ? (
+          {attentionAction || recentAchievement || certificateError ? (
             <section aria-label="Learning attention and recent achievement" className="grid gap-3 md:grid-cols-2">
-              {attentionCourse ? <AttentionCard course={attentionCourse} /> : null}
+              {attentionAction ? <AttentionCard action={attentionAction} /> : null}
               {recentAchievement ? <RecentAchievement certificate={recentAchievement} /> : null}
               {certificateError ? (
                 <article className="rounded-card border border-amber-200 bg-amber-50/60 p-4 shadow-soft">
