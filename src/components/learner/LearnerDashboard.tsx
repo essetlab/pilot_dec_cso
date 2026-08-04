@@ -1,6 +1,8 @@
-import { ActionButton, MetricCard, SectionHeader, StatusBadge } from "@/components/ui";
-import type { LearnerCourseSummary } from "@/lib/course-types";
+import { ActionButton, SectionHeader, StatusBadge } from "@/components/ui";
 import type { LearnerCertificateSummary } from "@/lib/certificate-workflow";
+import type { LearnerCourseSummary } from "@/lib/course-types";
+
+type MetricTone = "blue" | "green" | "gray" | "orange";
 
 function getSummaryCards(courses: LearnerCourseSummary[], certificatesCount: number) {
   const inProgress = courses.filter((course) => course.statusLabel === "In progress").length;
@@ -11,64 +13,64 @@ function getSummaryCards(courses: LearnerCourseSummary[], certificatesCount: num
 
   return [
     {
-      helperText: "Active learning paths underway.",
-      label: "Courses in progress",
+      label: "In progress",
       tone: "blue" as const,
       value: inProgress,
-      icon: (
-        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      )
     },
     {
-      helperText: "Finished courses.",
-      label: "Courses completed",
+      label: "Completed",
       tone: "green" as const,
       value: completed,
-      icon: (
-        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
     },
     {
-      helperText: "Verified certificates issued.",
       label: "Certificates earned",
       tone: "orange" as const,
       value: certificatesCount,
-      icon: (
-        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-        </svg>
-      )
     },
     {
-      helperText: "Learning paths to explore.",
-      label: "Available courses",
+      label: "Not started",
       tone: "gray" as const,
       value: available,
-      icon: (
-        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-        </svg>
-      )
     },
   ];
 }
 
-function ProgressBar({
+const metricToneClasses: Record<MetricTone, string> = {
+  blue: "bg-dec-blue/10 text-dec-blue",
+  green: "bg-dec-green/15 text-[#4f7c24]",
+  gray: "bg-soft-bg text-muted-text",
+  orange: "bg-orange-50 text-orange-700",
+};
+
+function CompactMetricCard({
   label,
+  tone,
   value,
 }: {
   label: string;
+  tone: MetricTone;
   value: number;
 }) {
   return (
-    <div className="space-y-2">
+    <article className="rounded-card border border-design-border bg-white px-4 py-3.5 shadow-soft">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-muted-text">{label}</p>
+        <span
+          aria-hidden="true"
+          className={`size-2.5 shrink-0 rounded-full ${metricToneClasses[tone]}`}
+        />
+      </div>
+      <p className="mt-1.5 text-2xl font-bold tracking-tight text-deep-navy">{value}</p>
+    </article>
+  );
+}
+
+function ProgressBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-4 text-xs font-semibold">
         <span className="text-muted-text">{label}</span>
-        <span className="text-deep-navy font-bold">{value}%</span>
+        <span className="font-bold text-deep-navy">{value}%</span>
       </div>
       <div
         aria-label={`${label}: ${value}% complete`}
@@ -91,243 +93,302 @@ function shouldUseDocumentLaunch(href?: string) {
   return href?.startsWith("/learn/courses/") && href.endsWith("/external");
 }
 
-function ContinueLearningCard({ course }: { course: LearnerCourseSummary }) {
-  const isStarted = course.progress > 0;
+function DashboardIntroduction({ learnerName }: { learnerName: string }) {
+  return (
+    <section className="relative overflow-hidden rounded-[24px] bg-deep-navy px-5 py-6 text-white shadow-hero sm:px-6 lg:px-8 lg:py-7">
+      <div
+        aria-hidden="true"
+        className="absolute -right-10 -top-14 h-40 w-40 rounded-full border-[18px] border-dec-blue/10"
+      />
+      <div className="relative z-10 max-w-2xl">
+        <p className="text-2xs font-extrabold uppercase tracking-[0.16em] text-[#72bee8]">
+          Learner dashboard
+        </p>
+        <h1 className="mt-2 font-display text-3xl font-bold leading-tight sm:text-4xl">
+          Welcome back, {learnerName || "Learner"}
+        </h1>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
+          See your next learning step, track progress, and find support in one place.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function getNextActionHeading(course: LearnerCourseSummary) {
+  if (course.statusLabel === "Certificate issued") {
+    return "Your certificate is ready";
+  }
+  if (course.statusLabel === "Completed") {
+    return "Course completed";
+  }
+  if (course.statusLabel === "Final assessment available") {
+    return "Complete your final assessment";
+  }
+  if (course.statusLabel === "In progress" || course.progress > 0) {
+    return "Continue your learning";
+  }
+  return "Start your learning";
+}
+
+function getNextActionContext(course: LearnerCourseSummary) {
+  if (course.statusLabel === "Certificate issued") {
+    return "Your learning is complete and your certificate is available.";
+  }
+  if (course.statusLabel === "Completed") {
+    return "You completed this course. You can review the learning or share feedback.";
+  }
+  if (course.statusLabel === "Final assessment available") {
+    return "Your course progress is ready for the final assessment.";
+  }
+  if (course.statusLabel === "In progress" || course.progress > 0) {
+    return `Current lesson: ${course.currentLesson || "Continue from your latest lesson"}`;
+  }
+  return "This course is ready when you are.";
+}
+
+function NextActionCard({ course }: { course: LearnerCourseSummary }) {
   const isCompleted = ["Completed", "Certificate issued"].includes(course.statusLabel);
+  const showProgress = course.progress > 0 || isCompleted;
+  const secondaryHref = course.certificateDownloadHref ?? course.secondaryActionHref;
+  const secondaryLabel = course.certificateDownloadHref
+    ? "Download certificate"
+    : course.secondaryAction;
 
   return (
-    <article className="rounded-card border border-design-border bg-white p-6 shadow-soft lg:p-7 relative overflow-hidden transition hover:border-dec-green/30">
-      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-dec-green/5 blur-2xl" aria-hidden="true" />
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between relative z-10">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-3xs font-black uppercase tracking-wider text-dec-blue bg-dec-blue/10 px-2 py-0.5 rounded">
-              Current Focus
+    <section aria-labelledby="next-action-heading" className="rounded-[20px] border border-design-border bg-white p-5 shadow-soft sm:p-6">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex min-h-7 items-center rounded-full bg-dec-blue/10 px-3 py-1 text-xs font-bold text-dec-blue">
+              Next action
             </span>
-            <StatusBadge label={course.statusLabel} tone={course.certificateCode ? "gold" : isStarted ? "green" : "gray"} />
-            {course.capacityArea && <StatusBadge label={course.capacityArea} tone="blue" />}
-          </div>
-          <h2 className="mt-4 text-xl font-bold leading-snug text-deep-navy">
-            {course.title}
-          </h2>
-          <p className="mt-2.5 text-xs leading-normal text-muted-text max-w-xl">
-            {isCompleted
-              ? "Course completed successfully. You can download your completion certificate or review the content at any time."
-              : isStarted
-                ? `Current module: ${course.currentModule || "Introductory module"} • Next lesson: ${course.currentLesson}`
-                : "Register or begin the introductory lesson to start tracking your progress."}
-          </p>
-          <div className="mt-5 max-w-lg">
-            <ProgressBar
-              label="Course progress"
-              value={course.progress}
+            <StatusBadge
+              label={course.statusLabel}
+              tone={course.certificateCode ? "gold" : course.progress > 0 ? "green" : "gray"}
             />
           </div>
-          {course.feedbackStatus && (
-            <p className="mt-3 text-3xs font-semibold text-dec-blue bg-dec-blue/5 px-2 py-0.5 rounded inline-block">
-              {course.feedbackStatus}
-            </p>
-          )}
+          <h2 id="next-action-heading" className="mt-3 text-xl font-bold text-deep-navy">
+            {getNextActionHeading(course)}
+          </h2>
+          <h3 className="mt-1.5 text-lg font-semibold leading-snug text-dark-ink">
+            {course.title}
+          </h3>
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-text">
+            {getNextActionContext(course)}
+          </p>
+          {showProgress ? (
+            <div className="mt-4 max-w-2xl">
+              <ProgressBar label="Course progress" value={course.progress} />
+            </div>
+          ) : null}
         </div>
-        <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row lg:flex-col sm:w-auto w-full">
+
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row lg:w-[210px] lg:flex-col">
           <ActionButton
+            aria-label={`${course.primaryAction}: ${course.title}`}
             forceDocumentNavigation={shouldUseDocumentLaunch(course.primaryActionHref)}
             href={course.primaryActionHref}
             prefetch={shouldUseDocumentLaunch(course.primaryActionHref) ? false : undefined}
-            size="md"
-            className="w-full sm:w-auto text-center justify-center font-bold text-sm"
+            className="min-h-11 w-full text-center font-bold"
           >
-            {isCompleted ? "Review course" : isStarted ? "Resume course" : "Start course"}
+            {course.primaryAction}
           </ActionButton>
-          
-          {course.certificateDownloadHref ? (
+          {secondaryHref ? (
             <ActionButton
-              href={course.certificateDownloadHref}
-              variant="success"
-              className="w-full sm:w-auto text-center justify-center font-bold text-sm"
-            >
-              Download certificate
-            </ActionButton>
-          ) : course.secondaryActionHref ? (
-            <ActionButton
-              forceDocumentNavigation={shouldUseDocumentLaunch(course.secondaryActionHref)}
-              href={course.secondaryActionHref}
-              prefetch={shouldUseDocumentLaunch(course.secondaryActionHref) ? false : undefined}
+              aria-label={`${secondaryLabel}: ${course.title}`}
+              forceDocumentNavigation={shouldUseDocumentLaunch(secondaryHref)}
+              href={secondaryHref}
+              prefetch={shouldUseDocumentLaunch(secondaryHref) ? false : undefined}
+              size="sm"
               variant="secondary"
-              className="w-full sm:w-auto text-center justify-center font-semibold text-sm"
+              className="min-h-11 w-full text-center text-xs"
             >
-              {course.secondaryAction || "View details"}
+              {secondaryLabel}
             </ActionButton>
           ) : null}
-
-          {(isStarted || isCompleted) && course.feedbackHref && (
-            <ActionButton
-              href={course.feedbackHref}
-              variant="outline"
-              className="w-full sm:w-auto text-center justify-center font-semibold text-sm"
-            >
-              Give feedback
-            </ActionButton>
-          )}
         </div>
       </div>
-    </article>
+    </section>
   );
 }
 
-function LearnerCourseCard({ course }: { course: LearnerCourseSummary }) {
-  const isStarted = course.progress > 0;
+function ActiveCourseCard({ course }: { course: LearnerCourseSummary }) {
   const isCompleted = ["Completed", "Certificate issued"].includes(course.statusLabel);
 
   return (
-    <article className="rounded-card border border-design-border bg-white p-5 shadow-soft hover:shadow-card hover:border-dec-green/30 transition flex flex-col justify-between">
-      <div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <StatusBadge label={course.statusLabel} tone={course.certificateCode ? "gold" : isStarted ? "green" : "gray"} />
-          {course.capacityArea && <StatusBadge label={course.capacityArea} tone="blue" />}
-        </div>
-        <h3 className="mt-3.5 text-base font-bold text-deep-navy leading-snug">
-          {course.title}
-        </h3>
-        <p className="mt-2 text-xs text-muted-text line-clamp-2">
-          {course.description || "Practical case-led capacity building online learning."}
-        </p>
+    <article className="rounded-card border border-design-border bg-white p-4 shadow-soft">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <StatusBadge
+          label={course.statusLabel}
+          tone={course.certificateCode ? "gold" : course.progress > 0 ? "green" : "gray"}
+        />
+        {course.capacityArea ? (
+          <span className="text-xs font-semibold text-dec-blue">{course.capacityArea}</span>
+        ) : null}
       </div>
-      <div className="mt-5 space-y-4">
+      <h3 className="mt-3 text-base font-bold leading-snug text-deep-navy">{course.title}</h3>
+      <p className="mt-1.5 line-clamp-1 text-xs text-muted-text">
+        {isCompleted ? "Course complete" : `Current lesson: ${course.currentLesson}`}
+      </p>
+      <div className="mt-3">
         <ProgressBar label="Progress" value={course.progress} />
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <ActionButton
-            forceDocumentNavigation={shouldUseDocumentLaunch(course.primaryActionHref)}
-            href={course.primaryActionHref}
-            prefetch={shouldUseDocumentLaunch(course.primaryActionHref) ? false : undefined}
-            size="sm"
-            className="font-bold shrink-0 text-xs"
-            variant={isCompleted ? "secondary" : "primary"}
-          >
-            {isCompleted ? "Review" : isStarted ? "Resume" : "Start"}
-          </ActionButton>
-          
-          {course.certificateDownloadHref && (
-            <ActionButton href={course.certificateDownloadHref} size="sm" variant="success" className="font-bold text-xs">
-              PDF
-            </ActionButton>
-          )}
-
-          {course.feedbackHref && (isStarted || isCompleted) && (
-            <ActionButton href={course.feedbackHref} size="sm" variant="outline" className="text-xs">
-              Feedback
-            </ActionButton>
-          )}
-        </div>
       </div>
-    </article>
-  );
-}
-
-function DashboardCertificateCard({ certificate }: { certificate: LearnerCertificateSummary }) {
-  return (
-    <article className="rounded-card border border-design-border bg-white p-5 shadow-soft flex flex-col justify-between hover:shadow-card hover:border-dec-green/20 transition">
-      <div>
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-3xs font-extrabold uppercase tracking-wider text-orange-700 bg-orange-50 px-2 py-0.5 rounded">
-            Issued
-          </span>
-          <span className="text-3xs text-muted-text font-medium">
-            {certificate.issuedAt}
-          </span>
-        </div>
-        <h3 className="mt-3.5 text-sm font-bold text-deep-navy leading-snug line-clamp-2">
-          {certificate.courseTitle}
-        </h3>
-        <p className="text-3xs text-muted-text mt-2 font-medium">
-          Code: <code className="font-mono bg-light-bg px-1.5 py-0.5 rounded text-deep-navy font-bold">{certificate.certificateCode}</code>
-        </p>
-      </div>
-      <div className="mt-4 pt-3 border-t border-design-border flex items-center gap-2">
-        <ActionButton href={certificate.certificateHref} size="sm" variant="secondary" className="font-bold text-xs px-2.5">
-          View
-        </ActionButton>
-        {certificate.downloadHref && (
-          <ActionButton href={certificate.downloadHref} size="sm" variant="success" className="font-bold text-xs px-2.5">
-            Download PDF
-          </ActionButton>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function AvailableLearningCard({ course }: { course: LearnerCourseSummary }) {
-  return (
-    <article className="rounded-card border border-design-border bg-white p-5 shadow-soft hover:shadow-card hover:border-dec-blue/30 transition flex flex-col justify-between">
-      <div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-3xs font-extrabold uppercase tracking-wider text-dec-blue bg-dec-blue/10 px-2 py-0.5 rounded">
-            Available
-          </span>
-          {course.capacityArea && <StatusBadge label={course.capacityArea} tone="blue" />}
-        </div>
-        <h3 className="mt-3.5 text-base font-bold text-deep-navy leading-snug">
-          {course.title}
-        </h3>
-        <p className="mt-2 text-xs text-muted-text line-clamp-2">
-          {course.description || "Start this course to explore e-learning modules."}
-        </p>
-      </div>
-      <div className="mt-5 pt-1">
+      <div className="mt-3">
         <ActionButton
+          aria-label={`${course.primaryAction}: ${course.title}`}
           forceDocumentNavigation={shouldUseDocumentLaunch(course.primaryActionHref)}
           href={course.primaryActionHref}
           prefetch={shouldUseDocumentLaunch(course.primaryActionHref) ? false : undefined}
-          className="font-bold w-full text-center justify-center text-xs"
+          size="sm"
+          variant={isCompleted ? "secondary" : "primary"}
+          className="min-h-11 w-full text-center text-xs sm:w-auto"
         >
-          {course.primaryAction || "Start learning"}
+          {course.primaryAction}
         </ActionButton>
       </div>
     </article>
   );
 }
 
-function EmptyContinueLearningCard() {
+function AttentionCard({ course }: { course: LearnerCourseSummary }) {
+  const isAssessment = course.statusLabel === "Final assessment available";
+  const isFeedback =
+    ["Completed", "Certificate issued"].includes(course.statusLabel) &&
+    course.feedbackStatus === "Feedback not submitted";
+  const heading = isAssessment
+    ? "Final assessment ready"
+    : isFeedback
+      ? "Course feedback is waiting"
+      : "Certificate ready";
+  const description = isAssessment
+    ? `Complete the final assessment for ${course.title}.`
+    : isFeedback
+      ? `Share feedback on ${course.title}.`
+      : `Your certificate for ${course.title} is available.`;
+  const actionHref = isAssessment
+    ? course.primaryActionHref
+    : isFeedback
+      ? course.feedbackHref
+      : course.primaryActionHref;
+  const actionLabel = isAssessment
+    ? course.primaryAction
+    : isFeedback
+      ? "Give feedback"
+      : course.primaryAction;
+
   return (
-    <article className="rounded-card border border-design-border bg-white p-8 text-center shadow-soft">
-      <h2 className="text-lg font-bold text-deep-navy">No active courses yet</h2>
-      <p className="mt-2 text-xs text-muted-text max-w-sm mx-auto">
-        You are not currently enrolled in any active courses. Visit the courses catalogue to explore available learning opportunities.
-      </p>
-      <div className="mt-5">
-        <ActionButton href="/courses" size="sm">Explore courses</ActionButton>
+    <article className="rounded-card border border-amber-200 bg-amber-50/60 p-4 shadow-soft">
+      <p className="text-2xs font-extrabold uppercase tracking-wider text-amber-800">Needs attention</p>
+      <h2 className="mt-2 text-base font-bold text-deep-navy">{heading}</h2>
+      <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-text">{description}</p>
+      <div className="mt-3">
+        <ActionButton
+          aria-label={`${actionLabel}: ${course.title}`}
+          forceDocumentNavigation={shouldUseDocumentLaunch(actionHref)}
+          href={actionHref}
+          prefetch={shouldUseDocumentLaunch(actionHref) ? false : undefined}
+          size="sm"
+          variant="warning"
+          className="min-h-11 w-full text-center text-xs sm:w-auto"
+        >
+          {actionLabel}
+        </ActionButton>
       </div>
     </article>
   );
 }
 
-function EmptyCertificatesCard() {
+function RecentAchievement({ certificate }: { certificate: LearnerCertificateSummary }) {
   return (
-    <div className="rounded-card border border-design-border bg-light-bg/40 p-6 text-center">
-      <p className="text-xs text-muted-text max-w-md mx-auto">
-        No certificates earned yet. Certificates become available automatically after you complete eligible courses and score at least 80% on the final assessment.
+    <article className="rounded-card border border-dec-green/30 bg-pale-mint p-4 shadow-soft">
+      <p className="text-2xs font-extrabold uppercase tracking-wider text-[#4f7c24]">
+        Recent achievement
       </p>
-    </div>
+      <h2 className="mt-2 text-base font-bold leading-snug text-deep-navy">
+        {certificate.courseTitle}
+      </h2>
+      <p className="mt-1.5 text-xs text-muted-text">Certificate issued {certificate.issuedAt}</p>
+      <div className="mt-3">
+        <ActionButton
+          aria-label={`View certificate: ${certificate.courseTitle}`}
+          href={certificate.certificateHref}
+          size="sm"
+          variant="success"
+          className="min-h-11 w-full text-center text-xs sm:w-auto"
+        >
+          View certificate
+        </ActionButton>
+      </div>
+    </article>
   );
 }
 
-function TechnicalFeedbackCard() {
+function AvailableCoursePreview({ course }: { course: LearnerCourseSummary }) {
   return (
-    <aside className="rounded-card border border-dec-blue/20 bg-dec-blue/5 p-5">
-      <StatusBadge label="Assisted Pilot" tone="blue" />
-      <h3 className="mt-3 text-sm font-bold text-deep-navy">
-        Technical support & feedback
-      </h3>
-      <p className="mt-2 text-xs leading-normal text-[#26536c]">
-        Encountering a bug or want to provide feedback on the pilot interface? Revisit the registration guidance or contact support.
-      </p>
-      <div className="mt-4 pt-1 flex flex-col gap-2">
-        <ActionButton href="/support" size="sm" variant="secondary" className="w-full text-center justify-center">
-          Open Support Guidance
+    <article className="flex flex-col justify-between rounded-card border border-design-border bg-white p-4 shadow-soft">
+      <div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-2xs font-extrabold uppercase tracking-wider text-dec-blue">
+            Ready to begin
+          </span>
+          {course.capacityArea ? (
+            <span className="text-xs font-semibold text-muted-text">{course.capacityArea}</span>
+          ) : null}
+        </div>
+        <h3 className="mt-2.5 text-base font-bold leading-snug text-deep-navy">{course.title}</h3>
+        <p className="mt-1.5 line-clamp-1 text-xs text-muted-text">{course.description}</p>
+      </div>
+      <div className="mt-3">
+        <ActionButton
+          aria-label={`${course.primaryAction}: ${course.title}`}
+          forceDocumentNavigation={shouldUseDocumentLaunch(course.primaryActionHref)}
+          href={course.primaryActionHref}
+          prefetch={shouldUseDocumentLaunch(course.primaryActionHref) ? false : undefined}
+          size="sm"
+          className="min-h-11 w-full text-center text-xs"
+        >
+          {course.primaryAction}
         </ActionButton>
       </div>
-    </aside>
+    </article>
+  );
+}
+
+function SupportCard() {
+  return (
+    <section className="flex flex-col gap-3 rounded-card border border-dec-blue/20 bg-dec-blue/5 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 className="text-sm font-bold text-deep-navy">Need learning or technical support?</h2>
+        <p className="mt-0.5 text-xs text-[#26536c]">
+          Find guidance for course access, certificates, and using the learning platform.
+        </p>
+      </div>
+      <ActionButton
+        href="/support"
+        size="sm"
+        variant="secondary"
+        className="min-h-11 w-full shrink-0 text-center text-xs sm:w-auto"
+      >
+        Open support
+      </ActionButton>
+    </section>
+  );
+}
+
+function EmptyDashboardState() {
+  return (
+    <section className="rounded-[20px] border border-design-border bg-white p-6 text-center shadow-soft">
+      <h2 className="text-xl font-bold text-deep-navy">No learning is available yet</h2>
+      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-text">
+        Your learning will appear here when a course becomes available to your account.
+      </p>
+      <div className="mt-4">
+        <ActionButton href="/support" className="min-h-11 w-full text-center sm:w-auto">
+          Contact support
+        </ActionButton>
+      </div>
+    </section>
   );
 }
 
@@ -342,7 +403,7 @@ export function LearnerDashboard({
   certificateError?: { code: string; message: string };
   learnerName: string;
 }) {
-  // Priority: 1) In progress, 2) Partially started (>0 progress), 3) Not started entitled course, 4) Fallback to first course
+  // Preserve the existing Phase 1 current-focus selection exactly.
   const primaryCourse =
     courses.find((course) => course.statusLabel === "In progress") ??
     courses.find((course) => course.progress > 0) ??
@@ -350,134 +411,126 @@ export function LearnerDashboard({
     courses[0];
 
   const summaryCards = getSummaryCards(courses, certificates.length);
-
-  // Active courses are courses in progress or completed
   const activeAndCompletedCourses = courses.filter((course) =>
-    ["In progress", "Completed", "Certificate issued"].includes(course.statusLabel)
+    ["In progress", "Completed", "Certificate issued"].includes(course.statusLabel),
   );
+  const availableCourses = courses.filter((course) => course.statusLabel === "Not started");
 
-  // Available learning are courses that are not started/enrolled yet
-  const availableCourses = courses.filter((course) =>
-    course.statusLabel === "Not started"
+  const activeCoursesWithoutFocus = activeAndCompletedCourses.filter(
+    (course) => course.id !== primaryCourse?.id,
+  );
+  const activeCoursePreview = activeCoursesWithoutFocus.slice(0, 2);
+  const availableCoursesWithoutFocus = availableCourses.filter(
+    (course) => course.id !== primaryCourse?.id,
+  );
+  const availableCoursePreview = availableCoursesWithoutFocus.slice(0, 3);
+
+  const finalAssessmentAttention = courses.find(
+    (course) =>
+      course.id !== primaryCourse?.id && course.statusLabel === "Final assessment available",
+  );
+  const feedbackAttention = courses.find(
+    (course) =>
+      ["Completed", "Certificate issued"].includes(course.statusLabel) &&
+      course.feedbackStatus === "Feedback not submitted",
+  );
+  const certificateAttention = courses.find(
+    (course) =>
+      course.id !== primaryCourse?.id && course.statusLabel === "Certificate issued",
+  );
+  const attentionCourse =
+    finalAssessmentAttention ?? feedbackAttention ?? certificateAttention;
+  const recentAchievement = certificates.find(
+    (certificate) => certificate.certificateCode !== primaryCourse?.certificateCode,
   );
 
   return (
-    <div className="space-y-8">
-      {/* 1. Welcoming header section */}
-      <section className="relative overflow-hidden rounded-[24px] bg-deep-navy px-6 py-8 text-white shadow-hero lg:px-8 lg:py-10">
-        <div aria-hidden="true" className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[24px] border-dec-blue/10" />
-        <div aria-hidden="true" className="absolute -left-10 bottom-10 h-48 w-48 rounded-full border-[16px] border-dec-green/5" />
-        
-        <div className="relative z-10 max-w-2xl">
-          <span className="text-2xs font-extrabold uppercase tracking-[0.16em] text-[#72bee8]">
-            Learner Space
-          </span>
-          <h1 className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">
-            Welcome back, {learnerName || "Learner"}
-          </h1>
-          <p className="mt-3 text-xs leading-normal text-slate-300">
-            Access your courses, practice case studies, and track eligible completion certificates below.
-          </p>
-        </div>
-      </section>
+    <div className="space-y-6 lg:space-y-8">
+      <DashboardIntroduction learnerName={learnerName} />
 
-      {/* 2. Continue Learning Card */}
-      <section aria-label="Continue learning focus" className="space-y-4">
-        {primaryCourse ? (
-          <ContinueLearningCard course={primaryCourse} />
-        ) : (
-          <EmptyContinueLearningCard />
-        )}
-      </section>
+      {courses.length === 0 || !primaryCourse ? (
+        <EmptyDashboardState />
+      ) : (
+        <>
+          <NextActionCard course={primaryCourse} />
 
-      {/* 3. Progress Summary Indicator Cards */}
-      <section aria-label="Learning progress summary" className="space-y-4">
-        <SectionHeader
-          description="A quick overview of your learning activity and metrics."
-          title="Progress summary"
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {summaryCards.map((card) => (
-            <MetricCard key={card.label} {...card} />
-          ))}
-        </div>
-      </section>
-
-      {/* Grid containing My Active Courses (Left) and Certificates/Support (Right) */}
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        {/* Left Column: My Learning List */}
-        <section aria-label="My active courses list" className="space-y-4">
-          <SectionHeader
-            action={
-              <ActionButton href="/learn/my-courses" variant="secondary" size="sm" className="font-bold">
-                View My Courses
-              </ActionButton>
-            }
-            description="Pick up where you left off or review completed courses."
-            title="My active courses"
-          />
-          {activeAndCompletedCourses.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {activeAndCompletedCourses.map((course) => (
-                <LearnerCourseCard key={course.title} course={course} />
+          <section aria-labelledby="progress-summary-heading" className="space-y-3">
+            <SectionHeader
+              description="A concise view of your current learning activity."
+              title="Learning progress"
+            />
+            <span className="sr-only" id="progress-summary-heading">
+              Learning progress summary
+            </span>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {summaryCards.map((card) => (
+                <CompactMetricCard key={card.label} {...card} />
               ))}
             </div>
-          ) : (
-            <div className="rounded-card border border-design-border bg-white p-6 text-center shadow-soft text-xs text-muted-text">
-              No active learning records found. Start an available course below to begin.
-            </div>
-          )}
-        </section>
-
-        {/* Right Column: Certificates Summary & Technical Support */}
-        <div className="space-y-6">
-          <section aria-label="My earned certificates" className="space-y-4">
-            <SectionHeader title="Certificates" />
-            {certificateError ? (
-              <div className="rounded-card border border-amber-200 bg-amber-50/60 p-5 shadow-soft">
-                <p className="text-xs font-bold text-deep-navy">Certificates temporarily unavailable</p>
-                <p className="mt-1 text-xs text-muted-text leading-relaxed">
-                  {certificateError.message} Please refresh or contact support if the problem continues.
-                </p>
-              </div>
-            ) : certificates.length > 0 ? (
-              <div className="space-y-4">
-                {certificates.slice(0, 3).map((certificate) => (
-                  <DashboardCertificateCard key={certificate.certificateCode} certificate={certificate} />
-                ))}
-                {certificates.length > 3 && (
-                  <ActionButton href="/learn/certificates" variant="secondary" className="w-full text-center justify-center font-bold text-xs">
-                    View all {certificates.length} certificates
-                  </ActionButton>
-                )}
-              </div>
-            ) : (
-              <EmptyCertificatesCard />
-            )}
           </section>
 
-          <TechnicalFeedbackCard />
-        </div>
-      </div>
+          {activeCoursePreview.length > 0 ? (
+            <section className="space-y-3">
+              <SectionHeader
+                action={
+                  activeCoursesWithoutFocus.length > 2 ? (
+                    <ActionButton href="/learn/my-courses" size="sm" variant="secondary">
+                      View all active courses
+                    </ActionButton>
+                  ) : undefined
+                }
+                description="Continue or review learning beyond your featured next step."
+                title="Active learning"
+              />
+              <div className="grid gap-3 md:grid-cols-2">
+                {activeCoursePreview.map((course) => (
+                  <ActiveCourseCard key={course.id} course={course} />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-      {/* 6. Available Learning Section */}
-      <section aria-label="Available capacity building courses" className="space-y-4">
-        <SectionHeader
-          description="Explore other training paths open to Ethiopian civil society organizations."
-          title="Available learning"
-        />
-        {availableCourses.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {availableCourses.map((course) => (
-              <AvailableLearningCard key={course.title} course={course} />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-card border border-design-border bg-light-bg/40 p-6 text-center text-xs text-muted-text">
-            All entitled courses are currently in progress or completed.
-          </div>
-        )}
-      </section>
+          {attentionCourse || recentAchievement || certificateError ? (
+            <section aria-label="Learning attention and recent achievement" className="grid gap-3 md:grid-cols-2">
+              {attentionCourse ? <AttentionCard course={attentionCourse} /> : null}
+              {recentAchievement ? <RecentAchievement certificate={recentAchievement} /> : null}
+              {certificateError ? (
+                <article className="rounded-card border border-amber-200 bg-amber-50/60 p-4 shadow-soft">
+                  <h2 className="text-sm font-bold text-deep-navy">
+                    Certificate information temporarily unavailable
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-muted-text">
+                    {certificateError.message} Contact support if the problem continues.
+                  </p>
+                </article>
+              ) : null}
+            </section>
+          ) : null}
+
+          {availableCoursePreview.length > 0 ? (
+            <section className="space-y-3">
+              <SectionHeader
+                action={
+                  availableCoursesWithoutFocus.length > 3 ? (
+                    <ActionButton href="/learn/my-courses" size="sm" variant="secondary">
+                      View all learning
+                    </ActionButton>
+                  ) : undefined
+                }
+                description="A small preview of other learning ready when you are."
+                title="Available learning"
+              />
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {availableCoursePreview.map((course) => (
+                  <AvailableCoursePreview key={course.id} course={course} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <SupportCard />
+        </>
+      )}
     </div>
   );
 }
