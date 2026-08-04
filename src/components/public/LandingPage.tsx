@@ -105,9 +105,14 @@ const displayTitles: Record<string, string> = {
   "Project Management for Local and Grassroots CSOs": "Plan and Manage Local CSO Projects with Greater Clarity",
 };
 
-const featuredCourseSlugs = [
-  "applying-human-rights-based-approach-in-cso-practice",
-  "project-management-local-grassroots-csos",
+const featuredCourseIdentities = [
+  {
+    slugs: [
+      "applying-human-rights-based-approach-in-cso-practice",
+      "human-rights-based-approach-practice",
+    ],
+  },
+  { slugs: ["project-management-local-grassroots-csos"] },
 ] as const;
 
 function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCourseSummary; featured: boolean }) {
@@ -185,11 +190,15 @@ function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCours
 }
 
 function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[] }) {
-  const shown = featuredCourseSlugs
-    .map((slug) => courses.find((course) => course.slug === slug))
+  const shown = featuredCourseIdentities
+    .map((identity) =>
+      courses.find((course) =>
+        identity.slugs.some((slug) => slug === course.slug),
+      ),
+    )
     .filter((course): course is PublicCatalogueCourseSummary => Boolean(course));
 
-  if (process.env.NODE_ENV !== "production" && shown.length !== featuredCourseSlugs.length) {
+  if (process.env.NODE_ENV !== "production" && shown.length !== featuredCourseIdentities.length) {
     throw new Error("Featured learning requires both configured course summaries.");
   }
 
@@ -215,7 +224,9 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
           {shown.map((course) => (
             <FeaturedCourseCard
               course={course}
-              featured={course.slug === featuredCourseSlugs[0]}
+              featured={featuredCourseIdentities[0].slugs.some(
+                (slug) => slug === course.slug,
+              )}
               key={course.slug}
             />
           ))}
