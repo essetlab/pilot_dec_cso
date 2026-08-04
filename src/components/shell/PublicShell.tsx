@@ -55,11 +55,11 @@ function isActive(pathname: string, item: NavItem) {
   return item.exact ? pathname === item.href : pathname.startsWith(item.href) && item.href !== "/";
 }
 
-function PublicNav({ isOverlay, polished = false }: { isOverlay: boolean; polished?: boolean }) {
+function PublicNav({ isOverlay }: { isOverlay: boolean }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Primary navigation">
-      <ul className={cx("flex items-center", polished ? "gap-5 xl:gap-7" : "gap-6 xl:gap-8")}>
+      <ul className="flex items-center gap-6 xl:gap-8">
         {publicItems.map((item) => {
           const active = isActive(pathname, item);
           return (
@@ -67,13 +67,11 @@ function PublicNav({ isOverlay, polished = false }: { isOverlay: boolean; polish
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "relative flex min-h-11 items-center rounded-lg font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2",
-                  polished ? "px-2.5 text-[15px] tracking-[0.01em]" : "px-2 text-sm tracking-wide",
+                  "relative flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2",
                   isOverlay
                     ? "text-white/80 hover:text-white focus-visible:text-white"
                     : "text-slate-700 hover:text-dec-blue focus-visible:text-dec-blue",
-                  active && "after:absolute after:rounded-full",
-                  active && (polished ? "after:inset-x-2.5 after:bottom-0.5 after:h-[3px]" : "after:inset-x-2 after:bottom-1 after:h-0.5"),
+                  active && "after:absolute after:inset-x-2 after:bottom-1 after:h-0.5 after:rounded-full",
                   active && (isOverlay ? "after:bg-dec-green text-white" : "after:bg-dec-blue text-dec-blue")
                 )}
                 href={item.href}
@@ -227,9 +225,9 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
           ? "text-white"
           : "border-b border-[#cad5df] bg-white text-[#0f172a] shadow-[0_8px_24px_rgba(15,23,42,0.06)]"
       )}
-      style={isOverlay ? { background: "rgba(7,20,38,.86)", backdropFilter: "blur(10px)" } : undefined}
+      style={isOverlay ? { background: "linear-gradient(90deg,rgba(7,20,38,.98),rgba(7,20,38,.86) 55%,rgba(7,20,38,.45))" } : undefined}
     >
-      <div className={cx("mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-5 sm:px-7 lg:px-10", isHome ? "min-h-[80px] sm:min-h-[84px]" : "min-h-[72px]")}>
+      <div className="mx-auto flex min-h-[72px] max-w-[1200px] items-center justify-between gap-5 px-5 sm:px-7 lg:px-10">
         <Link
           aria-label="CSO Learning Hub home"
           className="flex items-center gap-3 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2 rounded-lg p-1 transition-all"
@@ -237,20 +235,20 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
         >
           <Image
             alt="Development Expertise Center Logo"
-            className={cx("w-auto object-contain", isHome ? "h-9 sm:h-10" : "h-8")}
-            height={40}
+            className="h-8 w-auto object-contain"
+            height={32}
             priority
             src="/logos/dec-logo.png"
-            width={110}
+            width={88}
           />
           <div className={cx("h-5 w-px self-center", isOverlay ? "bg-white/25" : "bg-[#cad5df]")} />
-          <span className={cx("font-sans font-black uppercase", isHome ? "text-[15px] tracking-[0.1em] sm:text-base" : "text-sm tracking-wider")}>
+          <span className="font-sans text-sm font-black tracking-wider uppercase">
             CSO Learning Hub
           </span>
         </Link>
         
-        <div className={cx("hidden flex-1 items-center justify-end lg:flex", isHome ? "gap-5 xl:gap-6" : "gap-6")}>
-          <PublicNav isOverlay={isOverlay} polished={isHome} />
+        <div className="hidden flex-1 items-center justify-end gap-6 lg:flex">
+          <PublicNav isOverlay={isOverlay} />
           <span aria-hidden="true" className={cx("h-6 w-px", isOverlay ? "bg-white/20" : "bg-[#cad5df]")} />
           {session ? (
             <>
@@ -321,23 +319,23 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
   );
 }
 
-export function PublicFooter({ polished = false }: { polished?: boolean }) {
+export function PublicFooter() {
   const currentYear = new Date().getFullYear();
   return (
     <footer className="mt-auto bg-[#071426] text-white">
-      <div className={cx("mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10", polished ? "py-16 sm:py-20" : "py-16")}>
-        <div className={cx("grid md:grid-cols-2 lg:grid-cols-[1.5fr_0.8fr_0.8fr_1fr]", polished ? "gap-12 lg:gap-10" : "gap-10")}>
+      <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-7 lg:px-10">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.5fr_0.8fr_0.8fr_1fr]">
           <div>
-            <div className={cx("relative", polished ? "h-14 w-[150px]" : "h-12 w-[130px]")}>
+            <div className="relative h-12 w-[130px]">
               <Image
                 alt="Development Expertise Center Logo"
                 className="object-contain"
                 fill
-                sizes={polished ? "150px" : "130px"}
+                sizes="130px"
                 src="/logos/dec-logo.png"
               />
             </div>
-            <h2 className={cx("mt-5 font-extrabold tracking-tight text-white", polished ? "text-2xl" : "text-xl")}>CSO Learning Hub</h2>
+            <h2 className="mt-5 text-xl font-extrabold text-white tracking-tight">CSO Learning Hub</h2>
             <p className="mt-3 max-w-sm text-sm leading-7 text-slate-300 font-medium">
               A practical digital learning platform for local and grassroots civil society organisations in Ethiopia.
             </p>
@@ -348,7 +346,7 @@ export function PublicFooter({ polished = false }: { polished?: boolean }) {
             { heading: "Trust & Support", links: footerTrustLinks },
           ].map((group) => (
             <nav aria-label={`${group.heading} links`} key={group.heading}>
-              <h2 className={cx("text-xs uppercase text-dec-green", polished ? "font-black tracking-[0.16em]" : "font-bold tracking-[0.14em]")}>
+              <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-dec-green">
                 {group.heading}
               </h2>
               <ul className="mt-4 space-y-1">
@@ -366,17 +364,17 @@ export function PublicFooter({ polished = false }: { polished?: boolean }) {
             </nav>
           ))}
         </div>
-        <p className={cx("border-t border-white/10 pt-8 text-xs font-medium text-slate-400", polished ? "mt-14" : "mt-12")}>
+        <p className="mt-12 border-t border-white/10 pt-8 text-xs text-slate-400 font-medium">
           &copy; {currentYear} Development Expertise Center (DEC). All rights reserved.
         </p>
       </div>
-      <section aria-labelledby="partner-acknowledgement-title" className={cx("border-t bg-white", polished ? "border-t-4 border-dec-green py-9 sm:py-11" : "border-[#cad5df] py-5 sm:py-7")}>
+      <section aria-labelledby="partner-acknowledgement-title" className="border-t border-[#cad5df] bg-white py-5 sm:py-7">
         <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-          <h2 className={cx("text-xs font-black uppercase text-[#3f5061]", polished ? "text-center tracking-[0.16em]" : "tracking-[0.15em]")} id="partner-acknowledgement-title">
+          <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#3f5061]" id="partner-acknowledgement-title">
             Our partners &amp; donors
           </h2>
-          <div className={cx("grid sm:grid-cols-2 lg:grid-cols-[1.25fr_1.05fr_2.4fr_1.15fr_0.75fr]", polished ? "mt-7 gap-4" : "mt-4 gap-4 sm:gap-x-8 sm:gap-y-6 lg:gap-3")}>
-            <div className={cx(polished && "flex min-h-32 flex-col rounded-xl border border-design-border bg-slate-50/70 p-4")}>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-[1.25fr_1.05fr_2.4fr_1.15fr_0.75fr] lg:gap-3">
+            <div>
               <p className="whitespace-nowrap text-center text-xs font-bold text-[#3f5061]">Funded by the European Union</p>
               <div className="mt-2 flex items-center justify-center">
                 <Image
@@ -389,7 +387,7 @@ export function PublicFooter({ polished = false }: { polished?: boolean }) {
                 />
               </div>
             </div>
-            <div className={cx(polished && "flex min-h-32 flex-col rounded-xl border border-design-border bg-slate-50/70 p-4")}>
+            <div>
               <p className="text-center text-xs font-bold text-[#3f5061]">Coordinated by</p>
               <div className="mt-2 flex items-center justify-center">
                 <Image
@@ -402,7 +400,7 @@ export function PublicFooter({ polished = false }: { polished?: boolean }) {
                 />
               </div>
             </div>
-            <div className={cx(polished && "flex min-h-32 flex-col rounded-xl border border-design-border bg-slate-50/70 p-4")}>
+            <div>
               <p className="text-center text-xs font-bold text-[#3f5061]">In Partnership with</p>
               <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4 xl:flex-nowrap xl:gap-x-2">
                 <Image alt="CoSAP" className="h-10 w-auto object-contain sm:h-12" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
@@ -410,7 +408,7 @@ export function PublicFooter({ polished = false }: { polished?: boolean }) {
                 <Image alt="Pastoralist Forum Ethiopia" className="h-12 w-auto object-contain sm:h-14" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
               </div>
             </div>
-            <div className={cx(polished && "flex min-h-32 flex-col rounded-xl border border-design-border bg-slate-50/70 p-4")}>
+            <div>
               <p className="text-center text-xs font-bold text-[#3f5061]">With Technical Support of</p>
               <div className="mt-2 flex items-center justify-center">
                 <Image
@@ -423,7 +421,7 @@ export function PublicFooter({ polished = false }: { polished?: boolean }) {
                 />
               </div>
             </div>
-            <div className={cx(polished && "flex min-h-32 flex-col rounded-xl border border-design-border bg-slate-50/70 p-4")}>
+            <div>
               <p className="text-center text-[11px] font-semibold leading-4 text-[#66788a]">Platform and technical support by</p>
               <div className="mt-2 flex items-center justify-center gap-2">
                 <Image
@@ -465,7 +463,7 @@ export function PublicShell({ children, session = null }: PublicShellProps) {
       >
         {children}
       </main>
-      <PublicFooter polished={isHome} />
+      <PublicFooter />
     </div>
   );
 }
