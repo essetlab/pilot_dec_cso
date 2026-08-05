@@ -67,7 +67,7 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "relative flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2",
+                  "relative flex min-h-11 items-center rounded-lg px-2 text-[0.9rem] font-medium tracking-[0.01em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2",
                   isOverlay
                     ? "text-white/80 hover:text-white focus-visible:text-white"
                     : "text-slate-700 hover:text-dec-blue focus-visible:text-dec-blue",
@@ -114,7 +114,7 @@ function MobileNav({
             <Link
               aria-current={active ? "page" : undefined}
               className={cx(
-                "flex min-h-[44px] items-center rounded-xl px-4 text-base font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green focus-visible:ring-offset-2",
+                "flex min-h-[44px] items-center rounded-xl px-4 text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green focus-visible:ring-offset-2",
                 active ? "bg-white text-[#0f172a]" : "text-white hover:bg-white/10"
               )}
               href={item.href}
@@ -129,14 +129,14 @@ function MobileNav({
           {session ? (
             <>
               <Link
-                className="flex min-h-[44px] items-center rounded-xl px-4 font-semibold text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-[44px] items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/learn"
                 onClick={onClose}
               >
                 My learning
               </Link>
               <Link
-                className="flex min-h-[44px] items-center rounded-xl px-4 font-semibold text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-[44px] items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/sign-out"
                 onClick={onClose}
                 prefetch={false}
@@ -147,14 +147,14 @@ function MobileNav({
           ) : (
             <>
               <Link
-                className="flex min-h-[44px] items-center rounded-xl px-4 font-semibold text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-[44px] items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/sign-in"
                 onClick={onClose}
               >
                 Sign in
               </Link>
               <Link
-                className="flex min-h-[48px] items-center justify-center rounded-xl bg-dec-blue px-4 font-bold text-white hover:bg-[#2e82b7] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-[48px] items-center justify-center rounded-xl bg-dec-blue px-4 font-semibold tracking-[-0.01em] text-white hover:bg-[#2e82b7] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/register"
                 onClick={onClose}
               >
@@ -247,7 +247,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
             width={88}
           />
           <div className={cx("h-5 w-px self-center", isOverlay ? "bg-white/25" : "bg-[#cad5df]")} />
-          <span className="font-sans text-sm font-black tracking-wider uppercase">
+          <span className="font-sans text-[0.84rem] font-extrabold uppercase tracking-[0.07em]">
             CSO Learning Hub
           </span>
         </Link>
@@ -259,7 +259,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
             <>
               <Link
                 className={cx(
-                  "flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
+                  "flex min-h-11 items-center rounded-lg px-3 text-[0.9rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
                   isOverlay ? "text-white hover:text-white/80" : "text-[#0f172a] hover:text-dec-blue"
                 )}
                 href="/learn"
@@ -268,7 +268,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
               </Link>
               <Link
                 className={cx(
-                  "flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
+                  "flex min-h-11 items-center rounded-lg px-3 text-[0.9rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
                   isOverlay ? "text-white hover:text-white/80" : "text-[#0f172a] hover:text-dec-blue"
                 )}
                 href="/sign-out"
@@ -281,7 +281,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
             <>
               <Link
                 className={cx(
-                  "flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
+                  "flex min-h-11 items-center rounded-lg px-3 text-[0.9rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
                   isOverlay ? "text-white hover:text-white/80" : "text-[#0f172a] hover:text-dec-blue"
                 )}
                 href="/sign-in"
@@ -328,7 +328,7 @@ export function PublicFooter() {
   const currentYear = new Date().getFullYear();
   return (
     <footer className="mt-auto bg-[#071426] text-white">
-      <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-7 lg:px-10">
+      <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-7 sm:py-20 lg:px-10">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.5fr_0.8fr_0.8fr_1fr]">
           <div>
             <div className="relative h-12 w-[130px]">
@@ -340,8 +340,8 @@ export function PublicFooter() {
                 src="/logos/dec-logo.png"
               />
             </div>
-            <h2 className="mt-5 text-xl font-extrabold text-white tracking-tight">CSO Learning Hub</h2>
-            <p className="mt-3 max-w-sm text-sm leading-7 text-slate-300 font-medium">
+            <h2 className="mt-5 font-display text-2xl font-bold leading-tight tracking-[-0.018em] text-white">CSO Learning Hub</h2>
+            <p className="mt-4 max-w-sm text-[0.95rem] font-normal leading-7 text-slate-300">
               A practical digital learning platform for local and grassroots civil society organisations in Ethiopia.
             </p>
           </div>
@@ -351,14 +351,14 @@ export function PublicFooter() {
             { heading: "Trust & Support", links: footerTrustLinks },
           ].map((group) => (
             <nav aria-label={`${group.heading} links`} key={group.heading}>
-              <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-dec-green">
+              <h2 className="text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-dec-green">
                 {group.heading}
               </h2>
               <ul className="mt-4 space-y-1">
                 {group.links.map((item) => (
                   <li key={item.href}>
                     <Link
-                      className="inline-flex min-h-11 items-center text-sm text-slate-300 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green rounded px-1 transition-all"
+                      className="inline-flex min-h-11 items-center rounded px-1 text-[0.9rem] font-medium text-slate-300 underline-offset-4 transition-all hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                       href={item.href}
                     >
                       {item.label}
@@ -369,18 +369,18 @@ export function PublicFooter() {
             </nav>
           ))}
         </div>
-        <p className="mt-12 border-t border-white/10 pt-8 text-xs text-slate-400 font-medium">
+        <p className="mt-12 border-t border-white/10 pt-8 text-xs font-normal leading-5 text-slate-400">
           &copy; {currentYear} Development Expertise Center (DEC). All rights reserved.
         </p>
       </div>
       <section aria-labelledby="partner-acknowledgement-title" className="border-t border-[#cad5df] bg-white py-5 sm:py-7">
         <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-          <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#3f5061]" id="partner-acknowledgement-title">
+          <h2 className="text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-[#3f5061]" id="partner-acknowledgement-title">
             Our partners &amp; donors
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-[1.25fr_1.05fr_2.4fr_1.15fr_0.75fr] lg:gap-3">
             <div>
-              <p className="whitespace-nowrap text-center text-xs font-bold text-[#3f5061]">Funded by the European Union</p>
+              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">Funded by the European Union</p>
               <div className="mt-2 flex items-center justify-center">
                 <Image
                   alt="European Union"
@@ -393,7 +393,7 @@ export function PublicFooter() {
               </div>
             </div>
             <div>
-              <p className="text-center text-xs font-bold text-[#3f5061]">Coordinated by</p>
+              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">Coordinated by</p>
               <div className="mt-2 flex items-center justify-center">
                 <Image
                   alt="Welthungerhilfe"
@@ -406,7 +406,7 @@ export function PublicFooter() {
               </div>
             </div>
             <div>
-              <p className="text-center text-xs font-bold text-[#3f5061]">In Partnership with</p>
+              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">In Partnership with</p>
               <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4 xl:flex-nowrap xl:gap-x-2">
                 <Image alt="CoSAP" className="h-10 w-auto object-contain sm:h-12" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
                 <Image alt="Development Expertise Center" className="h-10 w-auto object-contain sm:h-12" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
@@ -414,7 +414,7 @@ export function PublicFooter() {
               </div>
             </div>
             <div>
-              <p className="text-center text-xs font-bold text-[#3f5061]">With Technical Support of</p>
+              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">With Technical Support of</p>
               <div className="mt-2 flex items-center justify-center">
                 <Image
                   alt="Civil Peace Service / ZFD"
@@ -427,7 +427,7 @@ export function PublicFooter() {
               </div>
             </div>
             <div>
-              <p className="text-center text-[11px] font-semibold leading-4 text-[#66788a]">Platform and technical support by</p>
+              <p className="text-center text-xs font-medium leading-5 text-[#5f7183]">Platform and technical support by</p>
               <div className="mt-2 flex items-center justify-center gap-2">
                 <Image
                   alt="Medab Solutions"
@@ -437,7 +437,7 @@ export function PublicFooter() {
                   src="/logos/medab-solutions-logo.png"
                   width={589}
                 />
-                <p className="text-xs font-semibold text-[#66788a]">Medab Solutions</p>
+                <p className="text-xs font-medium text-[#5f7183]">Medab Solutions</p>
               </div>
             </div>
           </div>

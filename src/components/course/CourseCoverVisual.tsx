@@ -40,6 +40,7 @@ export function CourseCoverVisual({
   imageUrl,
   showTextOverlay = true,
   title,
+  titleTypography = "default",
   tone,
   variant = "default",
 }: {
@@ -49,6 +50,7 @@ export function CourseCoverVisual({
   imageUrl?: string | null;
   showTextOverlay?: boolean;
   title: string;
+  titleTypography?: "default" | "editorial";
   tone: CourseTone;
   variant?: "default" | "detail";
 }) {
@@ -84,8 +86,13 @@ export function CourseCoverVisual({
             </p>
             <p
               className={cx(
-                "mt-3 font-semibold leading-tight text-white",
-                compact ? "text-xl" : "max-w-md text-3xl",
+                "mt-3 text-white",
+                titleTypography === "editorial"
+                  ? "font-display text-[1.45rem] font-bold leading-[1.08] tracking-[-0.018em]"
+                  : cx(
+                      "font-semibold leading-tight",
+                      compact ? "text-xl" : "max-w-md text-3xl",
+                    ),
               )}
             >
               {title}
