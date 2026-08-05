@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { CourseCoverVisual } from "@/components/course/CourseCoverVisual";
 import { ActionButton, StatusBadge } from "@/components/ui";
 import type { PublicCatalogueCourseSummary } from "@/lib/course-types";
 import { cx } from "@/components/ui/utils";
@@ -153,53 +152,71 @@ const displayTitles: Record<string, string> = {
 
 const featuredCourseIdentities = [
   {
+    image: {
+      alt: "Illustrated CSO practitioners collaborating through dialogue, community planning, and inclusive local action.",
+      objectPosition: "object-[50%_48%]",
+      src: "/images/courses/thumbnails/course-hrba-practice-thumbnail.webp",
+    },
     slugs: [
       "applying-human-rights-based-approach-in-cso-practice",
       "human-rights-based-approach-practice",
     ],
   },
-  { slugs: ["project-management-local-grassroots-csos"] },
+  {
+    image: {
+      alt: "Illustrated CSO teams mapping a project pathway from community needs through planning, monitoring, and results.",
+      objectPosition: "object-center",
+      src: "/images/courses/thumbnails/course-project-management-thumbnail.webp",
+    },
+    slugs: ["project-management-local-grassroots-csos"],
+  },
 ] as const;
 
-function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCourseSummary; featured: boolean }) {
+function FeaturedCourseCard({
+  course,
+  featured,
+  image,
+}: {
+  course: PublicCatalogueCourseSummary;
+  featured: boolean;
+  image: (typeof featuredCourseIdentities)[number]["image"];
+}) {
   const isAvailable = course.availability === "available";
   const requiresInvitation = course.accessState === "invitation_required";
   const displayTitle = displayTitles[course.title] ?? course.title;
   return (
     <article
-      className={cx(
-        "flex h-full flex-col overflow-hidden rounded-card border bg-white transition-all duration-300",
-        featured
-          ? "border-dec-blue shadow-card ring-1 ring-dec-blue/20"
-          : "border-design-border shadow-soft hover:shadow-card hover:border-slate-300"
-      )}
+      className="group flex h-full flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.07)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-within:border-dec-blue focus-within:ring-2 focus-within:ring-dec-blue/35 motion-reduce:transform-none motion-reduce:transition-none md:grid md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] md:items-stretch xl:flex"
     >
-      <div className="relative">
-        <CourseCoverVisual
-          capacityArea={course.primaryCapacityArea.name}
-          compact
-          imageAlt={course.imageAlt}
-          imageUrl={course.imageUrl}
-          title={course.title}
-          titleTypography="editorial"
-          tone={course.tone}
-        />
-        <div className="absolute right-4 top-4">
+      <div className="bg-[#f4f7f5] md:flex md:h-full md:items-center md:p-5 xl:block xl:h-auto xl:p-0">
+        <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+          <Image
+            alt={image.alt}
+            className={cx(
+              "object-cover transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transform-none motion-reduce:transition-none",
+              image.objectPosition,
+            )}
+            fill
+            sizes="(min-width: 1280px) 560px, (min-width: 768px) 42vw, calc(100vw - 2.5rem)"
+            src={image.src}
+          />
+        </div>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6 xl:p-7">
+        <div className="flex items-start justify-between gap-3">
+          <span className="max-w-[70%] text-[0.7rem] font-extrabold uppercase leading-5 tracking-[0.14em] text-[#277ead]">
+            {course.primaryCapacityArea.name}
+          </span>
           <StatusBadge
             label={isAvailable ? "Available now" : "Coming soon"}
             tone={isAvailable ? "green" : "gray"}
           />
         </div>
-      </div>
-      <div className="flex flex-1 flex-col p-6">
-        <span className="text-[0.7rem] font-extrabold uppercase leading-5 tracking-[0.14em] text-[#277ead]">
-          {course.primaryCapacityArea.name}
-        </span>
-        <h3 className="landing-card-heading mt-3 text-deep-navy">
+        <h3 className="landing-card-heading mt-3 max-w-[28rem] text-deep-navy">
           {displayTitle}
         </h3>
         {displayTitle !== course.title && (
-          <p className="mt-2 text-xs leading-5 text-[#5d6d7d] italic">
+          <p className="mt-2 text-[0.78rem] leading-5 text-[#607080]">
             Official title: {course.title}
           </p>
         )}
@@ -207,25 +224,25 @@ function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCours
           {course.shortDescription}
         </p>
         {isAvailable ? (
-          <div className="mt-6 flex flex-wrap gap-2 border-t border-design-border pt-5 text-xs font-medium text-[#536475]">
-            <span className="rounded-full bg-light-bg px-3 py-1.5">{course.duration}</span>
+          <div className="mt-5 flex min-h-14 flex-wrap content-start gap-2 border-t border-design-border pt-4 text-xs font-medium text-[#536475]">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">{course.duration}</span>
             {requiresInvitation && (
-              <span className="rounded-full bg-[#fff4d8] px-3 py-1.5 text-[#8a5600]">
+              <span className="rounded-full border border-[#f2d497] bg-[#fff8e8] px-3 py-1.5 text-[#80520a]">
                 Invitation required
               </span>
             )}
-            <span className="rounded-full bg-soft-bg px-3 py-1.5 text-[#0f8f8c]">
+            <span className="rounded-full border border-[#bfe6d1] bg-[#eefaf3] px-3 py-1.5 text-[#0b766f]">
               {course.certificateLabel}
             </span>
           </div>
         ) : (
-          <p className="mt-6 border-t border-design-border pt-5 text-xs font-medium leading-5 text-[#536475] italic">
+          <p className="mt-5 min-h-14 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-5 text-[#536475]">
             Duration and release date to be confirmed
           </p>
         )}
         <ActionButton
           aria-label={`${isAvailable ? "View" : "View course overview for"} ${course.title}`}
-          className="mt-6 w-full tracking-[-0.01em]"
+          className="mt-5 w-full tracking-[-0.01em]"
           href={course.href}
           variant={featured ? "primary" : "secondary"}
         >
@@ -238,42 +255,41 @@ function FeaturedCourseCard({ course, featured }: { course: PublicCatalogueCours
 
 function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[] }) {
   const shown = featuredCourseIdentities
-    .map((identity) =>
-      courses.find((course) =>
-        identity.slugs.some((slug) => slug === course.slug),
-      ),
-    )
-    .filter((course): course is PublicCatalogueCourseSummary => Boolean(course));
+    .flatMap((identity) => {
+      const course = courses.find((candidate) =>
+        identity.slugs.some((slug) => slug === candidate.slug),
+      );
+      return course ? [{ course, identity }] : [];
+    });
 
   if (process.env.NODE_ENV !== "production" && shown.length !== featuredCourseIdentities.length) {
     throw new Error("Featured learning requires both configured course summaries.");
   }
 
   return (
-    <section className="bg-white py-16 sm:py-20 lg:py-24" aria-labelledby="featured-learning-title">
+    <section id="featured-learning" className="scroll-mt-24 bg-white py-16 sm:py-20 lg:py-24" aria-labelledby="featured-learning-title">
       <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-3xl">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
+          <div className="max-w-[680px]">
             <SectionEyebrow>Featured learning</SectionEyebrow>
-            <h2 id="featured-learning-title" className="landing-section-heading mt-5 max-w-2xl text-deep-navy">
+            <h2 id="featured-learning-title" className="landing-section-heading mt-5 max-w-[620px] text-deep-navy">
               Start with the course available now
             </h2>
-            <p className="landing-section-copy mt-5 max-w-2xl text-muted-text">
+            <p className="landing-section-copy mt-5 max-w-[640px] text-muted-text">
               Explore the Human Rights-Based Approach course today. Review other confirmed course areas being prepared for future release.
             </p>
           </div>
-          <ActionButton className="shrink-0 self-start tracking-[-0.01em]" href="/courses" variant="secondary">
+          <ActionButton className="w-fit shrink-0 tracking-[-0.01em]" href="/courses" variant="secondary">
             Explore all courses
           </ActionButton>
         </div>
         
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          {shown.map((course) => (
+        <div className="mt-10 grid items-stretch gap-7 xl:grid-cols-2">
+          {shown.map(({ course, identity }, index) => (
             <FeaturedCourseCard
               course={course}
-              featured={featuredCourseIdentities[0].slugs.some(
-                (slug) => slug === course.slug,
-              )}
+              featured={index === 0}
+              image={identity.image}
               key={course.slug}
             />
           ))}
