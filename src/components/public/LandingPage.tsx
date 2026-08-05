@@ -658,37 +658,37 @@ function SafetyAccessibilityPanel() {
   return (
     <section className={cx("border-y border-design-border bg-[#eef8f2]", styles.sectionStandard)} aria-labelledby="safety-assurance-title">
       <div className={styles.pageContainer}>
-        <div className="grid overflow-hidden rounded-[32px] border border-soft-teal/20 bg-white shadow-[0_22px_58px_rgba(15,76,92,0.10)] lg:grid-cols-[0.8fr_1.2fr]">
-          <div className={cx("relative overflow-hidden bg-[#0b4c5c] text-white", styles.cardPadding)}>
+        <div className="grid overflow-hidden rounded-[32px] border border-soft-teal/25 bg-white shadow-[0_24px_64px_rgba(15,76,92,0.11)] lg:grid-cols-[0.88fr_1.12fr]">
+          <div className={cx("relative flex flex-col overflow-hidden bg-[#0b4c5c] text-white", styles.cardPadding)}>
             <span aria-hidden="true" className="absolute -bottom-24 -right-20 h-64 w-64 rounded-full border-[28px] border-white/5" />
             <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#b9e985] shadow-[0_14px_28px_rgba(0,0,0,0.15)]">
               <ShieldIcon className="h-7 w-7" />
             </span>
             <div className="relative mt-6">
               <SectionEyebrow tone="light">Safe participation</SectionEyebrow>
-              <h2 id="safety-assurance-title" className="mt-5 font-display text-[clamp(2rem,3.6vw,3.5rem)] font-bold leading-[1.07] tracking-[-0.025em] text-white [text-wrap:balance]">
+              <h2 id="safety-assurance-title" className="mt-5 max-w-[12ch] font-display text-[clamp(2rem,3.2vw,3.2rem)] font-bold leading-[1.07] tracking-[-0.025em] text-white [text-wrap:balance]">
                 Designed for practical and safe online access
               </h2>
             </div>
-            <p className="relative mt-5 max-w-[34rem] text-base leading-8 text-slate-200">
+            <p className="relative mt-5 max-w-[32rem] text-[1rem] leading-7 text-slate-100 sm:text-[1.02rem] sm:leading-8">
               The platform respects local connectivity realities. We prioritize lightweight structures, clear keyboard accessibility, and safe participant boundaries.
             </p>
-            <ActionButton className="relative mt-7 border-white bg-white text-deep-navy hover:bg-slate-100" href="/accessibility" variant="secondary">
+            <ActionButton className="relative mt-7 min-h-12 self-start border-white bg-white px-6 text-deep-navy shadow-[0_10px_24px_rgba(0,0,0,0.14)] hover:bg-slate-100 lg:mt-8" href="/accessibility" variant="secondary">
               Accessibility guidance
             </ActionButton>
           </div>
 
-          <ul className="grid sm:grid-cols-2">
+          <ul className="grid bg-[#fbfdfc] sm:grid-cols-2">
             {features.map((feature, index) => (
-              <li className={cx("relative border-b border-design-border last:border-b-0 sm:[&:nth-child(odd)]:border-r sm:[&:nth-last-child(-n+2)]:border-b-0", styles.cardPadding)} key={feature.title}>
+              <li className={cx("relative flex flex-col justify-center border-b border-design-border odd:bg-white last:border-b-0 sm:min-h-[15rem] sm:[&:nth-child(odd)]:border-r sm:[&:nth-last-child(-n+2)]:border-b-0 lg:min-h-0", styles.cardPadding)} key={feature.title}>
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9f5f1] font-sans text-xs font-extrabold text-soft-teal">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#d9ece7] bg-[#e9f5f1] font-sans text-xs font-extrabold tracking-[0.06em] text-soft-teal">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-soft-teal/35 to-transparent" />
                 </div>
-                <h3 className="landing-ui-card-heading mt-5 text-deep-navy">{feature.title}</h3>
-                <p className="landing-ui-card-copy mt-2 text-muted-text">{feature.desc}</p>
+                <h3 className="landing-ui-card-heading mt-5 text-deep-navy sm:text-[1.08rem]">{feature.title}</h3>
+                <p className="landing-ui-card-copy mt-2 max-w-[28rem] text-muted-text">{feature.desc}</p>
               </li>
             ))}
           </ul>
@@ -700,12 +700,16 @@ function SafetyAccessibilityPanel() {
 
 function HomepageCTA() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,#f7f3ea_0%,#f7f3ea_58%,#071426_58%,#071426_100%)] pb-10 pt-20 sm:pb-12 sm:pt-24 lg:pb-14 lg:pt-28" aria-labelledby="cta-section-title">
+    <section className="relative bg-[linear-gradient(180deg,#f7f3ea_0%,#f7f3ea_52%,#071426_52%,#071426_100%)] pb-10 pt-16 sm:pb-12 sm:pt-20 lg:pb-14 lg:pt-24" aria-labelledby="cta-section-title">
+      <div aria-hidden="true" className="absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+        <span className="h-8 w-px bg-gradient-to-b from-soft-teal/45 to-dec-blue" />
+        <span className="h-2.5 w-2.5 rounded-full border-2 border-[#f7f3ea] bg-dec-blue shadow-[0_0_0_4px_rgba(59,153,212,0.14)]" />
+      </div>
       <div className={styles.pageContainer}>
-        <div className="relative min-h-[430px] overflow-hidden rounded-[36px] border border-white/10 bg-deep-navy px-6 py-12 text-white shadow-[0_30px_80px_rgba(7,20,38,0.30)] sm:px-10 sm:py-14 lg:flex lg:items-center lg:px-16 lg:py-16">
+        <div className="relative overflow-hidden rounded-[36px] border border-white/15 bg-deep-navy px-6 py-10 text-white shadow-[0_30px_80px_rgba(7,20,38,0.30)] ring-1 ring-deep-navy/5 sm:min-h-[410px] sm:px-10 sm:py-12 lg:flex lg:items-center lg:px-16 lg:py-14">
           <div aria-hidden="true" className="absolute -right-24 -top-40 h-96 w-96 rounded-full border-[42px] border-dec-blue/16" />
           <div aria-hidden="true" className="absolute -bottom-52 left-[38%] h-80 w-80 rounded-full bg-soft-teal/10 blur-3xl" />
-          <svg aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[52%] opacity-55 md:block" preserveAspectRatio="none" viewBox="0 0 620 430">
+          <svg aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[46%] opacity-50 md:block" preserveAspectRatio="none" viewBox="0 0 620 430">
             <path d="M50 352 C170 256 242 364 350 242 S536 88 676 162" fill="none" stroke="#3b99d4" strokeDasharray="8 12" strokeLinecap="round" strokeWidth="2.5" />
             <path d="M18 395 C154 292 258 414 382 291 S552 154 668 212" fill="none" stroke="#91c852" strokeOpacity="0.55" strokeWidth="2" />
             <circle cx="190" cy="310" fill="#3b99d4" r="7" />
@@ -713,7 +717,7 @@ function HomepageCTA() {
             <circle cx="540" cy="164" fill="#f59e0b" r="7" />
           </svg>
 
-          <div className="relative grid w-full gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(13rem,0.3fr)] lg:items-end lg:gap-16">
+          <div className="relative grid w-full gap-8 sm:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.34fr)] lg:items-center lg:gap-14">
             <div>
               <div className="flex items-center gap-3">
                 <span aria-hidden="true" className="h-0.5 w-9 rounded-full bg-dec-green" />
@@ -721,19 +725,19 @@ function HomepageCTA() {
                   Ready to begin?
                 </span>
               </div>
-              <h2 id="cta-section-title" className="mt-5 max-w-[52rem] font-display text-[2.2rem] font-bold leading-[1.04] tracking-[-0.03em] text-white [text-wrap:balance] sm:mt-6 sm:text-[clamp(2.8rem,4.8vw,4.25rem)] sm:leading-[1.01]">
+              <h2 id="cta-section-title" className="mt-5 max-w-[48rem] font-display text-[2.15rem] font-bold leading-[1.05] tracking-[-0.03em] text-white [text-wrap:balance] sm:mt-6 sm:text-[clamp(2.7rem,4.4vw,4rem)] sm:leading-[1.02]">
                 Choose the course that supports your current work
               </h2>
-              <p className="landing-section-copy mt-7 max-w-[44rem] text-slate-200">
+              <p className="landing-section-copy mt-6 max-w-[41rem] text-slate-100 sm:mt-7">
                 Browse the course catalogue to explore details and prerequisites. If you have been invited to join a cohort, use the registration link shared in your invitation email.
               </p>
             </div>
-            <div className="flex w-full flex-col gap-3 sm:max-w-[30rem] sm:flex-row lg:max-w-none lg:flex-col">
-              <ActionButton className="w-full min-w-[13rem] tracking-[-0.01em] shadow-[0_14px_30px_rgba(20,103,153,0.32)]" href="/courses" size="lg">
+            <div className="flex w-full flex-col gap-3 sm:max-w-[30rem] sm:flex-row lg:max-w-none lg:flex-col lg:rounded-[24px] lg:border lg:border-white/10 lg:bg-white/[0.045] lg:p-4 lg:shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
+              <ActionButton className="min-h-14 w-full min-w-[13rem] tracking-[-0.01em] shadow-[0_14px_30px_rgba(20,103,153,0.32)]" href="/courses" size="lg">
                 Explore courses
               </ActionButton>
               <ActionButton
-                className="w-full min-w-[13rem] border-white/70 bg-transparent tracking-[-0.01em] text-white hover:border-white hover:bg-white/10 hover:text-white"
+                className="min-h-14 w-full min-w-[13rem] border-white/70 bg-transparent tracking-[-0.01em] text-white hover:border-white hover:bg-white/10 hover:text-white"
                 href="/sign-in"
                 size="lg"
                 variant="outline"
