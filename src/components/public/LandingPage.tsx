@@ -182,10 +182,10 @@ function FeaturedCourseCard({
   const displayTitle = displayTitles[course.title] ?? course.title;
   return (
     <article
-      className="group flex h-full flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.07)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-within:border-dec-blue focus-within:ring-2 focus-within:ring-dec-blue/35 motion-reduce:transform-none motion-reduce:transition-none md:grid md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] md:items-stretch xl:flex"
+      className="group flex h-full flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.07)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-within:border-dec-blue focus-within:ring-2 focus-within:ring-dec-blue/35 motion-reduce:transform-none motion-reduce:transition-none lg:grid lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] lg:items-stretch xl:flex"
     >
-      <div className="bg-[#f4f7f5] md:flex md:h-full md:items-center md:p-5 xl:block xl:h-auto xl:p-0">
-        <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+      <div className="bg-[#f4f7f5] lg:flex lg:h-full lg:items-center lg:p-5 xl:block xl:h-auto xl:p-0">
+        <div className="relative aspect-video w-full overflow-hidden bg-slate-100 sm:aspect-[2/1] lg:aspect-video xl:aspect-[1.95/1]">
           <Image
             alt={image.alt}
             className={cx(
@@ -193,34 +193,36 @@ function FeaturedCourseCard({
               image.objectPosition,
             )}
             fill
-            sizes="(min-width: 1280px) 560px, (min-width: 768px) 42vw, calc(100vw - 2.5rem)"
+            sizes="(min-width: 1280px) 560px, (min-width: 1024px) 40vw, calc(100vw - 2.5rem)"
             src={image.src}
           />
         </div>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6 xl:p-7">
+      <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <span className="max-w-[70%] text-xs font-extrabold uppercase leading-5 tracking-[0.12em] text-[#216f9d]">
             {course.primaryCapacityArea.name}
           </span>
-          <StatusBadge
-            label={isAvailable ? "Available now" : "Coming soon"}
-            tone={isAvailable ? "green" : "gray"}
-          />
+          <div className="shrink-0 [&>span]:min-h-8 [&>span]:whitespace-nowrap [&>span]:text-[0.8125rem]">
+            <StatusBadge
+              label={isAvailable ? "Available now" : "Coming soon"}
+              tone={isAvailable ? "green" : "gray"}
+            />
+          </div>
         </div>
-        <h3 className="landing-card-heading mt-3 max-w-[28rem] text-deep-navy">
+        <h3 className="landing-card-heading mt-2.5 max-w-[28rem] text-deep-navy">
           {displayTitle}
         </h3>
         {displayTitle !== course.title && (
-          <p className="mt-2 text-sm leading-6 text-[#526477]">
+          <p className="mt-1.5 text-sm leading-6 text-[#526477]">
             Official title: {course.title}
           </p>
         )}
-        <p className="landing-card-copy mt-4 flex-1 text-muted-text">
+        <p className="landing-card-copy mt-3 flex-1 text-muted-text">
           {course.shortDescription}
         </p>
         {isAvailable ? (
-          <div className="mt-5 flex min-h-14 flex-wrap content-start gap-2 border-t border-design-border pt-4 text-[0.8125rem] font-medium text-[#47596b]">
+          <div className="mt-4 flex min-h-12 flex-wrap content-start gap-2 border-t border-design-border pt-3.5 text-[0.8125rem] font-medium text-[#47596b]">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">{course.duration}</span>
             {requiresInvitation && (
               <span className="rounded-full border border-[#f2d497] bg-[#fff8e8] px-3 py-1.5 text-[#80520a]">
@@ -232,13 +234,13 @@ function FeaturedCourseCard({
             </span>
           </div>
         ) : (
-          <p className="mt-5 min-h-14 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-5 text-[#536475]">
+          <p className="mt-4 min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-5 text-[#536475]">
             Duration and release date to be confirmed
           </p>
         )}
         <ActionButton
           aria-label={`${isAvailable ? "View" : "View course overview for"} ${course.title}`}
-          className="mt-5 w-full text-[0.95rem] tracking-[-0.01em]"
+          className="mt-4 w-full text-[0.95rem] tracking-[-0.01em] active:translate-y-px"
           href={course.href}
           variant={featured ? "primary" : "secondary"}
         >
@@ -275,12 +277,12 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
               Explore the Human Rights-Based Approach course today. Review other confirmed course areas being prepared for future release.
             </p>
           </div>
-          <ActionButton className="w-fit shrink-0 text-[0.95rem] tracking-[-0.01em]" href="/courses" variant="secondary">
+          <ActionButton className="w-fit shrink-0 text-[0.95rem] tracking-[-0.01em] active:translate-y-px" href="/courses" variant="secondary">
             Explore all courses
           </ActionButton>
         </div>
         
-        <div className="mt-10 grid items-stretch gap-7 xl:grid-cols-2">
+        <div className="mt-9 grid items-stretch gap-7 sm:mt-10 xl:grid-cols-2">
           {shown.map(({ course, identity }, index) => (
             <FeaturedCourseCard
               course={course}
