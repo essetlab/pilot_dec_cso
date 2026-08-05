@@ -62,11 +62,11 @@ const CycleIcon = ({ className }: IconProps) => (
   </svg>
 );
 
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
+function SectionEyebrow({ children, tone = "dark" }: { children: React.ReactNode; tone?: "dark" | "light" }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="h-0.5 w-8 rounded-full bg-dec-blue" />
-      <span className="text-[0.7rem] font-extrabold uppercase leading-none tracking-[0.18em] text-[#277ead]">
+      <span className={cx("h-0.5 w-8 rounded-full", tone === "light" ? "bg-dec-green" : "bg-dec-blue")} />
+      <span className={cx("text-[0.7rem] font-extrabold uppercase leading-none tracking-[0.18em]", tone === "light" ? "text-[#9bd7f6]" : "text-[#277ead]")}>
         {children}
       </span>
     </div>
@@ -268,8 +268,8 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
   }
 
   return (
-    <section id="featured-learning" className="scroll-mt-24 bg-white py-16 sm:py-20 lg:py-24" aria-labelledby="featured-learning-title">
-      <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
+    <section id="featured-learning" className={cx("scroll-mt-24 bg-white", styles.sectionCompact)} aria-labelledby="featured-learning-title">
+      <div className={styles.pageContainer}>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
           <div className="max-w-[680px]">
             <SectionEyebrow>Featured learning</SectionEyebrow>
@@ -425,10 +425,10 @@ function LearningStageCard({
 
 function LearningPathway() {
   return (
-    <section id="how-the-hub-works" className="relative scroll-mt-24 overflow-hidden border-y border-design-border bg-[#f4fbf7] py-16 sm:py-20 lg:py-24" aria-labelledby="pathway-title">
+    <section id="how-the-hub-works" className={cx("relative scroll-mt-24 overflow-hidden border-y border-design-border bg-[#f4fbf7]", styles.sectionCompact)} aria-labelledby="pathway-title">
       <div aria-hidden="true" className="absolute -left-40 top-24 h-[440px] w-[440px] rounded-full border border-soft-teal/10" />
       <div aria-hidden="true" className="absolute -right-32 bottom-10 h-[360px] w-[360px] rounded-full border border-dec-blue/10" />
-      <div className="relative mx-auto max-w-[1280px] px-5 sm:px-7 lg:px-10">
+      <div className={cx("relative", styles.pageContainer)}>
         <div className="mx-auto max-w-[760px] text-center">
           <div className="flex justify-center">
             <SectionEyebrow>How learning works</SectionEyebrow>
@@ -534,34 +534,38 @@ function CsoRealities() {
   ];
 
   return (
-    <section className="bg-soft-bg py-16 sm:py-20 lg:py-24" aria-labelledby="realities-title">
-      <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-          <div>
+    <section className={cx("relative overflow-hidden bg-[#f7f3ea]", styles.sectionStandard)} aria-labelledby="realities-title">
+      <div aria-hidden="true" className="absolute -left-48 top-12 h-[420px] w-[420px] rounded-full border border-[#d8cdb8]/55" />
+      <div aria-hidden="true" className="absolute -left-32 top-28 h-[290px] w-[290px] rounded-full border border-[#d8cdb8]/40" />
+      <div className={cx("relative", styles.pageContainer)}>
+        <div className={cx("grid lg:grid-cols-[0.86fr_1.14fr] lg:items-start", styles.contentGap)}>
+          <div className="max-w-[34rem] lg:pt-5">
             <SectionEyebrow>Designed around CSO realities</SectionEyebrow>
-            <h2 id="realities-title" className="landing-section-heading mt-5 text-deep-navy">
+            <h2 id="realities-title" className="landing-section-heading mt-5 text-deep-navy lg:text-[clamp(2.75rem,4vw,4.25rem)]">
               Your organization already carries knowledge and experience
             </h2>
-            <p className="landing-section-copy mt-5 text-muted-text">
+            <div aria-hidden="true" className="mt-7 flex items-center gap-3">
+              <span className="h-px w-20 bg-[#b99f70]" />
+              <span className="h-2 w-2 rounded-full bg-restrained-amber" />
+            </div>
+            <p className="landing-section-copy mt-7 max-w-[31rem] text-muted-text">
               Finding time and internet continuity to transfer classroom training into shared practice is a common challenge. The Hub provides bite-sized, structured pathways to bridge this gap, putting your context and judgment first.
             </p>
           </div>
-          
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {realities.map((item) => (
-              <li className="rounded-card border border-design-border bg-white p-6 shadow-soft" key={item.title}>
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-soft-bg text-soft-teal">
-                  <CompassIcon className="h-5 w-5" />
-                </span>
-                <h3 className="landing-ui-card-heading mt-4 text-deep-navy">
-                  {item.title}
-                </h3>
-                <p className="landing-ui-card-copy mt-2 text-muted-text">
-                  {item.desc}
-                </p>
-              </li>
-            ))}
-          </ul>
+
+          <div className="overflow-hidden rounded-[30px] border border-[#e2d8c7] bg-white shadow-[0_22px_55px_rgba(65,52,32,0.10)]">
+            <ul className="divide-y divide-[#e8e0d3]">
+              {realities.map((item, index) => (
+                <li className={cx("grid grid-cols-[auto_1fr] items-start gap-4 sm:grid-cols-[auto_minmax(10rem,0.72fr)_minmax(0,1fr)] sm:gap-6", styles.cardPadding)} key={item.title}>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#d9e9e5] bg-[#edf7f4] font-sans text-xs font-extrabold text-soft-teal">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="landing-ui-card-heading pt-2 text-deep-navy sm:pt-2.5">{item.title}</h3>
+                  <p className="landing-ui-card-copy col-start-2 mt-1 text-muted-text sm:col-start-3 sm:mt-0 sm:pt-2">{item.desc}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -576,40 +580,47 @@ function OrgPracticeProgression() {
   ];
 
   return (
-    <section className="bg-white py-16 sm:py-20 lg:py-24" aria-labelledby="org-practice-title">
-      <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div>
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-light-bg text-dec-blue shadow-soft">
+    <section className={cx("relative overflow-hidden bg-deep-navy text-white", styles.sectionStandard)} aria-labelledby="org-practice-title">
+      <div aria-hidden="true" className="absolute -right-40 -top-48 h-[520px] w-[520px] rounded-full border-[42px] border-dec-blue/10" />
+      <div aria-hidden="true" className="absolute -bottom-48 left-[18%] h-80 w-80 rounded-full bg-soft-teal/10 blur-3xl" />
+      <div className={cx("relative", styles.pageContainer)}>
+        <div className={cx("grid lg:grid-cols-[0.82fr_1.18fr] lg:items-end", styles.contentGap)}>
+          <div className="max-w-[38rem]">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-[#8fd0f4] shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
               <PeopleIcon className="h-7 w-7" />
             </span>
             <div className="mt-6">
-              <SectionEyebrow>Individual to team</SectionEyebrow>
-              <h2 id="org-practice-title" className="landing-section-heading mt-5 text-deep-navy">
+              <SectionEyebrow tone="light">Individual to team</SectionEyebrow>
+              <h2 id="org-practice-title" className="landing-section-heading mt-5 text-white">
                 Bring the learning back to your team
               </h2>
             </div>
-            <p className="landing-section-copy mt-5 text-muted-text">
+          </div>
+          <div>
+            <p className="landing-section-copy max-w-[42rem] text-slate-200">
               Each learner maintains an individual account. To build institutional capacity, review course outputs together, adapt templates to your own systems, and retain them for future staff continuity.
             </p>
-            <p className="mt-4 text-sm font-medium leading-6 text-[#7a5008] italic">
-              Note: Team discussions happen offline within your own team; online collaboration is planned for future phases.
-            </p>
           </div>
+        </div>
 
-          <ol className="space-y-4">
-            {steps.map((item) => (
-              <li className="flex gap-4 rounded-card border border-design-border bg-white p-5 shadow-soft" key={item.title}>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-light-bg font-sans text-sm font-extrabold text-dec-blue">
-                  {item.num}
-                </span>
-                <div>
-                  <h3 className="landing-ui-card-heading text-deep-navy">{item.title}</h3>
-                  <p className="landing-ui-card-copy mt-1.5 text-muted-text">{item.desc}</p>
-                </div>
-              </li>
-            ))}
+        <div className="relative mt-10 overflow-hidden rounded-[30px] border border-white/12 bg-white/[0.055] shadow-[0_22px_54px_rgba(0,0,0,0.18)]">
+          <span aria-hidden="true" className="absolute left-[16%] right-[16%] top-[3.55rem] hidden border-t-2 border-dashed border-[#64b6df]/45 md:block" />
+          <ol className="relative grid md:grid-cols-3 md:divide-x md:divide-white/10">
+              {steps.map((item) => (
+                <li className={cx("relative grid grid-cols-[auto_1fr] gap-4 border-b border-white/10 last:border-b-0 md:block md:border-b-0", styles.cardPadding)} key={item.title}>
+                  <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 border-[#18334d] bg-dec-blue font-sans text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(0,0,0,0.22)] md:h-14 md:w-14">
+                    {item.num}
+                  </span>
+                  <div className="md:mt-6">
+                    <h3 className="landing-ui-card-heading text-white">{item.title}</h3>
+                    <p className="landing-ui-card-copy mt-2 text-slate-300">{item.desc}</p>
+                  </div>
+                </li>
+              ))}
           </ol>
+          <p className="border-t border-white/10 bg-restrained-amber/10 px-5 py-4 text-sm font-medium leading-6 text-[#f6d48d] italic sm:px-8">
+            Note: Team discussions happen offline within your own team; online collaboration is planned for future phases.
+          </p>
         </div>
       </div>
     </section>
@@ -625,31 +636,38 @@ function SafetyAccessibilityPanel() {
   ];
 
   return (
-    <section className="border-y border-design-border bg-light-bg py-16 sm:py-20 lg:py-24" aria-labelledby="safety-assurance-title">
-      <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div>
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-soft-teal shadow-soft">
+    <section className={cx("border-y border-design-border bg-[#eef8f2]", styles.sectionStandard)} aria-labelledby="safety-assurance-title">
+      <div className={styles.pageContainer}>
+        <div className="grid overflow-hidden rounded-[32px] border border-soft-teal/20 bg-white shadow-[0_22px_58px_rgba(15,76,92,0.10)] lg:grid-cols-[0.8fr_1.2fr]">
+          <div className={cx("relative overflow-hidden bg-[#0b4c5c] text-white", styles.cardPadding)}>
+            <span aria-hidden="true" className="absolute -bottom-24 -right-20 h-64 w-64 rounded-full border-[28px] border-white/5" />
+            <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#b9e985] shadow-[0_14px_28px_rgba(0,0,0,0.15)]">
               <ShieldIcon className="h-7 w-7" />
             </span>
-            <div className="mt-6">
-              <SectionEyebrow>Safe participation</SectionEyebrow>
-              <h2 id="safety-assurance-title" className="landing-section-heading mt-5 text-deep-navy">
+            <div className="relative mt-6">
+              <SectionEyebrow tone="light">Safe participation</SectionEyebrow>
+              <h2 id="safety-assurance-title" className="mt-5 font-display text-[clamp(2.2rem,3.7vw,3.5rem)] font-bold leading-[1.04] tracking-[-0.028em] text-white [text-wrap:balance]">
                 Designed for practical and safe online access
               </h2>
             </div>
-            <p className="landing-section-copy mt-5 text-muted-text">
+            <p className="relative mt-5 max-w-[34rem] text-base leading-8 text-slate-200">
               The platform respects local connectivity realities. We prioritize lightweight structures, clear keyboard accessibility, and safe participant boundaries.
             </p>
-            <ActionButton className="mt-6" href="/accessibility" variant="secondary">
+            <ActionButton className="relative mt-7 border-white bg-white text-deep-navy hover:bg-slate-100" href="/accessibility" variant="secondary">
               Accessibility guidance
             </ActionButton>
           </div>
 
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {features.map((feature) => (
-              <li className="rounded-card border border-design-border bg-white p-5 shadow-soft" key={feature.title}>
-                <h3 className="landing-ui-card-heading text-deep-navy">{feature.title}</h3>
+          <ul className="grid sm:grid-cols-2">
+            {features.map((feature, index) => (
+              <li className={cx("relative border-b border-design-border last:border-b-0 sm:[&:nth-child(odd)]:border-r sm:[&:nth-last-child(-n+2)]:border-b-0", styles.cardPadding)} key={feature.title}>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9f5f1] font-sans text-xs font-extrabold text-soft-teal">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-soft-teal/35 to-transparent" />
+                </div>
+                <h3 className="landing-ui-card-heading mt-5 text-deep-navy">{feature.title}</h3>
                 <p className="landing-ui-card-copy mt-2 text-muted-text">{feature.desc}</p>
               </li>
             ))}
@@ -662,8 +680,9 @@ function SafetyAccessibilityPanel() {
 
 function HomepageCTA() {
   return (
-    <section className="bg-white px-5 py-16 sm:px-7 sm:py-20 lg:px-10" aria-labelledby="cta-section-title">
-      <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-card bg-deep-navy px-6 py-10 text-white sm:px-10 sm:py-12 lg:px-12 lg:py-14">
+    <section className={cx("bg-[#f7f3ea]", styles.sectionCompact)} aria-labelledby="cta-section-title">
+      <div className={styles.pageContainer}>
+      <div className="relative overflow-hidden rounded-[32px] bg-deep-navy px-6 py-10 text-white shadow-[0_24px_58px_rgba(7,20,38,0.18)] sm:px-10 sm:py-12 lg:px-12 lg:py-14">
         <div aria-hidden="true" className="absolute -right-20 -top-28 h-72 w-72 rounded-full border-[28px] border-dec-blue/20" />
         <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
@@ -692,13 +711,14 @@ function HomepageCTA() {
           </div>
         </div>
       </div>
+      </div>
     </section>
   );
 }
 
 export function LandingPage({ courses = [] }: { courses?: PublicCatalogueCourseSummary[] }) {
   return (
-    <div className="flex flex-col overflow-x-clip bg-light-bg">
+    <div className={cx("flex flex-col overflow-x-clip bg-light-bg", styles.pageRhythm)}>
       {/* 1. Hero */}
       <HomepageHero />
 
