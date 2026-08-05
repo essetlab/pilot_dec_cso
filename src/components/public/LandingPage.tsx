@@ -680,37 +680,49 @@ function SafetyAccessibilityPanel() {
 
 function HomepageCTA() {
   return (
-    <section className={cx("bg-[#f7f3ea]", styles.sectionCompact)} aria-labelledby="cta-section-title">
+    <section className="relative bg-[linear-gradient(180deg,#f7f3ea_0%,#f7f3ea_58%,#071426_58%,#071426_100%)] pb-10 pt-20 sm:pb-12 sm:pt-24 lg:pb-14 lg:pt-28" aria-labelledby="cta-section-title">
       <div className={styles.pageContainer}>
-      <div className="relative overflow-hidden rounded-[32px] bg-deep-navy px-6 py-10 text-white shadow-[0_24px_58px_rgba(7,20,38,0.18)] sm:px-10 sm:py-12 lg:px-12 lg:py-14">
-        <div aria-hidden="true" className="absolute -right-20 -top-28 h-72 w-72 rounded-full border-[28px] border-dec-blue/20" />
-        <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <span className="text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-[#8fd0f4]">
-              Ready to begin?
-            </span>
-            <h2 id="cta-section-title" className="mt-4 max-w-3xl font-display text-[clamp(2rem,3.5vw,3rem)] font-bold leading-[1.08] tracking-[-0.025em] text-white [text-wrap:balance]">
-              Choose the course that supports your current work
-            </h2>
-            <p className="landing-section-copy mt-5 max-w-2xl text-slate-200">
-              Browse the course catalogue to explore details and prerequisites. If you have been invited to join a cohort, use the registration link shared in your invitation email.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col shrink-0">
-            <ActionButton className="tracking-[-0.01em]" href="/courses" size="md">
-              Explore courses
-            </ActionButton>
-            <ActionButton
-              className="border-white bg-white tracking-[-0.01em] text-deep-navy hover:bg-slate-100"
-              href="/sign-in"
-              size="md"
-              variant="secondary"
-            >
-              Sign in
-            </ActionButton>
+        <div className="relative min-h-[430px] overflow-hidden rounded-[36px] border border-white/10 bg-deep-navy px-6 py-12 text-white shadow-[0_30px_80px_rgba(7,20,38,0.30)] sm:px-10 sm:py-14 lg:flex lg:items-center lg:px-16 lg:py-16">
+          <div aria-hidden="true" className="absolute -right-24 -top-40 h-96 w-96 rounded-full border-[42px] border-dec-blue/16" />
+          <div aria-hidden="true" className="absolute -bottom-52 left-[38%] h-80 w-80 rounded-full bg-soft-teal/10 blur-3xl" />
+          <svg aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[52%] opacity-55 md:block" preserveAspectRatio="none" viewBox="0 0 620 430">
+            <path d="M50 352 C170 256 242 364 350 242 S536 88 676 162" fill="none" stroke="#3b99d4" strokeDasharray="8 12" strokeLinecap="round" strokeWidth="2.5" />
+            <path d="M18 395 C154 292 258 414 382 291 S552 154 668 212" fill="none" stroke="#91c852" strokeOpacity="0.55" strokeWidth="2" />
+            <circle cx="190" cy="310" fill="#3b99d4" r="7" />
+            <circle cx="382" cy="291" fill="#91c852" r="7" />
+            <circle cx="540" cy="164" fill="#f59e0b" r="7" />
+          </svg>
+
+          <div className="relative grid w-full gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(13rem,0.3fr)] lg:items-end lg:gap-16">
+            <div>
+              <div className="flex items-center gap-3">
+                <span aria-hidden="true" className="h-0.5 w-9 rounded-full bg-dec-green" />
+                <span className="text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-[#9bd7f6]">
+                  Ready to begin?
+                </span>
+              </div>
+              <h2 id="cta-section-title" className="mt-6 max-w-[56rem] font-display text-[2.3rem] font-bold leading-[0.99] tracking-[-0.035em] text-white [text-wrap:balance] sm:text-[clamp(3rem,5.4vw,4.75rem)]">
+                Choose the course that supports your current work
+              </h2>
+              <p className="landing-section-copy mt-7 max-w-[44rem] text-slate-200">
+                Browse the course catalogue to explore details and prerequisites. If you have been invited to join a cohort, use the registration link shared in your invitation email.
+              </p>
+            </div>
+            <div className="flex w-full flex-col gap-3 sm:max-w-[30rem] sm:flex-row lg:max-w-none lg:flex-col">
+              <ActionButton className="w-full min-w-[13rem] tracking-[-0.01em] shadow-[0_14px_30px_rgba(20,103,153,0.32)]" href="/courses" size="lg">
+                Explore courses
+              </ActionButton>
+              <ActionButton
+                className="w-full min-w-[13rem] border-white/70 bg-transparent tracking-[-0.01em] text-white hover:border-white hover:bg-white/10 hover:text-white"
+                href="/sign-in"
+                size="lg"
+                variant="outline"
+              >
+                Sign in
+              </ActionButton>
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </section>
   );

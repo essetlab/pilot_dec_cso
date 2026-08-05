@@ -30,11 +30,17 @@ const footerAccountLinks: NavItem[] = [
   { href: "/register", label: "Register" },
 ];
 
-const footerTrustLinks: NavItem[] = [
+const footerSupportLinks: NavItem[] = [
   { href: "/support", label: "Help / Support" },
   { href: "/verify-certificate", label: "Verify certificate" },
+];
+
+const footerPolicyLinks: NavItem[] = [
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
+];
+
+const footerAccessibilityLinks: NavItem[] = [
   { href: "/accessibility", label: "Accessibility" },
 ];
 
@@ -326,65 +332,72 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
+  const footerGroups = [
+    { heading: "Platform", links: footerPlatformLinks },
+    { heading: "Account", links: footerAccountLinks },
+    { heading: "Help & Support", links: footerSupportLinks },
+    { heading: "Policies & Legal", links: footerPolicyLinks },
+    { heading: "Accessibility", links: footerAccessibilityLinks },
+  ];
+
+  const footerLinkClassName = "inline-flex min-h-11 items-center rounded-lg px-2 text-[0.9rem] font-medium text-slate-300 underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green focus-visible:ring-offset-2 focus-visible:ring-offset-[#071426]";
+
   return (
-    <footer className="mt-auto bg-[#071426] text-white">
-      <div className="mx-auto max-w-[1200px] px-5 py-16 sm:px-7 sm:py-20 lg:px-10">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.5fr_0.8fr_0.8fr_1fr]">
-          <div>
-            <div className="relative h-12 w-[130px]">
+    <footer className="mt-auto overflow-hidden bg-[#071426] text-white">
+      <div className="mx-auto w-full max-w-[1280px] px-5 pb-10 pt-10 sm:px-7 sm:pb-12 sm:pt-12 lg:px-10 lg:pt-14">
+        <div className="grid gap-12 border-b border-white/10 pb-12 lg:grid-cols-[minmax(17rem,0.78fr)_minmax(0,1.62fr)] lg:gap-16 lg:pb-14">
+          <div className="max-w-md">
+            <div className="relative h-14 w-[145px]">
               <Image
                 alt="Development Expertise Center Logo"
                 className="object-contain"
                 fill
-                sizes="130px"
+                sizes="145px"
                 src="/logos/dec-logo.png"
               />
             </div>
-            <h2 className="mt-5 font-display text-2xl font-bold leading-tight tracking-[-0.018em] text-white">CSO Learning Hub</h2>
-            <p className="mt-4 max-w-sm text-[0.95rem] font-normal leading-7 text-slate-300">
+            <h2 className="mt-6 font-display text-[2rem] font-bold leading-tight tracking-[-0.022em] text-white">CSO Learning Hub</h2>
+            <p className="mt-4 max-w-sm text-[0.98rem] font-normal leading-7 text-slate-300">
               A practical digital learning platform for local and grassroots civil society organisations in Ethiopia.
             </p>
+            <span aria-hidden="true" className="mt-7 block h-0.5 w-16 rounded-full bg-gradient-to-r from-dec-blue to-dec-green" />
           </div>
-          {[
-            { heading: "Platform", links: footerPlatformLinks },
-            { heading: "Account", links: footerAccountLinks },
-            { heading: "Trust & Support", links: footerTrustLinks },
-          ].map((group) => (
-            <nav aria-label={`${group.heading} links`} key={group.heading}>
-              <h2 className="text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-dec-green">
-                {group.heading}
-              </h2>
-              <ul className="mt-4 space-y-1">
-                {group.links.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      className="inline-flex min-h-11 items-center rounded px-1 text-[0.9rem] font-medium text-slate-300 underline-offset-4 transition-all hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
-                      href={item.href}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
+
+          <div className="grid grid-cols-2 gap-x-5 gap-y-9 sm:grid-cols-3 xl:grid-cols-5 xl:gap-x-6">
+            {footerGroups.map((group) => (
+              <nav aria-label={`${group.heading} links`} key={group.heading}>
+                <h2 className="min-h-8 text-[0.68rem] font-extrabold uppercase leading-4 tracking-[0.16em] text-dec-green">
+                  {group.heading}
+                </h2>
+                <ul className="mt-3 space-y-0.5">
+                  {group.links.map((item) => (
+                    <li key={item.href}>
+                      <Link className={footerLinkClassName} href={item.href}>
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
+          </div>
         </div>
-        <p className="mt-12 border-t border-white/10 pt-8 text-xs font-normal leading-5 text-slate-400">
-          &copy; {currentYear} Development Expertise Center (DEC). All rights reserved.
-        </p>
-      </div>
-      <section aria-labelledby="partner-acknowledgement-title" className="border-t border-[#cad5df] bg-white py-5 sm:py-7">
-        <div className="mx-auto max-w-[1200px] px-5 sm:px-7 lg:px-10">
-          <h2 className="text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-[#3f5061]" id="partner-acknowledgement-title">
+
+        <section aria-labelledby="partner-acknowledgement-title" className="pt-10 sm:pt-12">
+          <div className="flex items-center gap-4">
+            <h2 className="shrink-0 text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-[#9bd7f6]" id="partner-acknowledgement-title">
             Our partners &amp; donors
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-[1.25fr_1.05fr_2.4fr_1.15fr_0.75fr] lg:gap-3">
-            <div>
-              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">Funded by the European Union</p>
-              <div className="mt-2 flex items-center justify-center">
+            </h2>
+            <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent" />
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-12">
+            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
+              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">Funded by the European Union</p>
+              <div className="mt-3 flex flex-1 items-center justify-center">
                 <Image
                   alt="European Union"
-                  className="h-12 w-auto object-contain"
+                  className="h-12 w-auto max-w-full object-contain"
                   height={870}
                   loading="lazy"
                   src="/logos/eu-logo.png"
@@ -392,12 +405,12 @@ export function PublicFooter() {
                 />
               </div>
             </div>
-            <div>
-              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">Coordinated by</p>
-              <div className="mt-2 flex items-center justify-center">
+            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
+              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">Coordinated by</p>
+              <div className="mt-3 flex flex-1 items-center justify-center">
                 <Image
                   alt="Welthungerhilfe"
-                  className="h-12 w-auto object-contain sm:h-14"
+                  className="h-11 w-auto max-w-full object-contain sm:h-12"
                   height={887}
                   loading="lazy"
                   src="/logos/whh-logo.png"
@@ -405,20 +418,20 @@ export function PublicFooter() {
                 />
               </div>
             </div>
-            <div>
-              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">In Partnership with</p>
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4 xl:flex-nowrap xl:gap-x-2">
-                <Image alt="CoSAP" className="h-10 w-auto object-contain sm:h-12" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
-                <Image alt="Development Expertise Center" className="h-10 w-auto object-contain sm:h-12" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
-                <Image alt="Pastoralist Forum Ethiopia" className="h-12 w-auto object-contain sm:h-14" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
+            <div className="col-span-2 flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-4 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-4">
+              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">In Partnership with</p>
+              <div className="mt-3 flex flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-3 lg:flex-nowrap lg:gap-x-3">
+                <Image alt="CoSAP" className="h-10 w-auto max-w-[90px] object-contain" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
+                <Image alt="Development Expertise Center" className="h-9 w-auto max-w-[92px] object-contain" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
+                <Image alt="Pastoralist Forum Ethiopia" className="h-10 w-auto max-w-[120px] object-contain" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
               </div>
             </div>
-            <div>
-              <p className="text-center text-xs font-semibold leading-5 text-[#3f5061]">With Technical Support of</p>
-              <div className="mt-2 flex items-center justify-center">
+            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
+              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">With Technical Support of</p>
+              <div className="mt-3 flex flex-1 items-center justify-center">
                 <Image
                   alt="Civil Peace Service / ZFD"
-                  className="h-12 w-auto object-contain sm:h-14"
+                  className="h-10 w-auto max-w-full object-contain sm:h-11"
                   height={724}
                   loading="lazy"
                   src="/logos/zfd-logo.png"
@@ -426,23 +439,27 @@ export function PublicFooter() {
                 />
               </div>
             </div>
-            <div>
-              <p className="text-center text-xs font-medium leading-5 text-[#5f7183]">Platform and technical support by</p>
-              <div className="mt-2 flex items-center justify-center gap-2">
+            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
+              <p className="text-center text-[0.68rem] font-medium leading-4 text-[#5f7183]">Platform and technical support by</p>
+              <div className="mt-3 flex flex-1 items-center justify-center gap-2">
                 <Image
                   alt="Medab Solutions"
-                  className="h-8 w-auto object-contain"
+                  className="h-12 w-auto object-contain"
                   height={876}
                   loading="lazy"
                   src="/logos/medab-solutions-logo.png"
                   width={589}
                 />
-                <p className="text-xs font-medium text-[#5f7183]">Medab Solutions</p>
+                <p className="text-xs font-medium leading-4 text-[#5f7183]">Medab Solutions</p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <p className="mt-10 border-t border-white/10 pt-7 text-xs font-normal leading-5 text-slate-400">
+          &copy; {currentYear} Development Expertise Center (DEC). All rights reserved.
+        </p>
+      </div>
     </footer>
   );
 }
