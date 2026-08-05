@@ -66,7 +66,7 @@ function SectionEyebrow({ children, tone = "dark" }: { children: React.ReactNode
   return (
     <div className="flex items-center gap-3">
       <span className={cx("h-0.5 w-8 rounded-full", tone === "light" ? "bg-dec-green" : "bg-dec-blue")} />
-      <span className={cx("text-[0.7rem] font-extrabold uppercase leading-none tracking-[0.18em]", tone === "light" ? "text-[#9bd7f6]" : "text-[#277ead]")}>
+      <span className={cx("text-xs font-extrabold uppercase leading-tight tracking-[0.16em]", tone === "light" ? "text-[#a8dcf7]" : "text-[#216f9d]")}>
         {children}
       </span>
     </div>
@@ -75,21 +75,21 @@ function SectionEyebrow({ children, tone = "dark" }: { children: React.ReactNode
 
 function HomepageHero() {
   return (
-    <section className="relative isolate flex min-h-[860px] w-full items-center overflow-hidden bg-[#071426] text-white sm:min-h-[clamp(680px,82vh,720px)]" aria-labelledby="landing-hero-title">
-      <div className="absolute inset-x-0 bottom-0 -z-30 h-[54%] sm:inset-0 sm:h-auto">
+    <section className="relative isolate flex min-h-[810px] w-full items-start overflow-hidden bg-[#071426] text-white sm:min-h-[clamp(680px,82vh,720px)] sm:items-center" aria-labelledby="landing-hero-title">
+      <div className="absolute inset-x-0 bottom-0 -z-30 h-[52%] sm:inset-0 sm:h-auto">
         <Image
           alt="Illustration of Ethiopian CSO practitioners with diverse abilities co-creating a community plan around a table."
-          className="landing-hero-art object-cover object-[72%_center] sm:object-[30%_center] lg:object-[32%_center] xl:object-[70%_center]"
+          className="landing-hero-art object-cover object-[68%_center] sm:object-[66%_center] lg:object-[68%_center] xl:object-[70%_center]"
           fill
           priority
           sizes="100vw"
           src="/images/landing/cso-collaborative-planning-hero.webp"
         />
       </div>
-      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,#071426_0%,rgba(7,20,38,0.98)_48%,rgba(7,20,38,0.62)_68%,rgba(7,20,38,0.18)_100%)] sm:bg-[linear-gradient(90deg,rgba(7,20,38,0.98)_0%,rgba(7,20,38,0.94)_36%,rgba(7,20,38,0.58)_54%,rgba(7,20,38,0.16)_74%,rgba(7,20,38,0.04)_100%)]" />
-      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,rgba(7,20,38,0.28)_0%,transparent_32%,transparent_74%,rgba(7,20,38,0.50)_100%)]" />
+      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,#071426_0%,rgba(7,20,38,0.99)_50%,rgba(7,20,38,0.76)_68%,rgba(7,20,38,0.20)_100%)] sm:bg-[linear-gradient(90deg,rgba(7,20,38,0.99)_0%,rgba(7,20,38,0.96)_38%,rgba(7,20,38,0.68)_56%,rgba(7,20,38,0.22)_78%,rgba(7,20,38,0.08)_100%)]" />
+      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,rgba(7,20,38,0.18)_0%,transparent_32%,transparent_72%,rgba(7,20,38,0.46)_100%)]" />
 
-      <div className="flex w-full items-center px-5 pb-20 pt-24 sm:px-8 sm:pb-24 sm:pt-28 lg:px-[clamp(3rem,5vw,6rem)] lg:pb-24 lg:pt-28 xl:pt-32">
+      <div className="flex w-full items-center px-5 pb-20 pt-[7.75rem] sm:px-8 sm:pb-24 sm:pt-28 lg:px-[clamp(3rem,5vw,6rem)] lg:pb-24 lg:pt-28 xl:pt-32">
         <div className="relative z-10 max-w-[680px]">
           <div className="flex items-center gap-3">
             <span aria-hidden="true" className="h-0.5 w-8 rounded-full bg-dec-green shadow-[0_0_14px_rgba(145,200,82,0.45)]" />
@@ -99,30 +99,30 @@ function HomepageHero() {
           </div>
           <h1
             id="landing-hero-title"
-            className="mt-5 max-w-[620px] font-display text-[2.4rem] font-bold leading-[0.99] tracking-[-0.03em] text-white [text-shadow:0_4px_28px_rgba(7,20,38,0.42)] sm:max-w-[500px] sm:text-[clamp(2.65rem,4vw,4.35rem)] xl:max-w-[620px]"
+            className="mt-4 max-w-[620px] font-display text-[clamp(2.15rem,9.5vw,2.4rem)] font-bold leading-[1.02] tracking-[-0.028em] text-white [text-shadow:0_4px_28px_rgba(7,20,38,0.42)] sm:mt-5 sm:max-w-[500px] sm:text-[clamp(2.65rem,4vw,4.35rem)] sm:leading-[0.99] xl:max-w-[620px]"
           >
             Practical learning for stronger local and grassroots CSOs
           </h1>
-          <p className="mt-5 max-w-[600px] text-[0.98rem] leading-7 text-slate-100 [text-shadow:0_2px_14px_rgba(7,20,38,0.58)] sm:max-w-[560px] sm:text-base sm:leading-7 lg:text-[1.02rem] xl:max-w-[600px]">
+          <p className="mt-4 max-w-[600px] text-base leading-7 text-white [text-shadow:0_2px_14px_rgba(7,20,38,0.72)] sm:mt-5 sm:max-w-[560px] lg:text-[1.0625rem] lg:leading-8 xl:max-w-[600px]">
             Work through realistic cases, guided activities, and adaptable tools built for the everyday realities of civil society work in Ethiopia. Study at your own pace and build shared capabilities.
           </p>
 
-          <ul aria-label="Learning benefits" className="mt-5 grid max-w-[660px] grid-cols-2 overflow-hidden rounded-2xl border border-white/16 bg-[#071426]/48 p-1.5 text-[0.72rem] font-extrabold uppercase tracking-[0.075em] text-white shadow-[0_14px_34px_rgba(7,20,38,0.20)] backdrop-blur-md sm:flex sm:w-fit sm:flex-wrap">
+          <ul aria-label="Learning benefits" className="mt-4 grid max-w-[660px] grid-cols-2 overflow-hidden rounded-2xl border border-white/20 bg-[#071426]/64 p-1.5 text-xs font-extrabold uppercase leading-4 tracking-[0.065em] text-white shadow-[0_14px_34px_rgba(7,20,38,0.24)] backdrop-blur-md sm:mt-5 sm:flex sm:w-fit sm:flex-wrap">
             {["Self-paced", "Practice-led", "Mobile-ready", "Certificate pathway"].map((benefit) => (
-              <li className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2.5 sm:px-3.5" key={benefit}>
+              <li className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2.5 sm:px-3.5" key={benefit}>
                 <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-dec-green shadow-[0_0_0_3px_rgba(145,200,82,0.18)]" />
                 <span>{benefit}</span>
               </li>
             ))}
           </ul>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row">
             <ActionButton className="min-w-[180px] border-[#63b8e8] tracking-[-0.01em] shadow-[0_14px_30px_rgba(20,103,153,0.32)] hover:-translate-y-0.5" href="/courses" size="lg">
               Explore courses
               <ChevronRightIcon className="h-4 w-4" />
             </ActionButton>
             <ActionButton
-              className="min-w-[190px] border-white/75 bg-[#071426]/34 tracking-[-0.01em] text-white backdrop-blur-md hover:-translate-y-0.5 hover:border-white hover:bg-white/12 hover:text-white"
+              className="min-w-[190px] border-white/75 bg-[#071426]/58 tracking-[-0.01em] text-white backdrop-blur-md hover:-translate-y-0.5 hover:border-white hover:bg-white/12 hover:text-white"
               href="/sign-in"
               size="lg"
               variant="outline"
@@ -200,7 +200,7 @@ function FeaturedCourseCard({
       </div>
       <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6 xl:p-7">
         <div className="flex items-start justify-between gap-3">
-          <span className="max-w-[70%] text-[0.7rem] font-extrabold uppercase leading-5 tracking-[0.14em] text-[#277ead]">
+          <span className="max-w-[70%] text-xs font-extrabold uppercase leading-5 tracking-[0.12em] text-[#216f9d]">
             {course.primaryCapacityArea.name}
           </span>
           <StatusBadge
@@ -212,7 +212,7 @@ function FeaturedCourseCard({
           {displayTitle}
         </h3>
         {displayTitle !== course.title && (
-          <p className="mt-2 text-[0.78rem] leading-5 text-[#607080]">
+          <p className="mt-2 text-sm leading-6 text-[#526477]">
             Official title: {course.title}
           </p>
         )}
@@ -220,7 +220,7 @@ function FeaturedCourseCard({
           {course.shortDescription}
         </p>
         {isAvailable ? (
-          <div className="mt-5 flex min-h-14 flex-wrap content-start gap-2 border-t border-design-border pt-4 text-xs font-medium text-[#536475]">
+          <div className="mt-5 flex min-h-14 flex-wrap content-start gap-2 border-t border-design-border pt-4 text-[0.8125rem] font-medium text-[#47596b]">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">{course.duration}</span>
             {requiresInvitation && (
               <span className="rounded-full border border-[#f2d497] bg-[#fff8e8] px-3 py-1.5 text-[#80520a]">
@@ -238,7 +238,7 @@ function FeaturedCourseCard({
         )}
         <ActionButton
           aria-label={`${isAvailable ? "View" : "View course overview for"} ${course.title}`}
-          className="mt-5 w-full tracking-[-0.01em]"
+          className="mt-5 w-full text-[0.95rem] tracking-[-0.01em]"
           href={course.href}
           variant={featured ? "primary" : "secondary"}
         >
@@ -268,14 +268,14 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
           <div className="max-w-[680px]">
             <SectionEyebrow>Featured learning</SectionEyebrow>
-            <h2 id="featured-learning-title" className="mt-5 max-w-none font-display text-[2.25rem] font-bold leading-[1.07] tracking-[-0.025em] text-deep-navy [text-wrap:balance] sm:whitespace-nowrap sm:text-[clamp(2.125rem,3.1vw,2.75rem)] sm:[text-wrap:nowrap]">
+            <h2 id="featured-learning-title" className="mt-4 max-w-none font-display text-[2rem] font-bold leading-[1.1] tracking-[-0.022em] text-deep-navy [text-wrap:balance] sm:mt-5 sm:whitespace-nowrap sm:text-[clamp(2.125rem,3.1vw,2.75rem)] sm:leading-[1.07] sm:[text-wrap:nowrap]">
               Start with the course available now
             </h2>
             <p className="landing-section-copy mt-5 max-w-[640px] text-muted-text">
               Explore the Human Rights-Based Approach course today. Review other confirmed course areas being prepared for future release.
             </p>
           </div>
-          <ActionButton className="w-fit shrink-0 tracking-[-0.01em]" href="/courses" variant="secondary">
+          <ActionButton className="w-fit shrink-0 text-[0.95rem] tracking-[-0.01em]" href="/courses" variant="secondary">
             Explore all courses
           </ActionButton>
         </div>
@@ -359,7 +359,7 @@ function CycleAnchor({ compact = false }: { compact?: boolean }) {
       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-deep-navy text-dec-green shadow-[0_12px_26px_rgba(15,23,42,0.26)] ring-4 ring-[#edf7f4]">
         <CycleIcon className="h-5 w-5" />
       </span>
-      <span className="mt-3 text-[0.66rem] font-extrabold uppercase tracking-[0.18em] text-soft-teal">
+      <span className="mt-3 text-[0.7rem] font-extrabold uppercase tracking-[0.16em] text-soft-teal">
         Continuous
       </span>
       <span className="mt-1 max-w-[138px] font-display text-[1.18rem] font-bold leading-[1.03] tracking-[-0.018em] text-deep-navy lg:text-xl">
@@ -393,7 +393,7 @@ function LearningStageCard({
           <StageIcon className="h-5 w-5" />
         </span>
         <div>
-          <span className={cx("inline-flex rounded-full px-2 py-0.5 text-[0.62rem] font-extrabold uppercase tracking-[0.13em]", stage.badgeStyle)}>
+          <span className={cx("inline-flex rounded-full px-2 py-0.5 text-[0.7rem] font-extrabold uppercase tracking-[0.11em]", stage.badgeStyle)}>
             Stage {stage.num}
           </span>
           <h3 className="mt-1.5 font-display text-[1.45rem] font-bold leading-none tracking-[-0.018em] text-deep-navy">
@@ -411,7 +411,7 @@ function LearningStageCard({
       >
         {stage.num}
       </span>
-      <p className="relative z-10 mt-4 text-sm leading-6 text-muted-text">
+      <p className="relative z-10 mt-4 text-[0.95rem] leading-6 text-muted-text">
         {stage.desc}
       </p>
     </li>
@@ -479,7 +479,7 @@ function LearningPathway() {
                 ))}
               </ol>
             </div>
-            <div className="mt-5 flex items-center justify-center gap-2 rounded-full border border-soft-teal/25 bg-white px-4 py-2.5 text-xs font-semibold text-soft-teal shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
+            <div className="mt-5 flex items-center justify-center gap-2 rounded-full border border-soft-teal/25 bg-white px-4 py-2.5 text-sm font-semibold leading-5 text-soft-teal shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
               <CycleIcon className="h-4 w-4" />
               <span>The cycle continues from Apply back to Explore.</span>
             </div>
@@ -489,14 +489,14 @@ function LearningPathway() {
             <span aria-hidden="true" className="absolute -right-24 -top-28 h-64 w-64 rounded-full border-[24px] border-dec-blue/12" />
             <span aria-hidden="true" className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-soft-teal/10 blur-2xl" />
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-2 rounded-full border border-dec-green/25 bg-dec-green/10 px-3 py-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-[#b9e985]">
+              <span className="inline-flex items-center gap-2 rounded-full border border-dec-green/25 bg-dec-green/10 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-[#c5ed98]">
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-dec-green" />
                 Video coming soon
               </span>
               <h3 id="hub-video-preview-title" className="mt-5 max-w-md font-display text-[clamp(1.8rem,3vw,2.45rem)] font-bold leading-[1.05] tracking-[-0.025em] text-white">
                 Introduction to the CSO Learning Hub
               </h3>
-              <p className="mt-4 max-w-md text-sm leading-7 text-slate-300">
+              <p className="mt-4 max-w-md text-base leading-7 text-slate-200">
                 A future short video will introduce the learning approach and guide learners through the platform journey.
               </p>
             </div>
@@ -515,7 +515,7 @@ function LearningPathway() {
                   <path d="M11 8.6v14.8L23 16 11 8.6Z" fill="currentColor" />
                 </svg>
               </span>
-              <span className="absolute bottom-4 left-4 rounded-full border border-white/15 bg-[#071426]/72 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-white/85 backdrop-blur-sm">
+              <span className="absolute bottom-4 left-4 rounded-full border border-white/15 bg-[#071426]/78 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
                 Platform introduction preview
               </span>
             </div>
@@ -619,7 +619,7 @@ function OrgPracticeProgression() {
                 </li>
               ))}
           </ol>
-          <p className="border-t border-white/10 bg-restrained-amber/10 px-5 py-4 text-sm font-medium leading-6 text-[#f6d48d] italic sm:px-8">
+          <p className="border-t border-white/10 bg-restrained-amber/10 px-5 py-4 text-[0.95rem] font-medium leading-6 text-[#f6d48d] italic sm:px-8">
             Note: Team discussions happen offline within your own team; online collaboration is planned for future phases.
           </p>
         </div>
@@ -647,7 +647,7 @@ function SafetyAccessibilityPanel() {
             </span>
             <div className="relative mt-6">
               <SectionEyebrow tone="light">Safe participation</SectionEyebrow>
-              <h2 id="safety-assurance-title" className="mt-5 font-display text-[clamp(2.2rem,3.7vw,3.5rem)] font-bold leading-[1.04] tracking-[-0.028em] text-white [text-wrap:balance]">
+              <h2 id="safety-assurance-title" className="mt-5 font-display text-[clamp(2rem,3.6vw,3.5rem)] font-bold leading-[1.07] tracking-[-0.025em] text-white [text-wrap:balance]">
                 Designed for practical and safe online access
               </h2>
             </div>
@@ -702,7 +702,7 @@ function HomepageCTA() {
                   Ready to begin?
                 </span>
               </div>
-              <h2 id="cta-section-title" className="mt-6 max-w-[56rem] font-display text-[2.3rem] font-bold leading-[0.99] tracking-[-0.035em] text-white [text-wrap:balance] sm:text-[clamp(3rem,5.4vw,4.75rem)]">
+              <h2 id="cta-section-title" className="mt-5 max-w-[52rem] font-display text-[2.2rem] font-bold leading-[1.04] tracking-[-0.03em] text-white [text-wrap:balance] sm:mt-6 sm:text-[clamp(2.8rem,4.8vw,4.25rem)] sm:leading-[1.01]">
                 Choose the course that supports your current work
               </h2>
               <p className="landing-section-copy mt-7 max-w-[44rem] text-slate-200">

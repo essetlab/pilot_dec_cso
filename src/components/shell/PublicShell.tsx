@@ -65,7 +65,7 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Primary navigation">
-      <ul className="flex items-center gap-6 xl:gap-8">
+      <ul className="flex items-center gap-5 xl:gap-7">
         {publicItems.map((item) => {
           const active = isActive(pathname, item);
           return (
@@ -73,11 +73,11 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "relative flex min-h-11 items-center rounded-lg px-2 text-[0.9rem] font-medium tracking-[0.01em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2",
+                  "relative flex min-h-11 items-center rounded-lg px-2 text-[0.95rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2",
                   isOverlay
                     ? "text-white/80 hover:text-white focus-visible:text-white"
                     : "text-slate-700 hover:text-dec-blue focus-visible:text-dec-blue",
-                  active && "after:absolute after:inset-x-2 after:bottom-1 after:h-0.5 after:rounded-full",
+                  active && "after:absolute after:inset-x-2 after:bottom-0.5 after:h-[3px] after:rounded-full",
                   active && (isOverlay ? "after:bg-dec-green text-white" : "after:bg-dec-blue text-dec-blue")
                 )}
                 href={item.href}
@@ -108,7 +108,7 @@ function MobileNav({
     <div
       aria-label="Main menu"
       aria-modal="true"
-      className="border-t border-white/10 bg-[#071426]/95 backdrop-blur-md shadow-[0_24px_50px_rgba(7,20,38,0.4)] xl:hidden"
+      className="max-h-[calc(100dvh-4.75rem)] overflow-y-auto border-t border-white/10 bg-[#071426]/98 backdrop-blur-xl shadow-[0_24px_50px_rgba(7,20,38,0.4)] xl:hidden"
       onKeyDown={onKeyDown}
       ref={panelRef}
       role="dialog"
@@ -120,7 +120,7 @@ function MobileNav({
             <Link
               aria-current={active ? "page" : undefined}
               className={cx(
-                "flex min-h-[44px] items-center rounded-xl px-4 text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green focus-visible:ring-offset-2",
+                "flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green focus-visible:ring-offset-2",
                 active ? "bg-white text-[#0f172a]" : "text-white hover:bg-white/10"
               )}
               href={item.href}
@@ -135,14 +135,14 @@ function MobileNav({
           {session ? (
             <>
               <Link
-                className="flex min-h-[44px] items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-12 items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/learn"
                 onClick={onClose}
               >
                 My learning
               </Link>
               <Link
-                className="flex min-h-[44px] items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-12 items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/sign-out"
                 onClick={onClose}
                 prefetch={false}
@@ -153,7 +153,7 @@ function MobileNav({
           ) : (
             <>
               <Link
-                className="flex min-h-[44px] items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-12 items-center rounded-xl px-4 font-medium text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/sign-in"
                 onClick={onClose}
               >
@@ -226,34 +226,34 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
   return (
     <header
       className={cx(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
+        "fixed inset-x-0 top-0 z-50 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300",
         isOverlay
           ? "text-white"
-          : "border-b border-[#cad5df] bg-white text-[#0f172a] shadow-[0_8px_24px_rgba(15,23,42,0.06)]"
+          : "border-b border-[#cad5df] bg-white/95 text-[#0f172a] shadow-[0_8px_24px_rgba(15,23,42,0.07)]"
       )}
-      style={isOverlay ? { background: "linear-gradient(90deg,rgba(7,20,38,.98),rgba(7,20,38,.86) 55%,rgba(7,20,38,.45))" } : undefined}
+      style={isOverlay ? { background: "linear-gradient(90deg,rgba(7,20,38,.99),rgba(7,20,38,.92) 55%,rgba(7,20,38,.72))" } : undefined}
     >
       <div
         className={cx(
-          "mx-auto flex min-h-[72px] w-full items-center justify-between gap-5 px-5 sm:px-7",
+          "mx-auto flex min-h-[76px] w-full items-center justify-between gap-4 px-5 sm:px-7",
           isHome ? "max-w-none lg:px-[clamp(3rem,5vw,6rem)]" : "max-w-[1200px] lg:px-10",
         )}
       >
         <Link
           aria-label="CSO Learning Hub home"
-          className="flex min-h-11 shrink-0 items-center gap-3 rounded-lg p-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2"
+          className="flex min-h-12 shrink-0 items-center gap-2.5 rounded-lg p-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2"
           href="/"
         >
           <Image
             alt="Development Expertise Center Logo"
-            className="h-8 w-auto object-contain"
-            height={32}
+            className="h-8 w-auto object-contain sm:h-9"
+            height={36}
             priority
             src="/logos/dec-logo.png"
-            width={88}
+            width={96}
           />
           <div className={cx("h-5 w-px self-center", isOverlay ? "bg-white/25" : "bg-[#cad5df]")} />
-          <span className="font-sans text-[0.84rem] font-extrabold uppercase tracking-[0.07em]">
+          <span className="font-sans text-[0.84rem] font-extrabold uppercase tracking-[0.055em] sm:text-[0.9rem]">
             CSO Learning Hub
           </span>
         </Link>
@@ -265,7 +265,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
             <>
               <Link
                 className={cx(
-                  "flex min-h-11 items-center rounded-lg px-3 text-[0.9rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
+                  "flex min-h-11 items-center rounded-lg px-3 text-[0.95rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
                   isOverlay ? "text-white hover:text-white/80" : "text-[#0f172a] hover:text-dec-blue"
                 )}
                 href="/learn"
@@ -274,7 +274,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
               </Link>
               <Link
                 className={cx(
-                  "flex min-h-11 items-center rounded-lg px-3 text-[0.9rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
+                  "flex min-h-11 items-center rounded-lg px-3 text-[0.95rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
                   isOverlay ? "text-white hover:text-white/80" : "text-[#0f172a] hover:text-dec-blue"
                 )}
                 href="/sign-out"
@@ -287,14 +287,14 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
             <>
               <Link
                 className={cx(
-                  "flex min-h-11 items-center rounded-lg px-3 text-[0.9rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
+                  "flex min-h-11 items-center rounded-lg px-3 text-[0.95rem] font-medium tracking-[0.005em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal",
                   isOverlay ? "text-white hover:text-white/80" : "text-[#0f172a] hover:text-dec-blue"
                 )}
                 href="/sign-in"
               >
                 Sign in
               </Link>
-              <ActionButton href="/register" size="md">
+              <ActionButton className="text-[0.95rem]" href="/register" size="md">
                 Register
               </ActionButton>
             </>
@@ -306,7 +306,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
           aria-expanded={mobileOpen}
           aria-label={mobileOpen ? "Close main menu" : "Open main menu"}
           className={cx(
-            "flex h-[44px] w-[44px] items-center justify-center rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal xl:hidden",
+            "flex h-12 w-12 items-center justify-center rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal xl:hidden",
             isOverlay ? "border-white/30 bg-white/10 text-white" : "border-[#cad5df] bg-white text-[#0f172a]"
           )}
           onClick={() => setMobileOpen((open) => !open)}
@@ -340,7 +340,7 @@ export function PublicFooter() {
     { heading: "Accessibility", links: footerAccessibilityLinks },
   ];
 
-  const footerLinkClassName = "inline-flex min-h-11 items-center rounded-lg px-2 text-[0.9rem] font-medium text-slate-300 underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green focus-visible:ring-offset-2 focus-visible:ring-offset-[#071426]";
+  const footerLinkClassName = "inline-flex min-h-11 items-center rounded-lg px-2 text-[0.95rem] font-medium text-slate-200 underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green focus-visible:ring-offset-2 focus-visible:ring-offset-[#071426]";
 
   return (
     <footer className="mt-auto overflow-hidden bg-[#071426] text-white">
@@ -366,7 +366,7 @@ export function PublicFooter() {
           <div className="grid grid-cols-2 gap-x-5 gap-y-9 sm:grid-cols-3 xl:grid-cols-5 xl:gap-x-6">
             {footerGroups.map((group) => (
               <nav aria-label={`${group.heading} links`} key={group.heading}>
-                <h2 className="min-h-8 text-[0.68rem] font-extrabold uppercase leading-4 tracking-[0.16em] text-dec-green">
+                <h2 className="min-h-8 text-xs font-extrabold uppercase leading-5 tracking-[0.14em] text-dec-green">
                   {group.heading}
                 </h2>
                 <ul className="mt-3 space-y-0.5">
@@ -383,80 +383,103 @@ export function PublicFooter() {
           </div>
         </div>
 
-        <section aria-labelledby="partner-acknowledgement-title" className="pt-10 sm:pt-12">
+        <section aria-labelledby="partner-acknowledgement-title" className="pt-9 sm:pt-10">
           <div className="flex items-center gap-4">
-            <h2 className="shrink-0 text-[0.7rem] font-extrabold uppercase tracking-[0.18em] text-[#9bd7f6]" id="partner-acknowledgement-title">
-            Our partners &amp; donors
+            <h2 className="shrink-0 text-xs font-extrabold uppercase tracking-[0.16em] text-[#a8dcf7]" id="partner-acknowledgement-title">
+              Our partners &amp; donors
             </h2>
             <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent" />
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-12">
-            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
-              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">Funded by the European Union</p>
-              <div className="mt-3 flex flex-1 items-center justify-center">
-                <Image
-                  alt="European Union"
-                  className="h-12 w-auto max-w-full object-contain"
-                  height={870}
-                  loading="lazy"
-                  src="/logos/eu-logo.png"
-                  width={1807}
-                />
+          <div className="mt-5 overflow-hidden rounded-[1.4rem] bg-white shadow-[0_14px_34px_rgba(0,0,0,0.14)]">
+            <div className="grid grid-cols-1 gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-[0.9fr_1fr_1.35fr_2.05fr_1.2fr]">
+              <div className="grid min-h-[132px] grid-rows-[2.5rem_1fr] items-center bg-white px-4 py-5 sm:min-h-[142px]">
+                <p className="flex h-full items-start justify-center text-center text-xs font-semibold leading-5 text-[#34475a]">
+                  Funded by the European Union
+                </p>
+                <div className="mx-auto flex h-[58px] w-full max-w-[148px] items-center justify-center overflow-hidden">
+                  <Image
+                    alt="European Union"
+                    className="h-full w-full object-contain"
+                    height={870}
+                    loading="lazy"
+                    src="/logos/eu-logo.png"
+                    width={1807}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
-              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">Coordinated by</p>
-              <div className="mt-3 flex flex-1 items-center justify-center">
-                <Image
-                  alt="Welthungerhilfe"
-                  className="h-11 w-auto max-w-full object-contain sm:h-12"
-                  height={887}
-                  loading="lazy"
-                  src="/logos/whh-logo.png"
-                  width={1774}
-                />
+              <div className="grid min-h-[132px] grid-rows-[2.5rem_1fr] items-center bg-white px-4 py-5 sm:min-h-[142px]">
+                <p className="flex h-full items-start justify-center text-center text-xs font-semibold leading-5 text-[#34475a]">Coordinated by</p>
+                <div className="mx-auto flex h-[58px] w-full max-w-[164px] items-center justify-center overflow-hidden">
+                  <Image
+                    alt="Welthungerhilfe"
+                    className="h-full w-full scale-[1.14] object-contain"
+                    height={887}
+                    loading="lazy"
+                    src="/logos/whh-logo.png"
+                    width={1774}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="col-span-2 flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-4 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-4">
-              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">In Partnership with</p>
-              <div className="mt-3 flex flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-3 lg:flex-nowrap lg:gap-x-3">
-                <Image alt="CoSAP" className="h-10 w-auto max-w-[90px] object-contain" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
-                <Image alt="Development Expertise Center" className="h-9 w-auto max-w-[92px] object-contain" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
-                <Image alt="Pastoralist Forum Ethiopia" className="h-10 w-auto max-w-[120px] object-contain" height={724} loading="lazy" src="/logos/pfe-logo.png" width={2172} />
+              <div className="grid min-h-[132px] grid-rows-[2.5rem_1fr] items-center bg-white px-4 py-5 sm:min-h-[142px]">
+                <p className="flex h-full items-start justify-center text-center text-xs font-semibold leading-5 text-[#34475a]">In partnership with</p>
+                <div className="flex min-h-[58px] items-center justify-center gap-4">
+                  <div className="flex h-14 w-[94px] items-center justify-center overflow-hidden">
+                    <Image alt="CoSAP" className="h-full w-full scale-[1.25] object-contain" height={887} loading="lazy" src="/logos/cosap-logo.png" width={1774} />
+                  </div>
+                  <div className="flex h-12 w-[100px] items-center justify-center overflow-hidden">
+                    <Image alt="Development Expertise Center" className="h-full w-full object-contain" height={481} loading="lazy" src="/logos/dec-logo.png" width={1000} />
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
-              <p className="text-center text-[0.68rem] font-semibold leading-4 text-[#3f5061]">With Technical Support of</p>
-              <div className="mt-3 flex flex-1 items-center justify-center">
-                <Image
-                  alt="Civil Peace Service / ZFD"
-                  className="h-10 w-auto max-w-full object-contain sm:h-11"
-                  height={724}
-                  loading="lazy"
-                  src="/logos/zfd-logo.png"
-                  width={2172}
-                />
+              <div className="grid min-h-[132px] grid-rows-[2.5rem_1fr] items-center bg-white px-4 py-5 sm:min-h-[142px]">
+                <p className="flex h-full items-start justify-center text-center text-xs font-semibold leading-5 text-[#34475a]">With technical support of</p>
+                <div className="flex min-h-[58px] items-center justify-center gap-3 sm:gap-4">
+                  <div className="flex h-14 w-[42%] max-w-[150px] items-center justify-center overflow-hidden">
+                    <Image
+                      alt="Pastoralist Forum Ethiopia"
+                      className="h-full w-full scale-[1.55] object-contain"
+                      height={724}
+                      loading="lazy"
+                      src="/logos/pfe-logo.png"
+                      width={2172}
+                    />
+                  </div>
+                  <div className="flex h-14 w-[42%] max-w-[150px] items-center justify-center overflow-hidden">
+                    <Image
+                      alt="Civil Peace Service / ZFD"
+                      className="h-full w-full scale-[1.36] object-contain"
+                      height={724}
+                      loading="lazy"
+                      src="/logos/zfd-logo.png"
+                      width={2172}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="flex min-h-[132px] flex-col items-center justify-between rounded-2xl border border-white/10 bg-white px-3 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] lg:col-span-2">
-              <p className="text-center text-[0.68rem] font-medium leading-4 text-[#5f7183]">Platform and technical support by</p>
-              <div className="mt-3 flex flex-1 items-center justify-center gap-2">
-                <Image
-                  alt="Medab Solutions"
-                  className="h-12 w-auto object-contain"
-                  height={876}
-                  loading="lazy"
-                  src="/logos/medab-solutions-logo.png"
-                  width={589}
-                />
-                <p className="text-xs font-medium leading-4 text-[#5f7183]">Medab Solutions</p>
+              <div className="grid min-h-[132px] grid-rows-[2.5rem_1fr] items-center bg-white px-4 py-5 sm:col-span-2 sm:min-h-[142px] xl:col-span-1">
+                <p className="flex h-full items-start justify-center text-center text-xs font-semibold leading-5 text-[#34475a]">
+                  Platform and technical support by
+                </p>
+                <div className="flex min-h-[58px] items-center justify-center gap-2.5">
+                  <div className="flex h-16 w-11 items-center justify-center overflow-hidden">
+                    <Image
+                      alt="Medab Solutions"
+                      className="h-full w-full object-contain"
+                      height={876}
+                      loading="lazy"
+                      src="/logos/medab-solutions-logo.png"
+                      width={589}
+                    />
+                  </div>
+                  <p className="text-[0.8125rem] font-medium leading-5 text-[#526477]">Medab Solutions</p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <p className="mt-10 border-t border-white/10 pt-7 text-xs font-normal leading-5 text-slate-400">
+        <p className="mt-7 border-t border-white/10 pt-5 text-[0.8125rem] font-normal leading-5 text-slate-300">
           &copy; {currentYear} Development Expertise Center (DEC). All rights reserved.
         </p>
       </div>
