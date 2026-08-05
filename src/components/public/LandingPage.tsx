@@ -541,10 +541,10 @@ function CsoRealities() {
       <div aria-hidden="true" className="absolute -left-48 top-12 h-[420px] w-[420px] rounded-full border border-[#d8cdb8]/55" />
       <div aria-hidden="true" className="absolute -left-32 top-28 h-[290px] w-[290px] rounded-full border border-[#d8cdb8]/40" />
       <div className={cx("relative", styles.pageContainer)}>
-        <div className={cx("grid lg:grid-cols-[0.86fr_1.14fr] lg:items-start", styles.contentGap)}>
-          <div className="max-w-[34rem] lg:pt-5">
+        <div className={cx("grid lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)] lg:items-center", styles.contentGap)}>
+          <div className="max-w-[32rem]">
             <SectionEyebrow>Designed around CSO realities</SectionEyebrow>
-            <h2 id="realities-title" className="landing-section-heading mt-5 text-deep-navy lg:text-[clamp(2.75rem,4vw,4.25rem)]">
+            <h2 id="realities-title" className="landing-section-heading mt-5 max-w-[12ch] text-deep-navy">
               Your organization already carries knowledge and experience
             </h2>
             <div aria-hidden="true" className="mt-7 flex items-center gap-3">
@@ -556,20 +556,24 @@ function CsoRealities() {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-[30px] border border-[#e2d8c7] bg-white shadow-[0_22px_55px_rgba(65,52,32,0.10)]">
+          <div className="overflow-hidden rounded-[30px] border border-[#ded1bd] bg-white shadow-[0_24px_64px_rgba(65,52,32,0.12)]">
             <ul className="divide-y divide-[#e8e0d3]">
               {realities.map((item, index) => (
-                <li className={cx("grid grid-cols-[auto_1fr] items-start gap-4 sm:grid-cols-[auto_minmax(10rem,0.72fr)_minmax(0,1fr)] sm:gap-6", styles.cardPadding)} key={item.title}>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#d9e9e5] bg-[#edf7f4] font-sans text-xs font-extrabold text-soft-teal">
+                <li className={cx("grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-2 odd:bg-[#fffdf9] sm:grid-cols-[auto_minmax(11rem,0.76fr)_minmax(0,1fr)] sm:gap-x-7", styles.cardPadding)} key={item.title}>
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#cfe4df] bg-[#eaf6f2] font-sans text-[0.78rem] font-extrabold tracking-[0.08em] text-soft-teal shadow-[0_6px_16px_rgba(21,142,140,0.08)]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <h3 className="landing-ui-card-heading pt-2 text-deep-navy sm:pt-2.5">{item.title}</h3>
-                  <p className="landing-ui-card-copy col-start-2 mt-1 text-muted-text sm:col-start-3 sm:mt-0 sm:pt-2">{item.desc}</p>
+                  <h3 className="landing-ui-card-heading pt-2 text-deep-navy sm:pt-2.5 sm:text-[1.1rem]">{item.title}</h3>
+                  <p className="landing-ui-card-copy col-start-2 text-muted-text sm:col-start-3 sm:pt-1.5">{item.desc}</p>
                 </li>
               ))}
             </ul>
           </div>
         </div>
+      </div>
+      <div aria-hidden="true" className="absolute bottom-0 left-1/2 z-10 flex translate-x-[-50%] translate-y-1/2 flex-col items-center">
+        <span className="h-8 w-px bg-gradient-to-b from-[#b99f70] to-[#64b6df]" />
+        <span className="h-2.5 w-2.5 rounded-full border-2 border-[#f7f3ea] bg-dec-blue shadow-[0_0_0_4px_rgba(100,182,223,0.16)]" />
       </div>
     </section>
   );
@@ -587,7 +591,7 @@ function OrgPracticeProgression() {
       <div aria-hidden="true" className="absolute -right-40 -top-48 h-[520px] w-[520px] rounded-full border-[42px] border-dec-blue/10" />
       <div aria-hidden="true" className="absolute -bottom-48 left-[18%] h-80 w-80 rounded-full bg-soft-teal/10 blur-3xl" />
       <div className={cx("relative", styles.pageContainer)}>
-        <div className={cx("grid lg:grid-cols-[0.82fr_1.18fr] lg:items-end", styles.contentGap)}>
+        <div className={cx("grid lg:grid-cols-[0.9fr_1.1fr] lg:items-end", styles.contentGap)}>
           <div className="max-w-[38rem]">
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-[#8fd0f4] shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
               <PeopleIcon className="h-7 w-7" />
@@ -606,24 +610,37 @@ function OrgPracticeProgression() {
           </div>
         </div>
 
-        <div className="relative mt-10 overflow-hidden rounded-[30px] border border-white/12 bg-white/[0.055] shadow-[0_22px_54px_rgba(0,0,0,0.18)]">
-          <span aria-hidden="true" className="absolute left-[16%] right-[16%] top-[3.55rem] hidden border-t-2 border-dashed border-[#64b6df]/45 md:block" />
-          <ol className="relative grid md:grid-cols-3 md:divide-x md:divide-white/10">
+        <div className="relative mt-10 overflow-hidden rounded-[30px] border border-white/15 bg-[linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] shadow-[0_24px_60px_rgba(0,0,0,0.22)]">
+          <span aria-hidden="true" className="absolute left-[16%] right-[16%] top-[3.7rem] hidden h-px bg-gradient-to-r from-[#64b6df]/25 via-[#64b6df]/75 to-[#64b6df]/25 lg:block" />
+          <span aria-hidden="true" className="absolute left-1/3 top-[3.25rem] z-20 hidden h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full border border-[#64b6df]/45 bg-[#132b43] text-[#8fd0f4] lg:flex">
+            <ChevronRightIcon className="h-2.5 w-2.5" />
+          </span>
+          <span aria-hidden="true" className="absolute left-2/3 top-[3.25rem] z-20 hidden h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full border border-[#64b6df]/45 bg-[#132b43] text-[#8fd0f4] lg:flex">
+            <ChevronRightIcon className="h-2.5 w-2.5" />
+          </span>
+          <ol className="relative grid before:absolute before:bottom-8 before:left-[2.75rem] before:top-8 before:w-px before:bg-gradient-to-b before:from-[#64b6df]/70 before:to-[#64b6df]/15 lg:grid-cols-3 lg:divide-x lg:divide-white/10 lg:before:hidden">
               {steps.map((item) => (
-                <li className={cx("relative grid grid-cols-[auto_1fr] gap-4 border-b border-white/10 last:border-b-0 md:block md:border-b-0", styles.cardPadding)} key={item.title}>
-                  <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 border-[#18334d] bg-dec-blue font-sans text-sm font-extrabold text-deep-navy shadow-[0_8px_20px_rgba(0,0,0,0.22)] md:h-14 md:w-14">
+                <li className={cx("relative grid grid-cols-[auto_1fr] gap-4 border-b border-white/10 last:border-b-0 lg:block lg:min-h-[14rem] lg:border-b-0", styles.cardPadding)} key={item.title}>
+                  <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 border-[#18334d] bg-dec-blue font-sans text-sm font-extrabold text-deep-navy shadow-[0_8px_20px_rgba(0,0,0,0.22)] lg:h-14 lg:w-14">
                     {item.num}
                   </span>
-                  <div className="md:mt-6">
-                    <h3 className="landing-ui-card-heading text-white">{item.title}</h3>
-                    <p className="landing-ui-card-copy mt-2 text-slate-300">{item.desc}</p>
+                  <div className="lg:mt-6">
+                    <h3 className="landing-ui-card-heading text-white lg:text-[1.1rem]">{item.title}</h3>
+                    <p className="landing-ui-card-copy mt-2 max-w-[21rem] text-slate-200">{item.desc}</p>
                   </div>
                 </li>
               ))}
           </ol>
-          <p className="border-t border-white/10 bg-restrained-amber/10 px-5 py-4 text-[0.95rem] font-medium leading-6 text-[#f6d48d] italic sm:px-8">
-            Note: Team discussions happen offline within your own team; online collaboration is planned for future phases.
-          </p>
+          <div className="border-t border-white/10 bg-white/[0.035] px-5 py-5 sm:px-8">
+            <div className="flex max-w-[62rem] items-start gap-3.5">
+              <span aria-hidden="true" className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-restrained-amber/35 bg-restrained-amber/10 text-restrained-amber">
+                <ApplyIcon className="h-4 w-4" />
+              </span>
+              <p className="text-[0.95rem] font-medium leading-6 text-slate-200">
+                <span className="font-bold text-[#f2c76f]">Note:</span> Team discussions happen offline within your own team; online collaboration is planned for future phases.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
