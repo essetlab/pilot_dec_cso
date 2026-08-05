@@ -2,6 +2,7 @@ import Image from "next/image";
 import { ActionButton, StatusBadge } from "@/components/ui";
 import type { PublicCatalogueCourseSummary } from "@/lib/course-types";
 import { cx } from "@/components/ui/utils";
+import styles from "./LandingPage.module.css";
 
 type IconProps = { className?: string };
 
@@ -299,86 +300,140 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
   );
 }
 
+const learningStages = [
+  {
+    num: "1",
+    title: "Explore",
+    desc: "Find the course and pathway that match your current work.",
+    icon: CompassIcon,
+    position: "col-start-1 row-start-1",
+    markerPosition: "-right-3 top-7",
+    accent: "bg-dec-blue",
+    border: "border-[#b9dff3]",
+    iconStyle: "bg-[#eaf5fb] text-[#277ead]",
+    badgeStyle: "bg-[#eaf5fb] text-[#226d9b]",
+  },
+  {
+    num: "2",
+    title: "Learn",
+    desc: "Build practical understanding through clear concepts and examples.",
+    icon: BookOpenIcon,
+    position: "col-start-2 row-start-1",
+    markerPosition: "-left-3 top-7",
+    accent: "bg-soft-teal",
+    border: "border-[#a9ddd8]",
+    iconStyle: "bg-[#e6f7f5] text-soft-teal",
+    badgeStyle: "bg-[#e6f7f5] text-[#08716f]",
+  },
+  {
+    num: "3",
+    title: "Practise",
+    desc: "Test choices in realistic CSO situations and receive guidance.",
+    icon: TargetIcon,
+    position: "col-start-2 row-start-2",
+    markerPosition: "-left-3 top-7",
+    accent: "bg-dec-green",
+    border: "border-[#c9e4aa]",
+    iconStyle: "bg-[#f0f8e7] text-[#5f8c2f]",
+    badgeStyle: "bg-[#f0f8e7] text-[#537b29]",
+  },
+  {
+    num: "4",
+    title: "Apply",
+    desc: "Adapt tools and learning to your organization’s everyday work.",
+    icon: ApplyIcon,
+    position: "col-start-1 row-start-2",
+    markerPosition: "-right-3 top-7",
+    accent: "bg-restrained-amber",
+    border: "border-[#f1d498]",
+    iconStyle: "bg-[#fff5df] text-[#b66b00]",
+    badgeStyle: "bg-[#fff5df] text-[#8a5600]",
+  },
+] as const;
+
 function CycleAnchor({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={cx(
-        "relative flex shrink-0 flex-col items-center justify-center rounded-full border border-dec-blue/25 bg-white text-center shadow-[0_18px_48px_rgba(15,23,42,0.14)]",
-        compact ? "mx-auto h-44 w-44" : "h-56 w-56",
+        "relative flex shrink-0 flex-col items-center justify-center rounded-full border border-dec-blue/30 bg-white text-center shadow-[0_18px_46px_rgba(15,23,42,0.16)]",
+        compact ? "mx-auto h-36 w-36" : "h-40 w-40",
       )}
     >
-      <span aria-hidden="true" className="absolute -inset-3 rounded-full border border-dashed border-soft-teal/35" />
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-deep-navy text-dec-green shadow-lg">
-        <CycleIcon className="h-6 w-6" />
+      <span aria-hidden="true" className="absolute -inset-2 rounded-full border border-dashed border-soft-teal/45" />
+      <span aria-hidden="true" className="absolute -inset-5 rounded-full border border-dec-blue/10" />
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-deep-navy text-dec-green shadow-[0_10px_22px_rgba(15,23,42,0.22)]">
+        <CycleIcon className="h-5 w-5" />
       </span>
-      <span className="mt-4 text-[0.68rem] font-extrabold uppercase tracking-[0.17em] text-soft-teal">
+      <span className="mt-3 text-[0.65rem] font-extrabold uppercase tracking-[0.17em] text-soft-teal">
         Continuous
       </span>
-      <span className="mt-1 max-w-[155px] font-display text-xl font-bold leading-[1.08] tracking-[-0.015em] text-deep-navy">
+      <span className="mt-1 max-w-[125px] font-display text-lg font-bold leading-[1.05] tracking-[-0.015em] text-deep-navy">
         Learning into action
       </span>
     </div>
   );
 }
 
-function LearningPathway() {
-  const stages = [
-    {
-      num: "1",
-      title: "Explore",
-      desc: "Browse course overviews and access requirements before registering.",
-      next: "Learn",
-      icon: CompassIcon,
-      position: "lg:col-start-1 lg:row-start-1",
-      accent: "bg-dec-blue",
-      iconStyle: "bg-[#eaf5fb] text-[#277ead]",
-      badgeStyle: "bg-[#eaf5fb] text-[#226d9b]",
-    },
-    {
-      num: "2",
-      title: "Learn",
-      desc: "Study key concepts and worked examples designed for local CSOs.",
-      next: "Practice",
-      icon: BookOpenIcon,
-      position: "lg:col-start-2 lg:row-start-1",
-      accent: "bg-soft-teal",
-      iconStyle: "bg-[#e6f7f5] text-soft-teal",
-      badgeStyle: "bg-[#e6f7f5] text-[#08716f]",
-    },
-    {
-      num: "3",
-      title: "Practice",
-      desc: "Make choices in realistic project scenarios and receive guidance.",
-      next: "Apply",
-      icon: TargetIcon,
-      position: "lg:col-start-2 lg:row-start-2",
-      accent: "bg-dec-green",
-      iconStyle: "bg-[#f0f8e7] text-[#5f8c2f]",
-      badgeStyle: "bg-[#f0f8e7] text-[#537b29]",
-    },
-    {
-      num: "4",
-      title: "Apply",
-      desc: "Download and adapt tools to your everyday program activities.",
-      next: "Explore again",
-      icon: ApplyIcon,
-      position: "lg:col-start-1 lg:row-start-2",
-      accent: "bg-restrained-amber",
-      iconStyle: "bg-[#fff5df] text-[#b66b00]",
-      badgeStyle: "bg-[#fff5df] text-[#8a5600]",
-    },
-  ];
-
+function LearningStageCard({
+  compact = false,
+  stage,
+}: {
+  compact?: boolean;
+  stage: (typeof learningStages)[number];
+}) {
+  const StageIcon = stage.icon;
+  const markerIsOnLeft = stage.num === "2" || stage.num === "3";
   return (
-    <section id="how-the-hub-works" className="relative scroll-mt-[72px] overflow-hidden border-y border-design-border bg-[#f4fbf7] py-16 sm:py-20 lg:py-24" aria-labelledby="pathway-title">
-      <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-[760px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-soft-teal/10" />
-      <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dec-blue/10" />
-      <div className="relative mx-auto max-w-[1360px] px-5 sm:px-7 lg:px-10">
-        <div className="mx-auto max-w-2xl text-center">
+    <li
+      className={cx(
+        "relative z-10 flex flex-col rounded-[22px] border bg-white shadow-[0_12px_28px_rgba(15,23,42,0.10)] after:pointer-events-none after:absolute after:inset-[5px] after:rounded-[17px] after:border after:border-slate-100/90",
+        compact ? "min-h-[145px] p-4" : "min-h-0 p-5",
+        !compact && stage.position,
+        stage.border,
+      )}
+    >
+      <span aria-hidden="true" className={cx("absolute inset-x-5 top-0 h-1 rounded-b-full", stage.accent)} />
+      <div className={cx("relative z-10 flex items-center gap-3 pr-10", !compact && markerIsOnLeft && "pl-4")}>
+        <span className={cx("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.72)]", stage.iconStyle)}>
+          <StageIcon className="h-5 w-5" />
+        </span>
+        <div>
+          <span className={cx("inline-flex rounded-full px-2 py-0.5 text-[0.62rem] font-extrabold uppercase tracking-[0.13em]", stage.badgeStyle)}>
+            Stage {stage.num}
+          </span>
+          <h3 className="mt-1.5 font-display text-[1.45rem] font-bold leading-none tracking-[-0.018em] text-deep-navy">
+            {stage.title}
+          </h3>
+        </div>
+      </div>
+      <span
+        aria-hidden="true"
+        className={cx(
+          "absolute z-20 flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold text-white shadow-[0_7px_16px_rgba(15,23,42,0.18)] ring-4 ring-[#f4fbf7]",
+          compact ? "right-4 top-4" : stage.markerPosition,
+          stage.accent,
+        )}
+      >
+        {stage.num}
+      </span>
+      <p className="relative z-10 mt-4 text-sm leading-6 text-muted-text">
+        {stage.desc}
+      </p>
+    </li>
+  );
+}
+
+function LearningPathway() {
+  return (
+    <section id="how-the-hub-works" className="relative scroll-mt-24 overflow-hidden border-y border-design-border bg-[#f4fbf7] py-16 sm:py-20 lg:py-24" aria-labelledby="pathway-title">
+      <div aria-hidden="true" className="absolute -left-40 top-24 h-[440px] w-[440px] rounded-full border border-soft-teal/10" />
+      <div aria-hidden="true" className="absolute -right-32 bottom-10 h-[360px] w-[360px] rounded-full border border-dec-blue/10" />
+      <div className="relative mx-auto max-w-[1280px] px-5 sm:px-7 lg:px-10">
+        <div className="mx-auto max-w-[760px] text-center">
           <div className="flex justify-center">
             <SectionEyebrow>How learning works</SectionEyebrow>
           </div>
-          <h2 id="pathway-title" className="landing-section-heading-prominent mt-5 text-deep-navy">
+          <h2 id="pathway-title" className="landing-section-heading mt-5 text-deep-navy">
             A clear path from access to application
           </h2>
           <p className="landing-section-copy mx-auto mt-5 max-w-xl text-muted-text">
@@ -386,68 +441,84 @@ function LearningPathway() {
           </p>
         </div>
 
-        <div className="mt-10 lg:hidden">
-          <CycleAnchor compact />
-        </div>
+        <div className="relative mt-10 grid gap-7 xl:grid-cols-[minmax(0,1.38fr)_minmax(360px,1fr)] xl:items-stretch">
+          <div className="relative hidden min-h-[620px] overflow-hidden rounded-[28px] border border-soft-teal/20 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.96)_0%,rgba(244,251,247,0.88)_48%,rgba(233,247,240,0.92)_100%)] shadow-[0_18px_50px_rgba(15,23,42,0.08)] md:block">
+            <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 720 580">
+              <defs>
+                <marker id="cycle-arrow-connected" markerHeight="7" markerWidth="7" orient="auto" refX="6" refY="3.5">
+                  <path d="M0,0 L7,3.5 L0,7 Z" fill="#0f8f8c" />
+                </marker>
+              </defs>
+              <ellipse cx="360" cy="290" fill="none" rx="225" ry="218" stroke="#0f8f8c" strokeOpacity="0.12" strokeWidth="1.5" />
+              <ellipse cx="360" cy="290" fill="none" rx="174" ry="164" stroke="#3b99d4" strokeOpacity="0.10" />
+              <path className={styles.cyclePath} d="M270 145 C300 70 420 70 450 145" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
+              <path className={styles.cyclePath} d="M450 145 C520 220 520 360 450 435" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
+              <path className={styles.cyclePath} d="M450 435 C420 510 300 510 270 435" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
+              <path className={styles.cyclePath} d="M270 435 C200 360 200 220 270 145" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
+            </svg>
 
-        <div className="relative mt-10 lg:mt-16">
-          <svg aria-hidden="true" className="pointer-events-none absolute inset-0 hidden h-full w-full lg:block" preserveAspectRatio="none" viewBox="0 0 1200 560">
-            <defs>
-              <marker id="cycle-arrow" markerHeight="7" markerWidth="7" orient="auto" refX="6" refY="3.5">
-                <path d="M0,0 L7,3.5 L0,7 Z" fill="#0f8f8c" />
-              </marker>
-            </defs>
-            <path d="M350 105 C470 34 730 34 850 105" fill="none" markerEnd="url(#cycle-arrow)" stroke="#0f8f8c" strokeDasharray="7 9" strokeLinecap="round" strokeWidth="2" />
-            <path d="M850 105 C1100 192 1100 368 850 455" fill="none" markerEnd="url(#cycle-arrow)" stroke="#0f8f8c" strokeDasharray="7 9" strokeLinecap="round" strokeWidth="2" />
-            <path d="M850 455 C730 526 470 526 350 455" fill="none" markerEnd="url(#cycle-arrow)" stroke="#0f8f8c" strokeDasharray="7 9" strokeLinecap="round" strokeWidth="2" />
-            <path d="M350 455 C100 368 100 192 350 105" fill="none" markerEnd="url(#cycle-arrow)" stroke="#0f8f8c" strokeDasharray="7 9" strokeLinecap="round" strokeWidth="2" />
-          </svg>
+            <ol aria-label="Four-stage continuous learning cycle" className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-x-32 gap-y-40 p-6 lg:gap-x-40 lg:p-8">
+              {learningStages.map((stage) => (
+                <LearningStageCard key={stage.title} stage={stage} />
+              ))}
+            </ol>
 
-          <ol aria-label="Four-stage continuous learning cycle" className="relative z-10 grid gap-5 md:grid-cols-2 lg:gap-x-[17rem] lg:gap-y-28">
-            {stages.map((stage) => {
-              const StageIcon = stage.icon;
-              return (
-                <li
-                  className={cx(
-                    "relative flex min-h-[210px] flex-col overflow-hidden rounded-panel border border-design-border bg-white p-6 shadow-card sm:p-7",
-                    stage.position,
-                  )}
-                  key={stage.title}
-                >
-                  <span aria-hidden="true" className={cx("absolute inset-x-0 top-0 h-1", stage.accent)} />
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <span className={cx("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", stage.iconStyle)}>
-                        <StageIcon className="h-6 w-6" />
-                      </span>
-                      <div>
-                        <span className={cx("inline-flex rounded-full px-2.5 py-1 text-[0.67rem] font-extrabold uppercase tracking-[0.13em]", stage.badgeStyle)}>
-                          Stage {stage.num}
-                        </span>
-                        <h3 className="mt-2 font-display text-[1.65rem] font-bold leading-none tracking-[-0.018em] text-deep-navy">
-                          {stage.title}
-                        </h3>
-                      </div>
-                    </div>
-                    <span className={cx("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white", stage.accent)}>
-                      {stage.num}
-                    </span>
-                  </div>
-                  <p className="landing-card-copy mt-5 flex-1 text-muted-text">
-                    {stage.desc}
-                  </p>
-                  <div className="mt-5 flex items-center justify-between border-t border-design-border pt-4 text-[0.72rem] font-semibold tracking-[0.01em] text-soft-teal">
-                    <span>Continue to {stage.next}</span>
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-
-          <div className="absolute left-1/2 top-1/2 z-20 hidden -translate-x-1/2 -translate-y-1/2 lg:block">
-            <CycleAnchor />
+            <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+              <CycleAnchor />
+            </div>
           </div>
+
+          <div className="relative rounded-[28px] border border-soft-teal/20 bg-[#eef8f2] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] md:hidden">
+            <CycleAnchor compact />
+            <div className="relative mt-7">
+              <span aria-hidden="true" className="absolute bottom-12 left-[2.2rem] top-12 border-l-2 border-dashed border-soft-teal/35" />
+              <ol aria-label="Four-stage continuous learning cycle" className="relative space-y-4">
+                {learningStages.map((stage) => (
+                  <LearningStageCard compact key={stage.title} stage={stage} />
+                ))}
+              </ol>
+            </div>
+            <div className="mt-5 flex items-center justify-center gap-2 rounded-full border border-soft-teal/20 bg-white px-4 py-2.5 text-xs font-semibold text-soft-teal">
+              <CycleIcon className="h-4 w-4" />
+              <span>The cycle continues from Apply back to Explore.</span>
+            </div>
+          </div>
+
+          <aside className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#071426] p-5 text-white shadow-[0_20px_54px_rgba(7,20,38,0.18)] sm:p-7 md:grid md:grid-cols-[0.78fr_1.22fr] md:items-center md:gap-8 lg:p-8 xl:flex xl:min-h-[620px] xl:flex-col xl:justify-center" aria-labelledby="hub-video-preview-title">
+            <span aria-hidden="true" className="absolute -right-24 -top-28 h-64 w-64 rounded-full border-[24px] border-dec-blue/12" />
+            <span aria-hidden="true" className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-soft-teal/10 blur-2xl" />
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-2 rounded-full border border-dec-green/25 bg-dec-green/10 px-3 py-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-[#b9e985]">
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-dec-green" />
+                Video coming soon
+              </span>
+              <h3 id="hub-video-preview-title" className="mt-5 max-w-md font-display text-[clamp(1.8rem,3vw,2.45rem)] font-bold leading-[1.05] tracking-[-0.025em] text-white">
+                Introduction to the CSO Learning Hub
+              </h3>
+              <p className="mt-4 max-w-md text-sm leading-7 text-slate-300">
+                A future short video will introduce the learning approach and guide learners through the platform journey.
+              </p>
+            </div>
+
+            <div className={cx("relative z-10 mt-7 aspect-video w-full overflow-hidden rounded-[22px] border border-white/15 shadow-[0_18px_36px_rgba(0,0,0,0.28)] md:mt-0 xl:mt-8", styles.videoPoster)} aria-label="Non-interactive preview for a future CSO Learning Hub introduction video" role="img">
+              <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-55" preserveAspectRatio="none" viewBox="0 0 640 360">
+                <path d="M-30 278 C96 178 188 326 302 212 S512 70 688 150" fill="none" stroke="#72bee8" strokeDasharray="8 12" strokeLinecap="round" strokeWidth="3" />
+                <path d="M-20 320 C118 224 210 350 330 248 S534 118 674 190" fill="none" stroke="#91c852" strokeOpacity="0.68" strokeWidth="2" />
+                <circle cx="112" cy="245" fill="#3b99d4" r="8" />
+                <circle cx="312" cy="210" fill="#91c852" r="8" />
+                <circle cx="520" cy="118" fill="#f59e0b" r="8" />
+              </svg>
+              <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,20,38,0.02),rgba(7,20,38,0.38))]" />
+              <span aria-hidden="true" className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/12 text-white shadow-[0_14px_34px_rgba(0,0,0,0.28)] backdrop-blur-sm">
+                <svg className="ml-1 h-8 w-8" fill="none" viewBox="0 0 32 32">
+                  <path d="M11 8.6v14.8L23 16 11 8.6Z" fill="currentColor" />
+                </svg>
+              </span>
+              <span className="absolute bottom-4 left-4 rounded-full border border-white/15 bg-[#071426]/72 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-white/85 backdrop-blur-sm">
+                Platform introduction preview
+              </span>
+            </div>
+          </aside>
         </div>
       </div>
     </section>

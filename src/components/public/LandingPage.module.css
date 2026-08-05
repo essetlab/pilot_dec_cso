@@ -1,0 +1,23 @@
+@keyframes learningCycleFlow {
+  to {
+    stroke-dashoffset: -180;
+  }
+}
+
+.cyclePath {
+  animation: learningCycleFlow 24s linear infinite;
+}
+
+.videoPoster {
+  background:
+    radial-gradient(circle at 82% 18%, rgb(145 200 82 / 0.34), transparent 24%),
+    radial-gradient(circle at 14% 84%, rgb(59 153 212 / 0.36), transparent 30%),
+    linear-gradient(145deg, #102c45 0%, #0b1f35 50%, #071426 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyclePath {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
