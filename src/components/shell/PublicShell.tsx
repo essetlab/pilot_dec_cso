@@ -227,7 +227,12 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
       )}
       style={isOverlay ? { background: "linear-gradient(90deg,rgba(7,20,38,.98),rgba(7,20,38,.86) 55%,rgba(7,20,38,.45))" } : undefined}
     >
-      <div className="mx-auto flex min-h-[72px] max-w-[1200px] items-center justify-between gap-5 px-5 sm:px-7 lg:px-10">
+      <div
+        className={cx(
+          "mx-auto flex min-h-[72px] w-full items-center justify-between gap-5 px-5 sm:px-7",
+          isHome ? "max-w-none lg:px-[clamp(3rem,5vw,6rem)]" : "max-w-[1200px] lg:px-10",
+        )}
+      >
         <Link
           aria-label="CSO Learning Hub home"
           className="flex items-center gap-3 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2 rounded-lg p-1 transition-all"
