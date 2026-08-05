@@ -108,7 +108,7 @@ function MobileNav({
     <div
       aria-label="Main menu"
       aria-modal="true"
-      className="border-t border-white/10 bg-[#071426]/95 backdrop-blur-md shadow-[0_24px_50px_rgba(7,20,38,0.4)] lg:hidden"
+      className="border-t border-white/10 bg-[#071426]/95 backdrop-blur-md shadow-[0_24px_50px_rgba(7,20,38,0.4)] xl:hidden"
       onKeyDown={onKeyDown}
       ref={panelRef}
       role="dialog"
@@ -160,7 +160,7 @@ function MobileNav({
                 Sign in
               </Link>
               <Link
-                className="flex min-h-[48px] items-center justify-center rounded-xl bg-dec-blue px-4 font-semibold tracking-[-0.01em] text-white hover:bg-[#2e82b7] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#1679b0] px-4 font-semibold tracking-[-0.01em] text-white transition-all hover:bg-[#115f8b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
                 href="/register"
                 onClick={onClose}
               >
@@ -241,7 +241,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
       >
         <Link
           aria-label="CSO Learning Hub home"
-          className="flex items-center gap-3 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2 rounded-lg p-1 transition-all"
+          className="flex min-h-11 shrink-0 items-center gap-3 rounded-lg p-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal focus-visible:ring-offset-2"
           href="/"
         >
           <Image
@@ -258,7 +258,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
           </span>
         </Link>
         
-        <div className="hidden flex-1 items-center justify-end gap-6 lg:flex">
+        <div className="hidden flex-1 items-center justify-end gap-6 xl:flex">
           <PublicNav isOverlay={isOverlay} />
           <span aria-hidden="true" className={cx("h-6 w-px", isOverlay ? "bg-white/20" : "bg-[#cad5df]")} />
           {session ? (
@@ -306,7 +306,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
           aria-expanded={mobileOpen}
           aria-label={mobileOpen ? "Close main menu" : "Open main menu"}
           className={cx(
-            "flex h-[44px] w-[44px] items-center justify-center rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal lg:hidden",
+            "flex h-[44px] w-[44px] items-center justify-center rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-soft-teal xl:hidden",
             isOverlay ? "border-white/30 bg-white/10 text-white" : "border-[#cad5df] bg-white text-[#0f172a]"
           )}
           onClick={() => setMobileOpen((open) => !open)}

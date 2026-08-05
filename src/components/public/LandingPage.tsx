@@ -75,27 +75,22 @@ function SectionEyebrow({ children, tone = "dark" }: { children: React.ReactNode
 
 function HomepageHero() {
   return (
-    <section className="relative isolate flex min-h-[720px] w-full items-center overflow-hidden bg-[#071426] text-white" aria-labelledby="landing-hero-title">
-      <Image
-        alt="Illustrated network of Ethiopian practitioners learning, collaborating, and applying knowledge across communities."
-        className="landing-hero-art -z-30 object-cover object-[62%_center] lg:object-[55%_center]"
-        fill
-        priority
-        sizes="100vw"
-        src="/images/landing/cso-learning-network-hero.webp"
-      />
-      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,rgba(7,20,38,0.94)_0%,rgba(8,35,61,0.82)_48%,rgba(20,94,139,0.58)_76%,rgba(7,20,38,0.76)_100%)] lg:bg-[linear-gradient(90deg,rgba(7,20,38,0.98)_0%,rgba(8,29,51,0.92)_33%,rgba(16,65,99,0.40)_62%,rgba(7,20,38,0.10)_100%)]" />
-      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,rgba(7,20,38,0.72)_0%,transparent_30%,transparent_66%,rgba(7,20,38,0.70)_100%)]" />
-      <div aria-hidden="true" className="absolute inset-0 -z-10 hidden bg-[radial-gradient(circle_at_78%_42%,rgba(114,190,232,0.24),transparent_36%)] lg:block" />
-      <div aria-hidden="true" className="absolute inset-y-0 right-0 -z-10 hidden w-[48%] opacity-30 [background-image:radial-gradient(rgba(255,255,255,0.55)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:linear-gradient(90deg,transparent,black_38%,black)] lg:block" />
-      <div aria-hidden="true" className="absolute -right-40 -top-56 -z-10 h-[680px] w-[680px] rounded-full bg-dec-blue/18 blur-3xl" />
-      <div aria-hidden="true" className="absolute -left-28 top-20 -z-10 h-72 w-72 rounded-full border border-white/10" />
-      <div aria-hidden="true" className="absolute -bottom-44 left-[42%] -z-10 h-96 w-96 rounded-full border-[56px] border-dec-blue/10" />
-      <span aria-hidden="true" className="landing-hero-node absolute right-[17%] top-[23%] -z-10 hidden h-3 w-3 rounded-full border-2 border-white bg-dec-blue shadow-[0_0_0_9px_rgba(59,153,212,0.13)] lg:block" />
-      <span aria-hidden="true" className="landing-hero-node landing-hero-node-delayed absolute bottom-[28%] right-[29%] -z-10 hidden h-2.5 w-2.5 rounded-full border-2 border-white bg-dec-green shadow-[0_0_0_8px_rgba(145,200,82,0.13)] lg:block" />
+    <section className="relative isolate flex min-h-[860px] w-full items-center overflow-hidden bg-[#071426] text-white sm:min-h-[clamp(680px,82vh,720px)]" aria-labelledby="landing-hero-title">
+      <div className="absolute inset-x-0 bottom-0 -z-30 h-[54%] sm:inset-0 sm:h-auto">
+        <Image
+          alt="Illustration of Ethiopian CSO practitioners with diverse abilities co-creating a community plan around a table."
+          className="landing-hero-art object-cover object-[72%_center] sm:object-[30%_center] lg:object-[32%_center] xl:object-[70%_center]"
+          fill
+          priority
+          sizes="100vw"
+          src="/images/landing/cso-collaborative-planning-hero.webp"
+        />
+      </div>
+      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,#071426_0%,rgba(7,20,38,0.98)_48%,rgba(7,20,38,0.62)_68%,rgba(7,20,38,0.18)_100%)] sm:bg-[linear-gradient(90deg,rgba(7,20,38,0.98)_0%,rgba(7,20,38,0.94)_36%,rgba(7,20,38,0.58)_54%,rgba(7,20,38,0.16)_74%,rgba(7,20,38,0.04)_100%)]" />
+      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,rgba(7,20,38,0.28)_0%,transparent_32%,transparent_74%,rgba(7,20,38,0.50)_100%)]" />
 
-      <div className="flex w-full items-center px-5 pb-20 pt-28 sm:px-8 sm:pb-28 sm:pt-32 lg:px-[clamp(3rem,5vw,6rem)] lg:pb-32 lg:pt-36">
-        <div className="relative z-10 max-w-[760px]">
+      <div className="flex w-full items-center px-5 pb-20 pt-24 sm:px-8 sm:pb-24 sm:pt-28 lg:px-[clamp(3rem,5vw,6rem)] lg:pb-24 lg:pt-28 xl:pt-32">
+        <div className="relative z-10 max-w-[680px]">
           <div className="flex items-center gap-3">
             <span aria-hidden="true" className="h-0.5 w-8 rounded-full bg-dec-green shadow-[0_0_14px_rgba(145,200,82,0.45)]" />
             <span className="text-xs font-black uppercase tracking-[0.2em] text-[#8fd0f4]">
@@ -104,24 +99,24 @@ function HomepageHero() {
           </div>
           <h1
             id="landing-hero-title"
-            className="mt-6 max-w-[740px] font-display text-[clamp(2.65rem,4.25vw,4.75rem)] font-bold leading-[1.01] tracking-[-0.03em] text-white [text-shadow:0_4px_32px_rgba(7,20,38,0.38)]"
+            className="mt-5 max-w-[620px] font-display text-[2.4rem] font-bold leading-[0.99] tracking-[-0.03em] text-white [text-shadow:0_4px_28px_rgba(7,20,38,0.42)] sm:max-w-[500px] sm:text-[clamp(2.65rem,4vw,4.35rem)] xl:max-w-[620px]"
           >
             Practical learning for stronger local and grassroots CSOs
           </h1>
-          <p className="mt-7 max-w-[670px] text-base leading-8 text-slate-100 [text-shadow:0_2px_16px_rgba(7,20,38,0.55)] sm:text-[1.08rem] sm:leading-8">
+          <p className="mt-5 max-w-[600px] text-[0.98rem] leading-7 text-slate-100 [text-shadow:0_2px_14px_rgba(7,20,38,0.58)] sm:max-w-[560px] sm:text-base sm:leading-7 lg:text-[1.02rem] xl:max-w-[600px]">
             Work through realistic cases, guided activities, and adaptable tools built for the everyday realities of civil society work in Ethiopia. Study at your own pace and build shared capabilities.
           </p>
 
-          <ul aria-label="Learning benefits" className="mt-7 grid max-w-[680px] grid-cols-2 overflow-hidden rounded-2xl border border-white/15 bg-[#071426]/42 p-1 text-[0.68rem] font-extrabold uppercase tracking-[0.09em] text-white shadow-[0_16px_38px_rgba(7,20,38,0.18)] backdrop-blur-md sm:flex sm:w-fit sm:flex-wrap">
+          <ul aria-label="Learning benefits" className="mt-5 grid max-w-[660px] grid-cols-2 overflow-hidden rounded-2xl border border-white/16 bg-[#071426]/48 p-1.5 text-[0.72rem] font-extrabold uppercase tracking-[0.075em] text-white shadow-[0_14px_34px_rgba(7,20,38,0.20)] backdrop-blur-md sm:flex sm:w-fit sm:flex-wrap">
             {["Self-paced", "Practice-led", "Mobile-ready", "Certificate pathway"].map((benefit) => (
-              <li className="flex min-h-10 items-center gap-2 rounded-xl px-3 py-2.5 sm:px-3.5" key={benefit}>
-                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-dec-green shadow-[0_0_0_3px_rgba(145,200,82,0.14)]" />
+              <li className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2.5 sm:px-3.5" key={benefit}>
+                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-dec-green shadow-[0_0_0_3px_rgba(145,200,82,0.18)]" />
                 <span>{benefit}</span>
               </li>
             ))}
           </ul>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <ActionButton className="min-w-[180px] border-[#63b8e8] tracking-[-0.01em] shadow-[0_14px_30px_rgba(20,103,153,0.32)] hover:-translate-y-0.5" href="/courses" size="lg">
               Explore courses
               <ChevronRightIcon className="h-4 w-4" />
@@ -273,7 +268,7 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
           <div className="max-w-[680px]">
             <SectionEyebrow>Featured learning</SectionEyebrow>
-            <h2 id="featured-learning-title" className="landing-section-heading mt-5 max-w-[620px] text-deep-navy">
+            <h2 id="featured-learning-title" className="mt-5 max-w-none font-display text-[2.25rem] font-bold leading-[1.07] tracking-[-0.025em] text-deep-navy [text-wrap:balance] sm:whitespace-nowrap sm:text-[clamp(2.125rem,3.1vw,2.75rem)] sm:[text-wrap:nowrap]">
               Start with the course available now
             </h2>
             <p className="landing-section-copy mt-5 max-w-[640px] text-muted-text">
@@ -409,7 +404,7 @@ function LearningStageCard({
       <span
         aria-hidden="true"
         className={cx(
-          "absolute z-20 flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold text-white shadow-[0_7px_16px_rgba(15,23,42,0.18)] ring-4 ring-[#f4fbf7]",
+          "absolute z-20 flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold text-deep-navy shadow-[0_7px_16px_rgba(15,23,42,0.18)] ring-4 ring-[#f4fbf7]",
           compact ? "right-4 top-4" : stage.markerPosition,
           stage.accent,
         )}
@@ -608,7 +603,7 @@ function OrgPracticeProgression() {
           <ol className="relative grid md:grid-cols-3 md:divide-x md:divide-white/10">
               {steps.map((item) => (
                 <li className={cx("relative grid grid-cols-[auto_1fr] gap-4 border-b border-white/10 last:border-b-0 md:block md:border-b-0", styles.cardPadding)} key={item.title}>
-                  <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 border-[#18334d] bg-dec-blue font-sans text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(0,0,0,0.22)] md:h-14 md:w-14">
+                  <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 border-[#18334d] bg-dec-blue font-sans text-sm font-extrabold text-deep-navy shadow-[0_8px_20px_rgba(0,0,0,0.22)] md:h-14 md:w-14">
                     {item.num}
                   </span>
                   <div className="md:mt-6">

@@ -27,7 +27,7 @@ export type ActionButtonProps = ActionButtonLinkProps | ActionButtonElementProps
 
 const variantClasses = {
   primary:
-    "border-dec-blue bg-dec-blue text-white shadow-soft hover:bg-[#2e82b7] hover:border-[#2e82b7]",
+    "border-[#1679b0] bg-[#1679b0] text-white shadow-soft hover:border-[#115f8b] hover:bg-[#115f8b]",
   secondary:
     "border-design-border bg-white text-deep-navy shadow-soft hover:border-dec-blue hover:text-dec-blue",
   outline:

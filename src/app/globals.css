@@ -76,29 +76,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-@keyframes landing-hero-drift {
-  from {
-    transform: scale(1.015) translate3d(0, 0, 0);
-  }
-  to {
-    transform: scale(1.04) translate3d(-0.4%, -0.35%, 0);
-  }
-}
-
-@keyframes landing-hero-node-float {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.72;
-  }
-  50% {
-    transform: translateY(-8px);
-    opacity: 1;
-  }
-}
-
 .landing-hero-art {
-  transform: scale(1.015);
+  transform: scale(1.006);
 }
 
 .landing-section-heading {
@@ -152,21 +131,6 @@ body {
   font-size: 0.875rem;
   line-height: 1.65;
   text-wrap: pretty;
-}
-
-@media (min-width: 1024px) {
-  .landing-hero-art {
-    animation: landing-hero-drift 18s ease-in-out infinite alternate;
-    will-change: transform;
-  }
-
-  .landing-hero-node {
-    animation: landing-hero-node-float 5.5s ease-in-out infinite;
-  }
-
-  .landing-hero-node-delayed {
-    animation-delay: -2.4s;
-  }
 }
 
 a:not([class]) {
