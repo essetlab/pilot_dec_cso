@@ -75,7 +75,7 @@ function SectionEyebrow({ children, tone = "dark" }: { children: React.ReactNode
 
 function HomepageHero() {
   return (
-    <section className="relative isolate flex min-h-[810px] w-full items-start overflow-hidden bg-[#071426] text-white sm:min-h-[clamp(680px,82vh,720px)] sm:items-center" aria-labelledby="landing-hero-title">
+    <section className="relative isolate flex min-h-[760px] w-full items-start overflow-hidden bg-[#071426] text-white sm:min-h-[clamp(680px,82vh,720px)] sm:items-center" aria-labelledby="landing-hero-title">
       <div className="absolute inset-x-0 bottom-0 -z-30 h-[52%] sm:inset-0 sm:h-auto">
         <Image
           alt="Illustration of Ethiopian CSO practitioners with diverse abilities co-creating a community plan around a table."
@@ -89,7 +89,7 @@ function HomepageHero() {
       <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,#071426_0%,rgba(7,20,38,0.99)_50%,rgba(7,20,38,0.76)_68%,rgba(7,20,38,0.20)_100%)] sm:bg-[linear-gradient(90deg,rgba(7,20,38,0.99)_0%,rgba(7,20,38,0.96)_38%,rgba(7,20,38,0.68)_56%,rgba(7,20,38,0.22)_78%,rgba(7,20,38,0.08)_100%)]" />
       <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,rgba(7,20,38,0.18)_0%,transparent_32%,transparent_72%,rgba(7,20,38,0.46)_100%)]" />
 
-      <div className="flex w-full items-center px-5 pb-20 pt-[7.75rem] sm:px-8 sm:pb-24 sm:pt-28 lg:px-[clamp(3rem,5vw,6rem)] lg:pb-24 lg:pt-28 xl:pt-32">
+      <div className="flex w-full items-center px-5 pb-16 pt-[7.25rem] sm:px-8 sm:pb-24 sm:pt-28 lg:px-[clamp(3rem,5vw,6rem)] lg:pb-24 lg:pt-28 xl:pt-32">
         <div className="relative z-10 max-w-[680px]">
           <div className="flex items-center gap-3">
             <span aria-hidden="true" className="h-0.5 w-8 rounded-full bg-dec-green shadow-[0_0_14px_rgba(145,200,82,0.45)]" />
@@ -198,7 +198,7 @@ function FeaturedCourseCard({
           />
         </div>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
+      <div className="flex min-w-0 flex-1 flex-col p-[1.125rem] sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <span className="max-w-[70%] text-xs font-extrabold uppercase leading-5 tracking-[0.12em] text-[#216f9d]">
             {course.primaryCapacityArea.name}
@@ -273,7 +273,7 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
             <h2 id="featured-learning-title" className="mt-4 max-w-none font-display text-[2rem] font-bold leading-[1.1] tracking-[-0.022em] text-deep-navy [text-wrap:balance] sm:mt-5 sm:whitespace-nowrap sm:text-[clamp(2.125rem,3.1vw,2.75rem)] sm:leading-[1.07] sm:[text-wrap:nowrap]">
               Start with the course available now
             </h2>
-            <p className="landing-section-copy mt-5 max-w-[640px] text-muted-text">
+            <p className="landing-section-copy mt-4 max-w-[640px] text-muted-text sm:mt-5">
               Explore the Human Rights-Based Approach course today. Review other confirmed course areas being prepared for future release.
             </p>
           </div>
@@ -282,7 +282,7 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
           </ActionButton>
         </div>
         
-        <div className="mt-9 grid items-stretch gap-7 sm:mt-10 xl:grid-cols-2">
+        <div className="mt-7 grid items-stretch gap-5 sm:mt-10 sm:gap-7 xl:grid-cols-2">
           {shown.map(({ course, identity }, index) => (
             <FeaturedCourseCard
               course={course}
@@ -438,7 +438,7 @@ function LearningPathway() {
           </p>
         </div>
 
-        <div className="relative mt-10 grid gap-7 xl:grid-cols-[minmax(0,1.58fr)_minmax(340px,0.92fr)] xl:items-stretch">
+        <div className="relative mt-8 grid gap-5 sm:mt-10 sm:gap-7 xl:grid-cols-[minmax(0,1.58fr)_minmax(340px,0.92fr)] xl:items-stretch">
           <div className="relative hidden min-h-[640px] overflow-hidden rounded-[30px] border border-soft-teal/25 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.98)_0%,rgba(244,251,247,0.90)_46%,rgba(233,247,240,0.94)_100%)] shadow-[0_22px_58px_rgba(15,23,42,0.10)] md:block lg:min-h-[660px]">
             <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 720 620">
               <defs>
@@ -466,7 +466,7 @@ function LearningPathway() {
             </div>
           </div>
 
-          <div className="relative mt-20 rounded-[28px] border border-soft-teal/25 bg-[#eef8f2] px-4 pb-4 pt-24 shadow-[0_20px_52px_rgba(15,23,42,0.10)] md:hidden">
+          <div className="relative mt-[4.5rem] rounded-[28px] border border-soft-teal/25 bg-[#eef8f2] px-3.5 pb-3.5 pt-20 shadow-[0_20px_52px_rgba(15,23,42,0.10)] sm:mt-20 sm:px-4 sm:pb-4 sm:pt-24 md:hidden">
             <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
               <CycleAnchor compact />
             </div>
@@ -475,13 +475,13 @@ function LearningPathway() {
             </svg>
             <div className="relative mt-2">
               <span aria-hidden="true" className={cx("absolute bottom-12 left-[2.2rem] top-12 w-0.5 opacity-55", styles.mobileCycleSpine)} />
-              <ol aria-label="Four-stage continuous learning cycle" className="relative space-y-4">
+              <ol aria-label="Four-stage continuous learning cycle" className="relative space-y-3 sm:space-y-4">
                 {learningStages.map((stage) => (
                   <LearningStageCard compact key={stage.title} stage={stage} />
                 ))}
               </ol>
             </div>
-            <div className="mt-5 flex items-center justify-center gap-2 rounded-full border border-soft-teal/25 bg-white px-4 py-2.5 text-sm font-semibold leading-5 text-soft-teal shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
+            <div className="mt-4 flex items-center justify-center gap-2 rounded-full border border-soft-teal/25 bg-white px-3 py-2.5 text-sm font-semibold leading-5 text-soft-teal shadow-[0_8px_18px_rgba(15,23,42,0.06)] sm:mt-5 sm:px-4">
               <CycleIcon className="h-4 w-4" />
               <span>The cycle continues from Apply back to Explore.</span>
             </div>
@@ -503,7 +503,7 @@ function LearningPathway() {
               </p>
             </div>
 
-            <div className={cx("relative z-10 mt-7 aspect-video w-full overflow-hidden rounded-[22px] border border-white/15 shadow-[0_18px_36px_rgba(0,0,0,0.28)] md:mt-0 xl:mt-8", styles.videoPoster)} aria-label="Non-interactive preview for a future CSO Learning Hub introduction video" role="img">
+            <div className={cx("relative z-10 mt-6 aspect-video w-full overflow-hidden rounded-[22px] border border-white/15 shadow-[0_18px_36px_rgba(0,0,0,0.28)] md:mt-0 xl:mt-8", styles.videoPoster)} aria-label="Non-interactive preview for a future CSO Learning Hub introduction video" role="img">
               <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-55" preserveAspectRatio="none" viewBox="0 0 640 360">
                 <path d="M-30 278 C96 178 188 326 302 212 S512 70 688 150" fill="none" stroke="#72bee8" strokeDasharray="8 12" strokeLinecap="round" strokeWidth="3" />
                 <path d="M-20 320 C118 224 210 350 330 248 S534 118 674 190" fill="none" stroke="#91c852" strokeOpacity="0.68" strokeWidth="2" />
@@ -547,11 +547,11 @@ function CsoRealities() {
             <h2 id="realities-title" className="landing-section-heading mt-5 max-w-[12ch] text-deep-navy">
               Your organization already carries knowledge and experience
             </h2>
-            <div aria-hidden="true" className="mt-7 flex items-center gap-3">
+            <div aria-hidden="true" className="mt-5 flex items-center gap-3 sm:mt-7">
               <span className="h-px w-20 bg-[#b99f70]" />
               <span className="h-2 w-2 rounded-full bg-restrained-amber" />
             </div>
-            <p className="landing-section-copy mt-7 max-w-[31rem] text-muted-text">
+            <p className="landing-section-copy mt-5 max-w-[31rem] text-muted-text sm:mt-7">
               Finding time and internet continuity to transfer classroom training into shared practice is a common challenge. The Hub provides bite-sized, structured pathways to bridge this gap, putting your context and judgment first.
             </p>
           </div>
@@ -610,7 +610,7 @@ function OrgPracticeProgression() {
           </div>
         </div>
 
-        <div className="relative mt-10 overflow-hidden rounded-[30px] border border-white/15 bg-[linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] shadow-[0_24px_60px_rgba(0,0,0,0.22)]">
+        <div className="relative mt-8 overflow-hidden rounded-[30px] border border-white/15 bg-[linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] shadow-[0_24px_60px_rgba(0,0,0,0.22)] sm:mt-10">
           <span aria-hidden="true" className="absolute left-[16%] right-[16%] top-[3.7rem] hidden h-px bg-gradient-to-r from-[#64b6df]/25 via-[#64b6df]/75 to-[#64b6df]/25 lg:block" />
           <span aria-hidden="true" className="absolute left-1/3 top-[3.25rem] z-20 hidden h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full border border-[#64b6df]/45 bg-[#132b43] text-[#8fd0f4] lg:flex">
             <ChevronRightIcon className="h-2.5 w-2.5" />
@@ -700,7 +700,7 @@ function SafetyAccessibilityPanel() {
 
 function HomepageCTA() {
   return (
-    <section className="relative bg-[linear-gradient(180deg,#f7f3ea_0%,#f7f3ea_52%,#071426_52%,#071426_100%)] pb-10 pt-16 sm:pb-12 sm:pt-20 lg:pb-14 lg:pt-24" aria-labelledby="cta-section-title">
+    <section className="relative bg-[linear-gradient(180deg,#f7f3ea_0%,#f7f3ea_52%,#071426_52%,#071426_100%)] pb-10 pt-14 sm:pb-12 sm:pt-20 lg:pb-14 lg:pt-24" aria-labelledby="cta-section-title">
       <div aria-hidden="true" className="absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
         <span className="h-8 w-px bg-gradient-to-b from-soft-teal/45 to-dec-blue" />
         <span className="h-2.5 w-2.5 rounded-full border-2 border-[#f7f3ea] bg-dec-blue shadow-[0_0_0_4px_rgba(59,153,212,0.14)]" />

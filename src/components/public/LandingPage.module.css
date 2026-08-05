@@ -69,6 +69,20 @@
     linear-gradient(145deg, #102c45 0%, #0b1f35 50%, #071426 100%);
 }
 
+@media (max-width: 39.9375rem) {
+  .pageRhythm {
+    --landing-section-space: 3.75rem;
+    --landing-section-space-compact: 3.5rem;
+    --landing-content-gap: 1.5rem;
+    --landing-card-gap: 0.875rem;
+    --landing-card-padding: 1.125rem;
+  }
+
+  .pageContainer {
+    padding-inline: 1.125rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cyclePath {
     animation: none;

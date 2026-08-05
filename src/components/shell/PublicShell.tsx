@@ -344,32 +344,38 @@ export function PublicFooter() {
 
   return (
     <footer className="mt-auto overflow-hidden bg-[#071426] text-white">
-      <div className="mx-auto w-full max-w-[1280px] px-5 pb-10 pt-10 sm:px-7 sm:pb-12 sm:pt-12 lg:px-10 lg:pt-14">
-        <div className="grid gap-12 border-b border-white/10 pb-12 lg:grid-cols-[minmax(17rem,0.78fr)_minmax(0,1.62fr)] lg:gap-16 lg:pb-14">
+      <div className="mx-auto w-full max-w-[1280px] px-5 pb-8 pt-8 sm:px-7 sm:pb-12 sm:pt-12 lg:px-10 lg:pt-14">
+        <div className="grid gap-8 border-b border-white/10 pb-8 sm:gap-12 sm:pb-12 lg:grid-cols-[minmax(17rem,0.78fr)_minmax(0,1.62fr)] lg:gap-16 lg:pb-14">
           <div className="max-w-md">
-            <div className="relative h-14 w-[145px]">
-              <Image
-                alt="Development Expertise Center Logo"
-                className="object-contain"
-                fill
-                sizes="145px"
-                src="/logos/dec-logo.png"
-              />
+            <div className="flex items-center gap-4 sm:block">
+              <div className="relative h-11 w-[114px] shrink-0 sm:h-14 sm:w-[145px]">
+                <Image
+                  alt="Development Expertise Center Logo"
+                  className="object-contain"
+                  fill
+                  sizes="(max-width: 639px) 114px, 145px"
+                  src="/logos/dec-logo.png"
+                />
+              </div>
+              <h2 className="font-display text-[1.55rem] font-bold leading-tight tracking-[-0.022em] text-white sm:mt-6 sm:text-[2rem]">CSO Learning Hub</h2>
             </div>
-            <h2 className="mt-6 font-display text-[2rem] font-bold leading-tight tracking-[-0.022em] text-white">CSO Learning Hub</h2>
             <p className="mt-4 max-w-sm text-[0.98rem] font-normal leading-7 text-slate-300">
               A practical digital learning platform for local and grassroots civil society organisations in Ethiopia.
             </p>
-            <span aria-hidden="true" className="mt-7 block h-0.5 w-16 rounded-full bg-gradient-to-r from-dec-blue to-dec-green" />
+            <span aria-hidden="true" className="mt-5 block h-0.5 w-16 rounded-full bg-gradient-to-r from-dec-blue to-dec-green sm:mt-7" />
           </div>
 
-          <div className="grid grid-cols-2 gap-x-5 gap-y-9 sm:grid-cols-3 xl:grid-cols-5 xl:gap-x-6">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3 sm:gap-y-9 xl:grid-cols-5 xl:gap-x-6">
             {footerGroups.map((group) => (
-              <nav aria-label={`${group.heading} links`} key={group.heading}>
-                <h2 className="min-h-8 text-xs font-extrabold uppercase leading-5 tracking-[0.14em] text-dec-green">
+              <nav
+                aria-label={`${group.heading} links`}
+                className={cx(group.heading === "Accessibility" && "col-span-2 flex items-center justify-between gap-4 border-t border-white/10 pt-4 sm:col-span-1 sm:block sm:border-0 sm:pt-0")}
+                key={group.heading}
+              >
+                <h2 className={cx("text-xs font-extrabold uppercase leading-5 tracking-[0.14em] text-dec-green", group.heading !== "Accessibility" && "min-h-8")}>
                   {group.heading}
                 </h2>
-                <ul className="mt-3 space-y-0.5">
+                <ul className={cx("space-y-0.5", group.heading === "Accessibility" ? "mt-0 sm:mt-3" : "mt-2 sm:mt-3")}>
                   {group.links.map((item) => (
                     <li key={item.href}>
                       <Link className={footerLinkClassName} href={item.href}>
