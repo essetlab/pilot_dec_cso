@@ -350,19 +350,19 @@ function CycleAnchor({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={cx(
-        "relative flex shrink-0 flex-col items-center justify-center rounded-full border border-dec-blue/30 bg-white text-center shadow-[0_18px_46px_rgba(15,23,42,0.16)]",
-        compact ? "mx-auto h-36 w-36" : "h-40 w-40",
+        "relative isolate flex shrink-0 flex-col items-center justify-center rounded-full border border-dec-blue/35 bg-white text-center shadow-[0_24px_58px_rgba(15,23,42,0.20)] before:absolute before:inset-[7px] before:-z-10 before:rounded-full before:border before:border-slate-100",
+        compact ? "mx-auto h-40 w-40" : "h-44 w-44 lg:h-48 lg:w-48",
       )}
     >
-      <span aria-hidden="true" className="absolute -inset-2 rounded-full border border-dashed border-soft-teal/45" />
-      <span aria-hidden="true" className="absolute -inset-5 rounded-full border border-dec-blue/10" />
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-deep-navy text-dec-green shadow-[0_10px_22px_rgba(15,23,42,0.22)]">
+      <span aria-hidden="true" className="absolute -inset-3 rounded-full border border-dashed border-soft-teal/55" />
+      <span aria-hidden="true" className="absolute -inset-7 rounded-full border border-dec-blue/15" />
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-deep-navy text-dec-green shadow-[0_12px_26px_rgba(15,23,42,0.26)] ring-4 ring-[#edf7f4]">
         <CycleIcon className="h-5 w-5" />
       </span>
-      <span className="mt-3 text-[0.65rem] font-extrabold uppercase tracking-[0.17em] text-soft-teal">
+      <span className="mt-3 text-[0.66rem] font-extrabold uppercase tracking-[0.18em] text-soft-teal">
         Continuous
       </span>
-      <span className="mt-1 max-w-[125px] font-display text-lg font-bold leading-[1.05] tracking-[-0.015em] text-deep-navy">
+      <span className="mt-1 max-w-[138px] font-display text-[1.18rem] font-bold leading-[1.03] tracking-[-0.018em] text-deep-navy lg:text-xl">
         Learning into action
       </span>
     </div>
@@ -381,13 +381,13 @@ function LearningStageCard({
   return (
     <li
       className={cx(
-        "relative z-10 flex flex-col rounded-[22px] border bg-white shadow-[0_12px_28px_rgba(15,23,42,0.10)] after:pointer-events-none after:absolute after:inset-[5px] after:rounded-[17px] after:border after:border-slate-100/90",
-        compact ? "min-h-[145px] p-4" : "min-h-0 p-5",
+        "relative z-10 flex flex-col rounded-[24px] border bg-white shadow-[0_18px_38px_rgba(15,23,42,0.12)] after:pointer-events-none after:absolute after:inset-[4px] after:rounded-[19px] after:border after:border-slate-100",
+        compact ? "min-h-[145px] p-4" : "min-h-0 p-5 lg:p-6",
         !compact && stage.position,
         stage.border,
       )}
     >
-      <span aria-hidden="true" className={cx("absolute inset-x-5 top-0 h-1 rounded-b-full", stage.accent)} />
+      <span aria-hidden="true" className={cx("absolute inset-x-4 top-0 h-1 rounded-b-full", stage.accent)} />
       <div className={cx("relative z-10 flex items-center gap-3 pr-10", !compact && markerIsOnLeft && "pl-4")}>
         <span className={cx("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.72)]", stage.iconStyle)}>
           <StageIcon className="h-5 w-5" />
@@ -436,50 +436,56 @@ function LearningPathway() {
           </p>
         </div>
 
-        <div className="relative mt-10 grid gap-7 xl:grid-cols-[minmax(0,1.38fr)_minmax(360px,1fr)] xl:items-stretch">
-          <div className="relative hidden min-h-[620px] overflow-hidden rounded-[28px] border border-soft-teal/20 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.96)_0%,rgba(244,251,247,0.88)_48%,rgba(233,247,240,0.92)_100%)] shadow-[0_18px_50px_rgba(15,23,42,0.08)] md:block">
-            <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 720 580">
+        <div className="relative mt-10 grid gap-7 xl:grid-cols-[minmax(0,1.58fr)_minmax(340px,0.92fr)] xl:items-stretch">
+          <div className="relative hidden min-h-[640px] overflow-hidden rounded-[30px] border border-soft-teal/25 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.98)_0%,rgba(244,251,247,0.90)_46%,rgba(233,247,240,0.94)_100%)] shadow-[0_22px_58px_rgba(15,23,42,0.10)] md:block lg:min-h-[660px]">
+            <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 720 620">
               <defs>
                 <marker id="cycle-arrow-connected" markerHeight="7" markerWidth="7" orient="auto" refX="6" refY="3.5">
                   <path d="M0,0 L7,3.5 L0,7 Z" fill="#0f8f8c" />
                 </marker>
               </defs>
-              <ellipse cx="360" cy="290" fill="none" rx="225" ry="218" stroke="#0f8f8c" strokeOpacity="0.12" strokeWidth="1.5" />
-              <ellipse cx="360" cy="290" fill="none" rx="174" ry="164" stroke="#3b99d4" strokeOpacity="0.10" />
-              <path className={styles.cyclePath} d="M270 145 C300 70 420 70 450 145" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
-              <path className={styles.cyclePath} d="M450 145 C520 220 520 360 450 435" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
-              <path className={styles.cyclePath} d="M450 435 C420 510 300 510 270 435" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
-              <path className={styles.cyclePath} d="M270 435 C200 360 200 220 270 145" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeWidth="2.4" />
+              <ellipse cx="360" cy="310" fill="none" rx="244" ry="228" stroke="#0f8f8c" strokeOpacity="0.12" strokeWidth="1.5" />
+              <ellipse cx="360" cy="310" fill="none" rx="180" ry="166" stroke="#3b99d4" strokeOpacity="0.12" />
+              <ellipse className={styles.cyclePath} cx="360" cy="310" fill="none" rx="210" ry="196" stroke="#0f8f8c" strokeDasharray="9 11" strokeLinecap="round" strokeOpacity="0.82" strokeWidth="2.8" />
+              <path d="M270 126 C315 100 405 100 450 126" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="2.2" />
+              <path d="M558 248 C576 284 576 336 558 372" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="2.2" />
+              <path d="M450 494 C405 520 315 520 270 494" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="2.2" />
+              <path d="M162 372 C144 336 144 284 162 248" fill="none" markerEnd="url(#cycle-arrow-connected)" stroke="#0f8f8c" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="2.2" />
             </svg>
 
-            <ol aria-label="Four-stage continuous learning cycle" className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-x-32 gap-y-40 p-6 lg:gap-x-40 lg:p-8">
+            <ol aria-label="Four-stage continuous learning cycle" className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-x-24 gap-y-32 p-7 lg:p-8">
               {learningStages.map((stage) => (
                 <LearningStageCard key={stage.title} stage={stage} />
               ))}
             </ol>
 
-            <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
               <CycleAnchor />
             </div>
           </div>
 
-          <div className="relative rounded-[28px] border border-soft-teal/20 bg-[#eef8f2] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] md:hidden">
-            <CycleAnchor compact />
-            <div className="relative mt-7">
-              <span aria-hidden="true" className="absolute bottom-12 left-[2.2rem] top-12 border-l-2 border-dashed border-soft-teal/35" />
+          <div className="relative mt-20 rounded-[28px] border border-soft-teal/25 bg-[#eef8f2] px-4 pb-4 pt-24 shadow-[0_20px_52px_rgba(15,23,42,0.10)] md:hidden">
+            <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
+              <CycleAnchor compact />
+            </div>
+            <svg aria-hidden="true" className="pointer-events-none absolute left-0 top-16 h-28 w-full" preserveAspectRatio="none" viewBox="0 0 340 112">
+              <path className={styles.cyclePath} d="M170 0 C170 54 36 38 36 112" fill="none" stroke="#0f8f8c" strokeDasharray="8 10" strokeLinecap="round" strokeOpacity="0.6" strokeWidth="2" />
+            </svg>
+            <div className="relative mt-2">
+              <span aria-hidden="true" className={cx("absolute bottom-12 left-[2.2rem] top-12 w-0.5 opacity-55", styles.mobileCycleSpine)} />
               <ol aria-label="Four-stage continuous learning cycle" className="relative space-y-4">
                 {learningStages.map((stage) => (
                   <LearningStageCard compact key={stage.title} stage={stage} />
                 ))}
               </ol>
             </div>
-            <div className="mt-5 flex items-center justify-center gap-2 rounded-full border border-soft-teal/20 bg-white px-4 py-2.5 text-xs font-semibold text-soft-teal">
+            <div className="mt-5 flex items-center justify-center gap-2 rounded-full border border-soft-teal/25 bg-white px-4 py-2.5 text-xs font-semibold text-soft-teal shadow-[0_8px_18px_rgba(15,23,42,0.06)]">
               <CycleIcon className="h-4 w-4" />
               <span>The cycle continues from Apply back to Explore.</span>
             </div>
           </div>
 
-          <aside className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#071426] p-5 text-white shadow-[0_20px_54px_rgba(7,20,38,0.18)] sm:p-7 md:grid md:grid-cols-[0.78fr_1.22fr] md:items-center md:gap-8 lg:p-8 xl:flex xl:min-h-[620px] xl:flex-col xl:justify-center" aria-labelledby="hub-video-preview-title">
+          <aside className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#071426] p-5 text-white shadow-[0_20px_54px_rgba(7,20,38,0.18)] sm:p-7 md:grid md:grid-cols-[0.78fr_1.22fr] md:items-center md:gap-8 lg:p-8 xl:flex xl:min-h-[660px] xl:flex-col xl:justify-center" aria-labelledby="hub-video-preview-title">
             <span aria-hidden="true" className="absolute -right-24 -top-28 h-64 w-64 rounded-full border-[24px] border-dec-blue/12" />
             <span aria-hidden="true" className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-soft-teal/10 blur-2xl" />
             <div className="relative z-10">

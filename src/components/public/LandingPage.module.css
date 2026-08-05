@@ -1,6 +1,12 @@
 @keyframes learningCycleFlow {
   to {
-    stroke-dashoffset: -180;
+    stroke-dashoffset: -80;
+  }
+}
+
+@keyframes mobileCycleFlow {
+  to {
+    background-position-y: 36px;
   }
 }
 
@@ -40,7 +46,20 @@
 }
 
 .cyclePath {
-  animation: learningCycleFlow 24s linear infinite;
+  animation: learningCycleFlow 28s linear infinite;
+}
+
+.mobileCycleSpine {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(15 143 140 / 0.72) 0,
+    rgb(15 143 140 / 0.72) 8px,
+    transparent 8px,
+    transparent 18px
+  );
+  background-position-y: 0;
+  background-size: 2px 36px;
+  animation: mobileCycleFlow 4s linear infinite;
 }
 
 .videoPoster {
@@ -54,5 +73,10 @@
   .cyclePath {
     animation: none;
     stroke-dashoffset: 0;
+  }
+
+  .mobileCycleSpine {
+    animation: none;
+    background-position-y: 0;
   }
 }
