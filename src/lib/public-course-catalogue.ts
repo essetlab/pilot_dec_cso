@@ -189,6 +189,7 @@ function comingSoonCourse(
   definition: Pick<
     CatalogueCourseDefinition,
     | "displayOrder"
+    | "imageAlt"
     | "imageUrl"
     | "integrationStatus"
     | "legacyAliases"
@@ -213,7 +214,7 @@ function comingSoonCourse(
       definition.externalCourse ?? comingSoonExternalCourse(),
     featured: false,
     fullDescription: COMING_SOON_OVERVIEW,
-    imageAlt: `Course cover for ${definition.title}`,
+    imageAlt: definition.imageAlt,
     imageUrl: definition.imageUrl,
     integrationStatus: definition.integrationStatus,
     intendedLearners: COMING_SOON_AUDIENCE,
@@ -258,8 +259,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
     },
     featured: true,
     fullDescription: HRBA_COURSE_OVERVIEW,
-    imageAlt: "Local CSO practitioners reviewing advocacy notes during a planning session.",
-    imageUrl: "/images/courses/thumbnails/hrba-cso-practice.webp",
+    imageAlt: "Diverse CSO practitioners reviewing a community map together around a table.",
+    imageUrl: "/images/courses/thumbnails/course-hrba-practice-thumbnail-v2.webp",
     integrationStatus: "integrated",
     intendedLearners:
       "Local and grassroots CSO staff, focal persons, facilitators, and programme teams applying HRBA in practical project work.",
@@ -290,7 +291,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   },
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[1],
-    imageUrl: "/images/courses/thumbnails/governance-leadership.webp",
+    imageAlt: "Local CSO leaders discussing organizational direction around a shared planning map.",
+    imageUrl: "/images/courses/thumbnails/course-lead-accountability-clear-direction-thumbnail.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Governance", "Organizational Development"],
     shortDescription:
@@ -300,7 +302,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[2],
     externalCourse: comingSoonExternalCourse("external_link"),
-    imageUrl: "/images/courses/thumbnails/project-management-local-csos.webp",
+    imageAlt: "CSO practitioners mapping a project pathway from community needs to results.",
+    imageUrl: "/images/courses/thumbnails/course-project-management-thumbnail-v2.webp",
     integrationStatus: "integration_pending",
     legacyAliases: ["Project Cycle Management", "Project Management"],
     shortDescription:
@@ -309,7 +312,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[3],
-    imageUrl: "/images/courses/thumbnails/meal-reporting-to-learning.webp",
+    imageAlt: "CSO practitioners reviewing community evidence through a continuous learning cycle.",
+    imageUrl: "/images/courses/thumbnails/course-meal-reporting-to-learning-thumbnail.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["MEAL", "Monitoring and Evaluation"],
     shortDescription:
@@ -318,7 +322,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[4],
-    imageUrl: "/images/courses/thumbnails/financial-management-compliance.webp",
+    imageAlt: "A local CSO team reviewing financial records, controls, and compliance steps together.",
+    imageUrl: "/images/courses/thumbnails/course-financial-management-compliance-thumbnail.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Financial Management", "Compliance"],
     shortDescription:
@@ -327,7 +332,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[5],
-    imageUrl: "/images/courses/thumbnails/strategic-planning-sustainability.webp",
+    imageAlt: "A CSO team planning a long-term organizational pathway across a community landscape.",
+    imageUrl: "/images/courses/thumbnails/course-strategic-planning-sustainability-thumbnail.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Organizational Development", "Strategic Planning"],
     shortDescription:
@@ -336,7 +342,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[6],
-    imageUrl: "/images/courses/thumbnails/people-inclusion-safeguarding.webp",
+    imageAlt: "An inclusive group of CSO practitioners building trust through supportive conversation.",
+    imageUrl: "/images/courses/thumbnails/course-people-inclusion-safeguarding-thumbnail.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Safeguarding", "Human Resources", "Inclusion"],
     shortDescription:
@@ -345,7 +352,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[7],
-    imageUrl: "/images/courses/thumbnails/digital-security-data-protection.webp",
+    imageAlt: "CSO practitioners using a tablet, notebooks, and secure records for responsible data work.",
+    imageUrl: "/images/courses/thumbnails/course-digital-skills-data-use-thumbnail.webp",
     integrationStatus: "content_preparation",
     legacyAliases: ["Digital Skills", "Data Use"],
     shortDescription:
@@ -354,7 +362,8 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
   }),
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[8],
-    imageUrl: "/images/courses/thumbnails/partnerships-networks-collective-action.webp",
+    imageAlt: "CSO practitioners connecting organizations and communities through a shared network map.",
+    imageUrl: "/images/courses/thumbnails/course-partnerships-networks-collective-action-thumbnail.webp",
     integrationStatus: "content_preparation",
     legacyAliases: [
       "Partnership and Networking",

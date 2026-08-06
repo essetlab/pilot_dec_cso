@@ -151,7 +151,6 @@ const featuredCourseIdentities = [
     image: {
       alt: "Illustrated CSO practitioners collaborating through dialogue, community planning, and inclusive local action.",
       objectPosition: "object-[50%_48%]",
-      src: "/images/courses/thumbnails/course-hrba-practice-thumbnail.webp",
     },
     slugs: [
       "applying-human-rights-based-approach-in-cso-practice",
@@ -162,7 +161,6 @@ const featuredCourseIdentities = [
     image: {
       alt: "Illustrated CSO teams mapping a project pathway from community needs through planning, monitoring, and results.",
       objectPosition: "object-center",
-      src: "/images/courses/thumbnails/course-project-management-thumbnail.webp",
     },
     slugs: ["project-management-local-grassroots-csos"],
   },
@@ -186,16 +184,18 @@ function FeaturedCourseCard({
     >
       <div className="bg-[#f4f7f5] lg:flex lg:h-full lg:items-center lg:p-5 xl:block xl:h-auto xl:p-0">
         <div className="relative aspect-video w-full overflow-hidden bg-slate-100 sm:aspect-[2/1] lg:aspect-video xl:aspect-[1.95/1]">
-          <Image
-            alt={image.alt}
-            className={cx(
-              "object-cover transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transform-none motion-reduce:transition-none",
-              image.objectPosition,
-            )}
-            fill
-            sizes="(min-width: 1280px) 560px, (min-width: 1024px) 40vw, calc(100vw - 2.5rem)"
-            src={image.src}
-          />
+          {course.imageUrl ? (
+            <Image
+              alt={image.alt}
+              className={cx(
+                "object-cover transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transform-none motion-reduce:transition-none",
+                image.objectPosition,
+              )}
+              fill
+              sizes="(min-width: 1280px) 560px, (min-width: 1024px) 40vw, calc(100vw - 2.5rem)"
+              src={course.imageUrl}
+            />
+          ) : null}
         </div>
       </div>
       <div className="flex min-w-0 flex-1 flex-col p-[1.125rem] sm:p-6">

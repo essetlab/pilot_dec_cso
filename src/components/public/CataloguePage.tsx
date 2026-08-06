@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { CourseCoverVisual } from "@/components/course/CourseCoverVisual";
 import { ActionButton, EmptyState, StatusBadge } from "@/components/ui";
 import type { PublicCourseFilters } from "@/lib/course-data";
@@ -17,65 +18,47 @@ function getCapacityAccent(areaId: string) {
       return {
         badgeBg: "bg-[#e5f3fb]",
         badgeText: "text-dec-blue",
-        cardBorder: "border-dec-blue",
-        markerBg: "bg-dec-blue",
       };
     case "CAP-GOV": // Internal Governance and Leadership
       return {
         badgeBg: "bg-deep-navy/10",
         badgeText: "text-deep-navy",
-        cardBorder: "border-[#72bee8]",
-        markerBg: "bg-deep-navy",
       };
     case "CAP-MEAL": // Monitoring & Evaluation
     case "CAP-ACC": // Transparency & Accountability
       return {
         badgeBg: "bg-[#e2f2f1]",
         badgeText: "text-[#0f8f8c]",
-        cardBorder: "border-[#f59e0b]",
-        markerBg: "bg-[#0f8f8c]",
       };
     case "CAP-FIN": // Financial Management
       return {
         badgeBg: "bg-deep-navy/10",
         badgeText: "text-deep-navy",
-        cardBorder: "border-dec-green",
-        markerBg: "bg-dec-green",
       };
     case "CAP-STRAT": // Strategic Planning
       return {
         badgeBg: "bg-deep-navy/10",
         badgeText: "text-deep-navy",
-        cardBorder: "border-dec-green",
-        markerBg: "bg-[#91c852]",
       };
     case "CAP-HRSAFE": // Human Resources and Safeguarding
       return {
         badgeBg: "bg-[#eaf7ef]",
         badgeText: "text-[#2f6b3b]",
-        cardBorder: "border-[#d97706]",
-        markerBg: "bg-[#0f8f8c]",
       };
     case "CAP-DIG": // Digital Skills
       return {
         badgeBg: "bg-dec-blue/10",
         badgeText: "text-dec-blue",
-        cardBorder: "border-cyan-500",
-        markerBg: "bg-cyan-500",
       };
     case "CAP-PART": // Partnerships
       return {
         badgeBg: "bg-dec-green/10",
         badgeText: "text-[#2f6b3b]",
-        cardBorder: "border-[#72bee8]",
-        markerBg: "bg-[#91c852]",
       };
     default:
       return {
         badgeBg: "bg-[#e5f3fb]",
         badgeText: "text-dec-blue",
-        cardBorder: "border-design-border",
-        markerBg: "bg-dec-blue",
       };
   }
 }
@@ -96,7 +79,7 @@ const displayTitles: Record<string, string> = {
 
 function CataloguePageHeader() {
   return (
-    <section className="grid gap-8 py-10 sm:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:py-14">
+    <section className="relative grid gap-7 border-b border-[#d9e7df] py-10 sm:py-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-end lg:gap-16 lg:py-14">
       <div>
         <div className="flex items-center gap-3">
           <span className="h-1 w-12 rounded-full bg-dec-blue" />
@@ -104,15 +87,15 @@ function CataloguePageHeader() {
             CSO Learning Hub
           </p>
         </div>
-        <h1 className="mt-4 max-w-[18ch] font-display text-4xl font-bold leading-[1.08] text-deep-navy sm:text-5xl lg:text-5xl">
+        <h1 className="mt-4 max-w-[17ch] font-display text-[2.4rem] font-bold leading-[1.05] tracking-[-0.028em] text-deep-navy sm:text-[3rem] lg:text-[3.35rem]">
           Practical learning catalogue
         </h1>
       </div>
-      <div className="max-w-xl">
-        <p className="text-base leading-7 text-muted-text">
+      <div className="max-w-[38rem] lg:justify-self-end">
+        <p className="text-[1rem] leading-7 text-muted-text sm:text-[1.05rem] sm:leading-8">
           Explore courses built for the operational realities of local and grassroots civil society organizations in Ethiopia.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-5 inline-flex flex-wrap gap-2 rounded-full border border-[#d8e5de] bg-white/75 p-1.5 shadow-[0_8px_20px_rgba(15,76,92,0.06)]">
           <StatusBadge label="Available now" tone="green" />
           <StatusBadge label="Coming soon" tone="gray" />
         </div>
@@ -133,10 +116,10 @@ function FilterSelect({
   value?: string;
 }) {
   return (
-    <label className="flex min-w-0 flex-col gap-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-text">
+    <label className="flex min-w-0 flex-col gap-2 text-xs font-extrabold uppercase tracking-[0.1em] text-[#405568]">
       {label}
       <select
-        className="min-h-12 w-full min-w-0 max-w-full rounded-control border border-design-border bg-white px-4 py-3 text-sm font-semibold normal-case tracking-normal text-deep-navy shadow-soft outline-none transition focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+        className="min-h-[52px] w-full min-w-0 max-w-full rounded-xl border border-[#cfdde5] bg-white px-4 py-3 text-[0.95rem] font-semibold normal-case tracking-normal text-deep-navy shadow-[0_4px_12px_rgba(15,23,42,0.04)] outline-none transition hover:border-[#aebfcb] focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
         defaultValue={value ?? ""}
         name={name}
       >
@@ -163,17 +146,17 @@ function CatalogueFilterBar({ filters }: { filters: PublicCourseFilters }) {
     <form
       action="/courses"
       aria-labelledby="catalogue-filters-title"
-      className="min-w-0 overflow-hidden rounded-card border border-design-border bg-white p-5 shadow-soft"
+      className="min-w-0 overflow-hidden rounded-[24px] border border-[#d5e2dd] bg-white/95 p-5 shadow-[0_16px_38px_rgba(15,76,92,0.08)] sm:p-6"
     >
       <h2 className="sr-only" id="catalogue-filters-title">
         Search and filter courses
       </h2>
-      <div className="grid min-w-0 gap-4 md:grid-cols-[1.35fr_1fr_0.8fr]">
-        <label className="flex min-w-0 flex-col gap-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-text">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[1.45fr_1fr_0.8fr] lg:gap-5">
+        <label className="flex min-w-0 flex-col gap-2 text-xs font-extrabold uppercase tracking-[0.1em] text-[#405568]">
           Search
           <input
             aria-label="Search courses"
-            className="min-h-12 w-full min-w-0 max-w-full rounded-control border border-design-border bg-light-bg px-4 py-3 text-sm font-semibold normal-case tracking-normal text-deep-navy shadow-soft outline-none transition placeholder:text-muted-text/80 focus:border-dec-blue focus:ring-4 focus:ring-dec-blue/20"
+            className="min-h-[52px] w-full min-w-0 max-w-full rounded-xl border border-[#cfdde5] bg-[#f7fbf8] px-4 py-3 text-[0.95rem] font-semibold normal-case tracking-normal text-deep-navy shadow-[0_4px_12px_rgba(15,23,42,0.04)] outline-none transition placeholder:font-normal placeholder:text-[#657789] hover:border-[#aebfcb] focus:border-dec-blue focus:bg-white focus:ring-4 focus:ring-dec-blue/20"
             defaultValue={filters.search ?? ""}
             name="search"
             placeholder="Search course titles or descriptions..."
@@ -197,9 +180,9 @@ function CatalogueFilterBar({ filters }: { filters: PublicCourseFilters }) {
           value={filters.access}
         />
       </div>
-      <div className="mt-5 flex flex-wrap gap-3">
-        <ActionButton type="submit">Apply filters</ActionButton>
-        <ActionButton href="/courses" variant="secondary">
+      <div className="mt-5 flex flex-col gap-3 border-t border-[#e1e9e5] pt-5 sm:flex-row sm:items-center sm:justify-end">
+        <ActionButton className="min-h-12 sm:min-w-[8.5rem]" type="submit">Apply filters</ActionButton>
+        <ActionButton className="min-h-12 sm:min-w-[8.5rem]" href="/courses" variant="secondary">
           Reset filters
         </ActionButton>
       </div>
@@ -216,61 +199,78 @@ function PublicCourseCard({ course }: { course: PublicCatalogueCourseSummary }) 
 
   return (
     <article
-      className={cx(
-        "flex h-full flex-col overflow-hidden rounded-card border bg-white shadow-soft transition-all duration-300 hover:shadow-card",
-        isAvailable ? accent.cardBorder : "border-design-border"
-      )}
+      className="group flex h-full flex-col overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.07)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)] focus-within:border-dec-blue focus-within:ring-2 focus-within:ring-dec-blue/35 motion-reduce:transform-none motion-reduce:transition-none"
     >
-      <div className="relative aspect-video shrink-0 overflow-hidden">
-        <CourseCoverVisual
-          capacityArea={course.primaryCapacityArea.name}
-          compact
-          imageAlt={course.imageAlt}
-          imageUrl={course.imageUrl}
-          showTextOverlay={false}
-          title={course.title}
-          tone={course.tone}
-        />
-        <div className="absolute right-4 top-4">
-          <StatusBadge
-            label={isAvailable ? "Available now" : "Coming soon"}
-            tone={isAvailable ? "green" : "gray"}
+      <div className="relative aspect-video shrink-0 overflow-hidden bg-[#edf3ef]">
+        {course.imageUrl ? (
+          <Image
+            alt={course.imageAlt}
+            className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transform-none motion-reduce:transition-none"
+            fill
+            sizes="(min-width: 1280px) 31vw, (min-width: 768px) 46vw, calc(100vw - 2.5rem)"
+            src={course.imageUrl}
           />
-        </div>
+        ) : (
+          <CourseCoverVisual
+            capacityArea={course.primaryCapacityArea.name}
+            compact
+            imageAlt={course.imageAlt}
+            imageUrl={course.imageUrl}
+            showTextOverlay={false}
+            title={course.title}
+            tone={course.tone}
+          />
+        )}
       </div>
       <div className="flex flex-1 flex-col p-5 sm:p-6">
-        <span
-          className={cx(
-            "inline-flex self-start rounded-full px-3 py-1 text-xs font-semibold leading-4",
-            accent.badgeBg,
-            accent.badgeText
-          )}
-        >
-          {course.primaryCapacityArea.name}
-        </span>
-        <h3 className="mt-4 text-xl font-bold leading-snug text-deep-navy">
+        <div className="flex items-start justify-between gap-3">
+          <span
+            className={cx(
+              "inline-flex max-w-[72%] self-start rounded-full px-3 py-1.5 text-xs font-bold leading-4",
+              accent.badgeBg,
+              accent.badgeText
+            )}
+          >
+            {course.primaryCapacityArea.name}
+          </span>
+          <div className="shrink-0 [&>span]:min-h-8 [&>span]:whitespace-nowrap [&>span]:text-[0.78rem]">
+            <StatusBadge
+              label={isAvailable ? "Available now" : "Coming soon"}
+              tone={isAvailable ? "green" : "gray"}
+            />
+          </div>
+        </div>
+        <h3 className="mt-4 font-display text-[1.4rem] font-bold leading-[1.12] tracking-[-0.018em] text-deep-navy">
           {displayTitle}
         </h3>
-        <p className="mt-3 flex-1 text-sm leading-6 text-muted-text">
+        {displayTitle !== course.title ? (
+          <p className="mt-2 text-sm leading-6 text-[#526477]">
+            Official title: {course.title}
+          </p>
+        ) : null}
+        <p className="mt-3 flex-1 text-[0.95rem] leading-6 text-muted-text">
           {course.shortDescription}
         </p>
 
         {/* Dynamic, clean metadata display */}
-        <div className="mt-5 space-y-2 border-t border-design-border pt-4 text-xs leading-5 text-muted-text">
+        <div className="mt-5 space-y-2.5 border-t border-design-border pt-4 text-[0.8125rem] leading-5 text-[#526477]">
           <p>
-            <strong className="text-deep-navy font-bold">Format:</strong> {formattedFormat}
+            <strong className="font-bold text-deep-navy">Format:</strong> {formattedFormat}
           </p>
           {isAvailable ? (
             <>
               <p>
-                <strong className="text-deep-navy font-bold">Duration:</strong> {course.duration}
+                <strong className="font-bold text-deep-navy">Duration:</strong> {course.duration}
               </p>
               <p>
-                <strong className="text-deep-navy font-bold">Progress:</strong> Saved to your account
+                <strong className="font-bold text-deep-navy">Certificate:</strong> {course.certificateLabel}
+              </p>
+              <p>
+                <strong className="font-bold text-deep-navy">Progress:</strong> Saved to your account
               </p>
             </>
           ) : (
-            <p className="italic text-muted-soft">Duration and launch details to be confirmed</p>
+            <p className="font-medium text-[#667789]">Duration and launch details to be confirmed</p>
           )}
         </div>
 
@@ -282,7 +282,7 @@ function PublicCourseCard({ course }: { course: PublicCatalogueCourseSummary }) 
                 ? "Open registration"
                 : "Overview only"}
           </span>
-          <ActionButton href={course.href} size="sm" variant={isAvailable ? "primary" : "secondary"}>
+          <ActionButton className="min-h-11 shrink-0" href={course.href} size="sm" variant={isAvailable ? "primary" : "secondary"}>
             {isAvailable ? "View course" : "View overview"}
           </ActionButton>
         </div>
@@ -302,7 +302,7 @@ export function CataloguePage({
   const forthcomingCourses = courses.filter((c) => c.availability === "coming_soon");
 
   return (
-    <div className="flex flex-col bg-light-bg pb-20">
+    <div className="flex flex-col bg-light-bg pb-16 sm:pb-20">
       <CataloguePageHeader />
       <CatalogueFilterBar filters={filters} />
 
@@ -312,8 +312,8 @@ export function CataloguePage({
       </div>
 
       {courses.length > 0 ? (
-        <section aria-label="Course catalogue results" className="mt-12">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:auto-rows-fr lg:grid-cols-3">
+        <section aria-label="Course catalogue results" className="mt-10 sm:mt-12">
+          <div className="grid grid-cols-1 gap-5 md:auto-rows-fr md:grid-cols-2 md:gap-6 xl:grid-cols-3 xl:gap-7">
             {courses.map((course) => (
               <PublicCourseCard course={course} key={course.slug} />
             ))}
