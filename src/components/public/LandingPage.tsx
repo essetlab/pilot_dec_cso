@@ -89,7 +89,7 @@ function HomepageHero() {
       <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,#071426_0%,rgba(7,20,38,0.99)_50%,rgba(7,20,38,0.76)_68%,rgba(7,20,38,0.20)_100%)] sm:bg-[linear-gradient(90deg,rgba(7,20,38,0.99)_0%,rgba(7,20,38,0.96)_38%,rgba(7,20,38,0.68)_56%,rgba(7,20,38,0.22)_78%,rgba(7,20,38,0.08)_100%)]" />
       <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(180deg,rgba(7,20,38,0.18)_0%,transparent_32%,transparent_72%,rgba(7,20,38,0.46)_100%)]" />
 
-      <div className="flex w-full items-center px-5 pb-16 pt-[7.25rem] sm:px-8 sm:pb-24 sm:pt-28 lg:px-[clamp(3rem,5vw,6rem)] lg:pb-24 lg:pt-28 xl:pt-32">
+      <div className="landing-page-shell flex items-center pb-16 pt-[7.25rem] sm:pb-24 sm:pt-28 lg:pb-24 lg:pt-28 xl:pt-32">
         <div className="relative z-10 max-w-[680px]">
           <div className="flex items-center gap-3">
             <span aria-hidden="true" className="h-0.5 w-8 rounded-full bg-dec-green shadow-[0_0_14px_rgba(145,200,82,0.45)]" />
@@ -266,7 +266,7 @@ function FeaturedLearning({ courses }: { courses: PublicCatalogueCourseSummary[]
 
   return (
     <section id="featured-learning" className={cx("scroll-mt-24 bg-white", styles.sectionCompact)} aria-labelledby="featured-learning-title">
-      <div className={styles.pageContainer}>
+      <div className="landing-page-shell">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
           <div className="max-w-[680px]">
             <SectionEyebrow>Featured learning</SectionEyebrow>
@@ -425,7 +425,7 @@ function LearningPathway() {
     <section id="how-the-hub-works" className={cx("relative scroll-mt-24 overflow-hidden border-y border-design-border bg-[#f4fbf7]", styles.sectionCompact)} aria-labelledby="pathway-title">
       <div aria-hidden="true" className="absolute -left-40 top-24 h-[440px] w-[440px] rounded-full border border-soft-teal/10" />
       <div aria-hidden="true" className="absolute -right-32 bottom-10 h-[360px] w-[360px] rounded-full border border-dec-blue/10" />
-      <div className={cx("relative", styles.pageContainer)}>
+      <div className="landing-page-shell relative">
         <div className="mx-auto max-w-[760px] text-center">
           <div className="flex justify-center">
             <SectionEyebrow>How learning works</SectionEyebrow>
@@ -540,7 +540,7 @@ function CsoRealities() {
     <section className={cx("relative overflow-hidden bg-[#f7f3ea]", styles.sectionStandard)} aria-labelledby="realities-title">
       <div aria-hidden="true" className="absolute -left-48 top-12 h-[420px] w-[420px] rounded-full border border-[#d8cdb8]/55" />
       <div aria-hidden="true" className="absolute -left-32 top-28 h-[290px] w-[290px] rounded-full border border-[#d8cdb8]/40" />
-      <div className={cx("relative", styles.pageContainer)}>
+      <div className="landing-page-shell relative">
         <div className={cx("grid lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)] lg:items-center", styles.contentGap)}>
           <div className="max-w-[32rem]">
             <SectionEyebrow>Designed around CSO realities</SectionEyebrow>
@@ -590,7 +590,7 @@ function OrgPracticeProgression() {
     <section className={cx("relative overflow-hidden bg-deep-navy text-white", styles.sectionStandard)} aria-labelledby="org-practice-title">
       <div aria-hidden="true" className="absolute -right-40 -top-48 h-[520px] w-[520px] rounded-full border-[42px] border-dec-blue/10" />
       <div aria-hidden="true" className="absolute -bottom-48 left-[18%] h-80 w-80 rounded-full bg-soft-teal/10 blur-3xl" />
-      <div className={cx("relative", styles.pageContainer)}>
+      <div className="landing-page-shell relative">
         <div className={cx("grid lg:grid-cols-[0.9fr_1.1fr] lg:items-end", styles.contentGap)}>
           <div className="max-w-[38rem]">
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-[#8fd0f4] shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
@@ -657,7 +657,7 @@ function SafetyAccessibilityPanel() {
 
   return (
     <section className={cx("border-y border-design-border bg-[#eef8f2]", styles.sectionStandard)} aria-labelledby="safety-assurance-title">
-      <div className={styles.pageContainer}>
+      <div className="landing-page-shell">
         <div className="grid overflow-hidden rounded-[32px] border border-soft-teal/25 bg-white shadow-[0_24px_64px_rgba(15,76,92,0.11)] lg:grid-cols-[0.88fr_1.12fr]">
           <div className={cx("relative flex flex-col overflow-hidden bg-[#0b4c5c] text-white", styles.cardPadding)}>
             <span aria-hidden="true" className="absolute -bottom-24 -right-20 h-64 w-64 rounded-full border-[28px] border-white/5" />
@@ -705,7 +705,7 @@ function HomepageCTA() {
         <span className="h-8 w-px bg-gradient-to-b from-soft-teal/45 to-dec-blue" />
         <span className="h-2.5 w-2.5 rounded-full border-2 border-[#f7f3ea] bg-dec-blue shadow-[0_0_0_4px_rgba(59,153,212,0.14)]" />
       </div>
-      <div className={styles.pageContainer}>
+      <div className="landing-page-shell">
         <div className="relative overflow-hidden rounded-[36px] border border-white/15 bg-deep-navy px-6 py-10 text-white shadow-[0_30px_80px_rgba(7,20,38,0.30)] ring-1 ring-deep-navy/5 sm:min-h-[410px] sm:px-10 sm:py-12 lg:flex lg:items-center lg:px-16 lg:py-14">
           <div aria-hidden="true" className="absolute -right-24 -top-40 h-96 w-96 rounded-full border-[42px] border-dec-blue/16" />
           <div aria-hidden="true" className="absolute -bottom-52 left-[38%] h-80 w-80 rounded-full bg-soft-teal/10 blur-3xl" />

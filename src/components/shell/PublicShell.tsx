@@ -235,8 +235,8 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
     >
       <div
         className={cx(
-          "mx-auto flex min-h-[76px] w-full items-center justify-between gap-4 px-5 sm:px-7",
-          isHome ? "max-w-none lg:px-[clamp(3rem,5vw,6rem)]" : "max-w-[1200px] lg:px-10",
+          "mx-auto flex min-h-[76px] w-full items-center justify-between gap-4",
+          isHome ? "landing-page-shell max-w-none" : "max-w-[1200px] px-5 sm:px-7 lg:px-10",
         )}
       >
         <Link
@@ -332,6 +332,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
+  const isHome = usePathname() === "/";
   const footerGroups = [
     { heading: "Platform", links: footerPlatformLinks },
     { heading: "Account", links: footerAccountLinks },
@@ -344,7 +345,7 @@ export function PublicFooter() {
 
   return (
     <footer className="mt-auto overflow-hidden bg-[#071426] text-white">
-      <div className="mx-auto w-full max-w-[1280px] px-5 pb-8 pt-8 sm:px-7 sm:pb-12 sm:pt-12 lg:px-10 lg:pt-14">
+      <div className={cx("mx-auto w-full pb-8 pt-8 sm:pb-12 sm:pt-12 lg:pt-14", isHome ? "landing-page-shell" : "max-w-[1280px] px-5 sm:px-7 lg:px-10")}>
         <div className="grid gap-8 border-b border-white/10 pb-8 sm:gap-12 sm:pb-12 lg:grid-cols-[minmax(17rem,0.78fr)_minmax(0,1.62fr)] lg:gap-16 lg:pb-14">
           <div className="max-w-md">
             <div className="flex items-center gap-4 sm:block">
