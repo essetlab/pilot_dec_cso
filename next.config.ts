@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+import { getHrbaExternalCourseAllowedOrigins } from "./src/lib/external-course-config";
+
 function originFromUrl(value: string | undefined) {
   if (!value) {
     return "";
@@ -12,17 +14,7 @@ function originFromUrl(value: string | undefined) {
   }
 }
 
-const externalCourseOrigins = Array.from(
-  new Set([
-    "https://pilot-hrba-e-learn-v1-wajj.vercel.app",
-    "http://localhost:5173",
-    ...(process.env.HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS ?? "")
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter(Boolean),
-    originFromUrl(process.env.HRBA_EXTERNAL_COURSE_URL),
-  ].filter(Boolean)),
-);
+const externalCourseOrigins = getHrbaExternalCourseAllowedOrigins();
 
 const supabaseOrigin = originFromUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
 
