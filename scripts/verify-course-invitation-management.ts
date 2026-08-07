@@ -8,11 +8,17 @@ import {
   CourseInvitationStatus,
   CourseStatus,
   CourseVisibility,
+  EnrollmentStatus,
+  FeedbackType,
+  LessonProgressStatus,
   OrganizationStatus,
+  QuizAttemptStatus,
   RoleKey,
   UserStatus,
 } from "../src/generated/prisma/client";
 import type { AuthSession } from "../src/lib/auth/session-codec";
+import { deactivateAdminCourseAssignment } from "../src/lib/admin-course-workflow";
+import { hasLearnerCourseEntitlement } from "../src/lib/course-entitlement";
 import {
   createAdminCourseInvitation,
   getAdminCourseInvitationDetail,
@@ -25,11 +31,12 @@ import {
   cancelCourseInvitation,
   createManagedCourseInvitation,
   hashCourseInvitationToken,
-  markManagedCourseInvitationSent,
   prepareManagedCourseInvitationResend,
+  reconcileInvitedSupabaseLearnerProfile,
   resolveCourseInvitationAcceptance,
   resolveCourseInvitationToken,
 } from "../src/lib/course-invitation-workflow";
+import { COURSE_INVITATION_VALIDITY_MS } from "../src/lib/hub-access-policy";
 import { prisma } from "../src/lib/prisma";
 
 const suffix = randomUUID();
@@ -41,6 +48,24 @@ const cohortName = (name: string) => `B3 ${name} fictional cohort ${suffix}`;
 const courseSlug = (name: string) => `${prefix}-${name}`;
 const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
 process.env.NEXT_PUBLIC_APP_URL = "https://preview.example.test";
+const deliveredInvitationUrls: string[] = [];
+
+const captureInvitationEmail = async (input: { invitationUrl: string }) => {
+  deliveredInvitationUrls.push(input.invitationUrl);
+  return { delivered: true as const };
+};
+
+function latestDeliveredToken() {
+  const invitationUrl = deliveredInvitationUrls.at(-1);
+  assert(invitationUrl, "Expected an invitation email to be delivered.");
+  const parsed = new URL(invitationUrl);
+  assert.equal(parsed.origin, "https://preview.example.test");
+  assert.equal(parsed.pathname, "/course-invitations/start");
+  assert.equal(parsed.searchParams.size, 1);
+  const token = parsed.searchParams.get("token");
+  assert(token);
+  return { invitationUrl, token };
+}
 
 function sessionFor(user: { email: string; fullName: string; id: string }): AuthSession {
   return {
@@ -235,29 +260,33 @@ try {
     cohortId: cohorts.active.id,
     courseId: courses.eligible.id,
     courseVersionId: versions.eligible.id,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
     invitedEmail,
     invitedName: "B3 Fictional Invited Learner",
     organizationId: organizations.active.id,
+    sendEmail: captureInvitationEmail,
     session: adminSession,
   });
 
   const prepared = await createAdminCourseInvitation(baseInput(email("activate")));
   assert(prepared.success, prepared.success ? undefined : prepared.code);
-  assert.equal(prepared.invitation.status, CourseInvitationStatus.DRAFT);
+  assert.equal(prepared.invitation.status, CourseInvitationStatus.SENT);
+  assert.equal(prepared.delivered, true);
+  const invitationTtl = prepared.invitation.expiresAt.getTime() - Date.now();
+  assert(
+    invitationTtl <= COURSE_INVITATION_VALIDITY_MS &&
+      invitationTtl >= COURSE_INVITATION_VALIDITY_MS - 10_000,
+    "Controlled invitation validity must be five days.",
+  );
   assert.equal(prepared.summary?.courseTitle, courses.eligible.title);
   assert.equal(prepared.summary?.invitedEmail, email("activate"));
   assert.equal(prepared.summary?.organizationName, organizations.active.name);
-  const preparedUrl = new URL(prepared.deliveryUrl);
-  assert.equal(preparedUrl.origin, "https://preview.example.test");
-  const activationToken = preparedUrl.searchParams.get("token");
-  assert(activationToken);
-  assert.equal(preparedUrl.searchParams.size, 1);
+  const { invitationUrl: preparedUrl, token: activationToken } = latestDeliveredToken();
   const stored = await prisma.courseInvitation.findUniqueOrThrow({ where: { id: prepared.invitation.id } });
   assert.equal(stored.tokenHash, hashCourseInvitationToken(activationToken));
   assert(!JSON.stringify(stored).includes(activationToken));
-  assert(!JSON.stringify(stored).includes(prepared.deliveryUrl));
-  assert.deepEqual(await resolveCourseInvitationToken(activationToken), { code: "not-sent", success: false });
+  assert(!JSON.stringify(stored).includes(preparedUrl));
+  assert((await resolveCourseInvitationToken(activationToken)).success);
   const createdAudit = await prisma.auditLog.findFirstOrThrow({ where: { actionType: AuditActionType.COURSE_INVITATION_CREATED, entityId: stored.id } });
   assert(!JSON.stringify(createdAudit).includes(activationToken));
   assert(!JSON.stringify(createdAudit).includes(stored.invitedEmail));
@@ -267,7 +296,7 @@ try {
   assert.equal(list.records[0].id, stored.id);
   const detail = await getAdminCourseInvitationDetail(stored.id, superSession);
   assert(detail);
-  assert.equal(detail.history.length, 1);
+  assert.equal(detail.history.length, 2);
 
   const unauthorizedCreate = await createManagedCourseInvitation({ ...baseInput(email("unauthorized")), session: participantSession });
   assert.equal(unauthorizedCreate.success, false);
@@ -336,8 +365,6 @@ try {
   const duplicateInvitation = await prisma.courseInvitation.findFirstOrThrow({ where: { courseId: courses.eligible.id, invitedEmail: duplicateEmail } });
   assert.equal(await prisma.auditLog.count({ where: { actionType: AuditActionType.COURSE_INVITATION_CREATED, entityId: duplicateInvitation.id } }), 1);
 
-  const markedSent = await markManagedCourseInvitationSent({ invitationId: stored.id, session: adminSession });
-  assert(markedSent.success);
   const unauthenticatedResolution = await resolveCourseInvitationAcceptance({ plaintextToken: activationToken, session: null });
   assert(
     unauthenticatedResolution.success &&
@@ -364,6 +391,12 @@ try {
       mismatchResolution.state === "available" &&
       mismatchResolution.authentication === "mismatch",
   );
+  const afterRepeatedOpening = await prisma.courseInvitation.findUniqueOrThrow({
+    where: { id: stored.id },
+  });
+  assert.equal(afterRepeatedOpening.status, CourseInvitationStatus.SENT);
+  assert.equal(afterRepeatedOpening.activatedAt, null);
+  assert.equal(afterRepeatedOpening.courseAssignmentId, null);
   const mismatchActivation = await activateCourseInvitation({ plaintextToken: activationToken, session: sessionFor(mismatchLearner) });
   assert.equal(mismatchActivation.success, false);
   const activated = await activateCourseInvitation({ plaintextToken: activationToken, session: matchingSession });
@@ -378,28 +411,251 @@ try {
   assert.equal(assignment.targetCohortId, null);
   const activatedResolution = await resolveCourseInvitationAcceptance({ plaintextToken: activationToken, session: matchingSession });
   assert(activatedResolution.success && activatedResolution.state === "already-activated");
+  await prisma.courseInvitation.update({
+    data: { expiresAt: new Date(Date.now() - 60_000) },
+    where: { id: stored.id },
+  });
+  const signedOutActivated = await resolveCourseInvitationAcceptance({ plaintextToken: activationToken, session: null });
+  assert(
+    signedOutActivated.success &&
+      signedOutActivated.state === "already-activated" &&
+      signedOutActivated.authentication === "required",
+  );
+
+  const reconciliationEmail = email("profile-reconciliation");
+  const reconciliationInvitation = await createAdminCourseInvitation(
+    baseInput(reconciliationEmail),
+  );
+  assert(reconciliationInvitation.success && reconciliationInvitation.delivered);
+  const reconciliationToken = latestDeliveredToken().token;
+  const reconciliationInput = {
+    authProviderId: `fictional-supabase-${suffix}`,
+    email: reconciliationEmail,
+    plaintextToken: reconciliationToken,
+  };
+  const concurrentReconciliations = await Promise.all([
+    reconcileInvitedSupabaseLearnerProfile(reconciliationInput),
+    reconcileInvitedSupabaseLearnerProfile(reconciliationInput),
+  ]);
+  assert(concurrentReconciliations.some((result) => result.success));
+  const reconciliationRetry = await reconcileInvitedSupabaseLearnerProfile(
+    reconciliationInput,
+  );
+  assert(reconciliationRetry.success);
+  const reconciledLearner = await prisma.user.findUniqueOrThrow({
+    where: { email: reconciliationEmail },
+  });
+  assert.equal(
+    await prisma.user.count({ where: { email: reconciliationEmail } }),
+    1,
+  );
+  assert.equal(
+    await prisma.userRoleAssignment.count({
+      where: {
+        isActive: true,
+        roleId: roles.get(RoleKey.PARTICIPANT)!.id,
+        userId: reconciledLearner.id,
+      },
+    }),
+    1,
+  );
+  const beforeReconciledActivation = await prisma.courseInvitation.findUniqueOrThrow({
+    where: { id: reconciliationInvitation.invitation.id },
+  });
+  assert.equal(beforeReconciledActivation.status, CourseInvitationStatus.SENT);
+  assert.equal(beforeReconciledActivation.courseAssignmentId, null);
+  assert.equal(
+    await prisma.courseAssignment.count({
+      where: { targetUserId: reconciledLearner.id },
+    }),
+    0,
+  );
+  const reconciledActivation = await activateCourseInvitation({
+    plaintextToken: reconciliationToken,
+    session: sessionFor(reconciledLearner),
+  });
+  assert(reconciledActivation.success && reconciledActivation.code === "activated");
+  assert.equal(reconciledActivation.access.courseId, courses.eligible.id);
+  assert.equal(
+    await prisma.courseAssignment.count({
+      where: {
+        courseId: courses.eligible.id,
+        courseVersionId: versions.eligible.id,
+        isActive: true,
+        targetUserId: reconciledLearner.id,
+      },
+    }),
+    1,
+  );
+  assert.equal(
+    await prisma.courseAssignment.count({
+      where: { targetUserId: reconciledLearner.id },
+    }),
+    1,
+  );
+
+  const additionalCourseInvitation = await createAdminCourseInvitation({
+    ...baseInput(activationLearner.email),
+    courseId: courses.other.id,
+    courseVersionId: versions.other.id,
+  });
+  assert(additionalCourseInvitation.success && additionalCourseInvitation.delivered);
+  const additionalCourseToken = latestDeliveredToken().token;
+  const additionalCourseActivation = await activateCourseInvitation({
+    plaintextToken: additionalCourseToken,
+    session: matchingSession,
+  });
+  assert(additionalCourseActivation.success);
+  assert.equal(additionalCourseActivation.access.courseId, courses.other.id);
+  assert.equal(
+    await prisma.user.count({ where: { email: activationLearner.email } }),
+    1,
+  );
+  assert.equal(
+    await prisma.courseAssignment.count({
+      where: { isActive: true, targetUserId: activationLearner.id },
+    }),
+    2,
+  );
+
+  const evidenceModule = await prisma.module.create({
+    data: {
+      courseVersionId: versions.eligible.id,
+      order: 1,
+      title: "B3 Fictional Evidence Module",
+    },
+  });
+  const evidenceLesson = await prisma.lesson.create({
+    data: {
+      moduleId: evidenceModule.id,
+      order: 1,
+      title: "B3 Fictional Evidence Lesson",
+    },
+  });
+  const evidenceEnrollment = await prisma.enrollment.create({
+    data: {
+      courseId: courses.eligible.id,
+      courseVersionId: versions.eligible.id,
+      progressPercent: 55,
+      status: EnrollmentStatus.IN_PROGRESS,
+      userId: activationLearner.id,
+    },
+  });
+  const evidenceLessonProgress = await prisma.lessonProgress.create({
+    data: {
+      enrollmentId: evidenceEnrollment.id,
+      lessonId: evidenceLesson.id,
+      progressJson: { screenId: "fictional-preserved-screen" },
+      status: LessonProgressStatus.IN_PROGRESS,
+    },
+  });
+  const evidenceQuiz = await prisma.quiz.create({
+    data: {
+      courseVersionId: versions.eligible.id,
+      isFinalTest: true,
+      title: "B3 Fictional Evidence Assessment",
+    },
+  });
+  const evidenceAttempt = await prisma.quizAttempt.create({
+    data: {
+      courseId: courses.eligible.id,
+      courseVersionId: versions.eligible.id,
+      externalEvidenceId: randomUUID(),
+      maxScore: 10,
+      passed: true,
+      percentage: 90,
+      quizId: evidenceQuiz.id,
+      score: 9,
+      status: QuizAttemptStatus.PASSED,
+      submittedAt: new Date(),
+      userId: activationLearner.id,
+    },
+  });
+  const evidenceCertificate = await prisma.certificate.create({
+    data: {
+      certificateCode: `B3-EVIDENCE-${suffix}`,
+      courseId: courses.eligible.id,
+      courseTitleSnapshot: courses.eligible.title,
+      courseVersionId: versions.eligible.id,
+      enrollmentId: evidenceEnrollment.id,
+      participantNameSnapshot: activationLearner.fullName,
+      quizAttemptId: evidenceAttempt.id,
+      userId: activationLearner.id,
+    },
+  });
+  const evidenceFeedback = await prisma.feedback.create({
+    data: {
+      comment: "B3 fictional preserved feedback",
+      courseId: courses.eligible.id,
+      enrollmentId: evidenceEnrollment.id,
+      rating: 5,
+      type: FeedbackType.COURSE_FEEDBACK,
+      userId: activationLearner.id,
+    },
+  });
+  const removal = await deactivateAdminCourseAssignment({
+    assignmentId: assignment.id,
+    session: { ...adminSession, roles: [RoleKey.PLATFORM_ADMIN] },
+  });
+  assert(removal.success && removal.code === "course-assignment-removed");
+  assert.equal(
+    (await prisma.courseAssignment.findUniqueOrThrow({ where: { id: assignment.id } }))
+      .isActive,
+    false,
+  );
+  assert.equal(
+    await hasLearnerCourseEntitlement({
+      courseId: courses.eligible.id,
+      courseSlug: courses.eligible.slug,
+      organizationId: organizations.active.id,
+      userId: activationLearner.id,
+      visibility: CourseVisibility.ASSIGNED_ONLY,
+    }),
+    false,
+  );
+  assert.equal(
+    await hasLearnerCourseEntitlement({
+      courseId: courses.other.id,
+      courseSlug: courses.other.slug,
+      organizationId: organizations.active.id,
+      userId: activationLearner.id,
+      visibility: CourseVisibility.ASSIGNED_ONLY,
+    }),
+    true,
+  );
+  const preservedEvidence = await Promise.all([
+    prisma.enrollment.findUnique({ where: { id: evidenceEnrollment.id } }),
+    prisma.lessonProgress.findUnique({ where: { id: evidenceLessonProgress.id } }),
+    prisma.quizAttempt.findUnique({ where: { id: evidenceAttempt.id } }),
+    prisma.certificate.findUnique({ where: { id: evidenceCertificate.id } }),
+    prisma.feedback.findUnique({ where: { id: evidenceFeedback.id } }),
+  ]);
+  assert(preservedEvidence.every(Boolean));
+  assert.equal(preservedEvidence[0]?.progressPercent, 55);
+  assert.deepEqual(preservedEvidence[1]?.progressJson, {
+    screenId: "fictional-preserved-screen",
+  });
+  assert.equal(preservedEvidence[2]?.passed, true);
+  assert.equal(preservedEvidence[3]?.certificateCode, `B3-EVIDENCE-${suffix}`);
+  assert.equal(preservedEvidence[4]?.comment, "B3 fictional preserved feedback");
+
   assert.equal((await cancelCourseInvitation({ invitationId: stored.id, session: adminSession })).success, false);
   assert.equal((await prepareManagedCourseInvitationResend({ invitationId: stored.id, session: adminSession })).success, false);
 
   const resendPrepared = await createAdminCourseInvitation(baseInput(email("resend")));
   assert(resendPrepared.success);
-  const oldToken = new URL(resendPrepared.deliveryUrl).searchParams.get("token");
-  assert(oldToken);
-  assert((await markManagedCourseInvitationSent({ invitationId: resendPrepared.invitation.id, session: adminSession })).success);
-  const resent = await prepareAdminCourseInvitationLink({ expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), invitationId: resendPrepared.invitation.id, session: adminSession });
+  const oldToken = latestDeliveredToken().token;
+  const resent = await prepareAdminCourseInvitationLink({ expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), invitationId: resendPrepared.invitation.id, sendEmail: captureInvitationEmail, session: adminSession });
   assert(resent.success);
-  const newToken = new URL(resent.deliveryUrl).searchParams.get("token");
-  assert(newToken && newToken !== oldToken);
+  const newToken = latestDeliveredToken().token;
+  assert.notEqual(newToken, oldToken);
   assert.deepEqual(await resolveCourseInvitationToken(oldToken), { code: "invalid-token", success: false });
-  assert.deepEqual(await resolveCourseInvitationToken(newToken), { code: "not-sent", success: false });
-  assert((await markManagedCourseInvitationSent({ invitationId: resent.invitation.id, session: adminSession })).success);
   assert((await resolveCourseInvitationToken(newToken)).success);
   assert.equal(await prisma.courseInvitation.count({ where: { id: resent.invitation.id } }), 1);
 
   const cancelPrepared = await createAdminCourseInvitation(baseInput(email("cancel")));
   assert(cancelPrepared.success);
-  const cancelToken = new URL(cancelPrepared.deliveryUrl).searchParams.get("token");
-  assert(cancelToken);
+  const cancelToken = latestDeliveredToken().token;
   assert((await cancelCourseInvitation({ invitationId: cancelPrepared.invitation.id, session: adminSession })).success);
   assert.deepEqual(await resolveCourseInvitationToken(cancelToken), { code: "cancelled", success: false });
   assert.deepEqual(await resolveCourseInvitationAcceptance({ plaintextToken: cancelToken, session: null }), { state: "cancelled", success: false });
@@ -413,7 +669,6 @@ try {
 
   const stalePrepared = await createAdminCourseInvitation(baseInput(email("stale")));
   assert(stalePrepared.success);
-  assert((await markManagedCourseInvitationSent({ invitationId: stalePrepared.invitation.id, session: adminSession })).success);
   await prisma.organization.update({ data: { status: OrganizationStatus.INACTIVE }, where: { id: organizations.active.id } });
   const staleResend = await prepareManagedCourseInvitationResend({ invitationId: stalePrepared.invitation.id, session: adminSession });
   assert.equal(staleResend.success, false);
@@ -422,7 +677,6 @@ try {
 
   const staleCoursePrepared = await createAdminCourseInvitation(baseInput(email("stale-course")));
   assert(staleCoursePrepared.success);
-  assert((await markManagedCourseInvitationSent({ invitationId: staleCoursePrepared.invitation.id, session: adminSession })).success);
   await prisma.course.update({ data: { status: CourseStatus.UNPUBLISHED }, where: { id: courses.eligible.id } });
   const staleCourseResend = await prepareManagedCourseInvitationResend({ invitationId: staleCoursePrepared.invitation.id, session: adminSession });
   assert.equal(staleCourseResend.success, false);
@@ -431,7 +685,6 @@ try {
 
   const staleVersionPrepared = await createAdminCourseInvitation(baseInput(email("stale-version")));
   assert(staleVersionPrepared.success);
-  assert((await markManagedCourseInvitationSent({ invitationId: staleVersionPrepared.invitation.id, session: adminSession })).success);
   await prisma.courseVersion.update({ data: { status: CourseStatus.UNPUBLISHED }, where: { id: versions.eligible.id } });
   const staleVersionResend = await prepareManagedCourseInvitationResend({ invitationId: staleVersionPrepared.invitation.id, session: adminSession });
   assert.equal(staleVersionResend.success, false);
@@ -440,7 +693,6 @@ try {
 
   const staleCohortPrepared = await createAdminCourseInvitation(baseInput(email("stale-cohort")));
   assert(staleCohortPrepared.success);
-  assert((await markManagedCourseInvitationSent({ invitationId: staleCohortPrepared.invitation.id, session: adminSession })).success);
   await prisma.cohort.update({ data: { status: OrganizationStatus.INACTIVE }, where: { id: cohorts.active.id } });
   const staleCohortResend = await prepareManagedCourseInvitationResend({ invitationId: staleCohortPrepared.invitation.id, session: adminSession });
   assert.equal(staleCohortResend.success, false);
@@ -449,7 +701,6 @@ try {
 
   const assignedResendPrepared = await createAdminCourseInvitation(baseInput(email("assigned-after-send")));
   assert(assignedResendPrepared.success);
-  assert((await markManagedCourseInvitationSent({ invitationId: assignedResendPrepared.invitation.id, session: adminSession })).success);
   const assignedAfterSend = await prisma.user.create({ data: { email: email("assigned-after-send"), fullName: "B3 Fictional Assigned After Send", organizationId: organizations.active.id } });
   await prisma.userRoleAssignment.create({ data: { assignedById: users.admin.id, roleId: roles.get(RoleKey.PARTICIPANT)!.id, userId: assignedAfterSend.id } });
   await prisma.courseAssignment.create({ data: { assignedById: users.admin.id, assignmentType: "USER", courseId: courses.eligible.id, courseVersionId: versions.eligible.id, targetUserId: assignedAfterSend.id } });
@@ -459,10 +710,53 @@ try {
 
   const expiredPrepared = await createAdminCourseInvitation(baseInput(email("expired")));
   assert(expiredPrepared.success);
-  const expiredToken = new URL(expiredPrepared.deliveryUrl).searchParams.get("token");
-  assert(expiredToken);
-  await prisma.courseInvitation.update({ data: { expiresAt: new Date(Date.now() - 60_000), status: CourseInvitationStatus.EXPIRED }, where: { id: expiredPrepared.invitation.id } });
+  const expiredToken = latestDeliveredToken().token;
+  await prisma.courseInvitation.update({ data: { expiresAt: new Date(Date.now() - 60_000) }, where: { id: expiredPrepared.invitation.id } });
+  const naturallyExpiredDetail = await getAdminCourseInvitationDetail(expiredPrepared.invitation.id, adminSession);
+  assert.equal(naturallyExpiredDetail?.status, "INVITATION_EXPIRED");
   assert.deepEqual(await resolveCourseInvitationAcceptance({ plaintextToken: expiredToken, session: null }), { state: "expired", success: false });
+  await prisma.courseInvitation.update({ data: { status: CourseInvitationStatus.EXPIRED }, where: { id: expiredPrepared.invitation.id } });
+  const expiredReplacement = await prepareAdminCourseInvitationLink({
+    invitationId: expiredPrepared.invitation.id,
+    sendEmail: captureInvitationEmail,
+    session: adminSession,
+  });
+  assert(expiredReplacement.success && expiredReplacement.delivered);
+  const expiredReplacementToken = latestDeliveredToken().token;
+  assert.notEqual(expiredReplacementToken, expiredToken);
+  assert.deepEqual(await resolveCourseInvitationToken(expiredToken), { code: "invalid-token", success: false });
+  assert((await resolveCourseInvitationToken(expiredReplacementToken)).success);
+
+  const failedDelivery = await createAdminCourseInvitation({
+    ...baseInput(email("failed-delivery")),
+    sendEmail: async () => ({
+      delivered: false as const,
+      message: "Fictional local delivery failure.",
+      reason: "send-failed" as const,
+    }),
+  });
+  assert(failedDelivery.success && !failedDelivery.delivered);
+  assert.equal(failedDelivery.invitation.status, CourseInvitationStatus.FAILED);
+  const failedRetry = await prepareAdminCourseInvitationLink({
+    invitationId: failedDelivery.invitation.id,
+    sendEmail: captureInvitationEmail,
+    session: adminSession,
+  });
+  assert(failedRetry.success && failedRetry.delivered);
+
+  const pendingDraft = await createManagedCourseInvitation(baseInput(email("pending-retry")));
+  assert(pendingDraft.success);
+  const pending = await prepareManagedCourseInvitationResend({
+    invitationId: pendingDraft.invitation.id,
+    session: adminSession,
+  });
+  assert(pending.success && pending.invitation.status === CourseInvitationStatus.PENDING);
+  const pendingRetry = await prepareAdminCourseInvitationLink({
+    invitationId: pending.invitation.id,
+    sendEmail: captureInvitationEmail,
+    session: adminSession,
+  });
+  assert(pendingRetry.success && pendingRetry.delivered);
   assert.deepEqual(await resolveCourseInvitationAcceptance({ plaintextToken: "fictional-invalid-token", session: null }), { state: "unavailable", success: false });
 
   const [acceptPage, acceptClient, nextConfig, adminUi, invitationForm, adminDashboard, adminPage, signInPage, organizationActions] = await Promise.all([
@@ -479,9 +773,9 @@ try {
   assert(acceptPage.includes('referrer: "no-referrer"'));
   assert(acceptPage.includes('dynamic = "force-dynamic"'));
   assert(!acceptPage.includes("activateCourseInvitation("));
-  assert(acceptClient.includes('fetch("/api/course-invitations/activate"'));
+  assert(!acceptClient.includes('fetch("/api/course-invitations/activate"'));
   assert(acceptClient.includes("/sign-in?next="));
-  assert(acceptClient.includes("/register?next="));
+  assert(acceptClient.includes('href="/register"'));
   assert(acceptClient.includes('state === "cancelled"'));
   assert(acceptClient.includes('state === "expired"'));
   assert(acceptClient.includes('state === "already-activated"'));
@@ -489,12 +783,15 @@ try {
   assert(nextConfig.includes('value: "private, no-store, max-age=0"'));
   assert(nextConfig.includes('value: "no-referrer"'));
   assert(!adminUi.includes("tokenHash"));
-  assert(adminUi.includes("Send the secure link privately"));
+  assert(adminUi.includes("The Hub sends secure invitation emails directly."));
   assert(adminUi.includes("Recent invitation status"));
   assert(invitationForm.includes("All active pilot organizations are shown."));
   assert(invitationForm.includes("The latest published version is selected automatically."));
   assert(invitationForm.includes("/admin/organizations/new?returnTo="));
-  assert(invitationForm.includes("Create invitation"));
+  assert(invitationForm.includes("Send invitation"));
+  assert(invitationForm.includes("valid for five days"));
+  assert(!invitationForm.includes("Copy secure link"));
+  assert(!invitationForm.includes("Confirm link was delivered"));
   assert(!invitationForm.includes("Search organizations"));
   assert(!invitationForm.includes('name="region"'));
   assert(!invitationForm.includes('name="cohortId"'));
@@ -506,11 +803,11 @@ try {
   assert(adminDashboard.includes("Sign in as administrator"));
   assert(adminDashboard.includes("/sign-in?next=%2Fadmin%2Fcourse-invitations"));
   assert(adminDashboard.includes("How to invite a learner"));
-  assert(adminDashboard.includes("Create and deliver"));
+  assert(adminDashboard.includes("Send invitation"));
   assert(adminPage.includes('actualRoute === "/admin"'));
   assert(adminPage.includes("<AdminPortalEntry />"));
   assert(signInPage.includes("isAdministratorSignIn"));
-  assert(signInPage.includes("Sign in to the DEC Administrator Portal"));
+  assert(signInPage.includes("Sign in as administrator"));
 
   const activationAudits = await prisma.auditLog.count({ where: { actionType: AuditActionType.COURSE_INVITATION_ACTIVATED, entityId: stored.id } });
   assert.equal(activationAudits, 1);

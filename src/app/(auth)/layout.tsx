@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/shell/PublicShell";
+import { isControlledHubAccess } from "@/lib/hub-access-policy";
 
 export default async function AuthLayout({
   children,
@@ -8,7 +9,7 @@ export default async function AuthLayout({
 }>) {
   return (
     <div className="min-h-screen bg-light-bg text-dark-ink">
-      <PublicHeader />
+      <PublicHeader controlledAccess={isControlledHubAccess()} />
       <div className="flex min-h-screen flex-col pt-[72px] lg:flex-row">
         <section className="relative hidden shrink-0 overflow-hidden bg-deep-navy p-10 text-white lg:flex lg:w-[38%] lg:flex-col lg:justify-between xl:p-14">
           <div aria-hidden="true" className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[24px] border-dec-blue/15" />

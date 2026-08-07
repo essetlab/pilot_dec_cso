@@ -10,10 +10,13 @@ import {
 } from "../generated/prisma/enums";
 import type { Prisma } from "../generated/prisma/client";
 import type { AuthSession } from "./auth/session-codec";
+import {
+  createCourseInvitationExpiry,
+  isControlledHubAccess,
+} from "./hub-access-policy";
 import { prisma } from "./prisma";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DEFAULT_INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_INVITATION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const ACTIVE_INVITATION_STATUSES = [
   CourseInvitationStatus.DRAFT,
@@ -32,6 +35,8 @@ export const COURSE_INVITATION_ALLOWED_TRANSITIONS = {
     CourseInvitationStatus.FAILED,
   ],
   [CourseInvitationStatus.PENDING]: [
+    // A fresh replacement may be issued if a delivery attempt was interrupted.
+    CourseInvitationStatus.PENDING,
     CourseInvitationStatus.SENT,
     CourseInvitationStatus.EXPIRED,
     CourseInvitationStatus.CANCELLED,
@@ -51,7 +56,7 @@ export const COURSE_INVITATION_ALLOWED_TRANSITIONS = {
     CourseInvitationStatus.CANCELLED,
   ],
   [CourseInvitationStatus.ACTIVATED]: [],
-  [CourseInvitationStatus.EXPIRED]: [],
+  [CourseInvitationStatus.EXPIRED]: [CourseInvitationStatus.PENDING],
   [CourseInvitationStatus.CANCELLED]: [],
 } satisfies Record<CourseInvitationStatus, CourseInvitationStatus[]>;
 
@@ -173,6 +178,7 @@ export type CourseInvitationAcceptanceResolution =
       success: true;
     }
   | {
+      authentication: "matching" | "mismatch" | "required";
       context: {
         courseSlug: string;
         courseTitle: string;
@@ -211,6 +217,13 @@ export function canTransitionCourseInvitation(
 
 function cleanText(value: string | null | undefined, maxLength = 160) {
   return value?.trim().slice(0, maxLength) || null;
+}
+
+function isInvitationCourseVisibilityEligible(visibility: CourseVisibility) {
+  return (
+    visibility === CourseVisibility.ASSIGNED_ONLY ||
+    (isControlledHubAccess() && visibility === CourseVisibility.PUBLIC)
+  );
 }
 
 function requireTransition(
@@ -331,7 +344,7 @@ async function validateManagedInvitationScope(input: {
   if (
     !course ||
     course.status !== CourseStatus.PUBLISHED ||
-    course.visibility !== CourseVisibility.ASSIGNED_ONLY ||
+    !isInvitationCourseVisibilityEligible(course.visibility) ||
     course.archivedAt
   ) {
     throw new CourseInvitationWorkflowError("invalid-course-state");
@@ -443,8 +456,7 @@ async function createCourseInvitation(
   const courseVersionId = cleanText(input.courseVersionId);
   const cohortId = cleanText(input.cohortId);
   const now = new Date();
-  const expiresAt =
-    input.expiresAt ?? new Date(now.getTime() + DEFAULT_INVITATION_TTL_MS);
+  const expiresAt = input.expiresAt ?? createCourseInvitationExpiry(now);
 
   if (!EMAIL_PATTERN.test(invitedEmail)) {
     return { code: "invalid-email", success: false };
@@ -680,7 +692,7 @@ export function markManagedCourseInvitationSent(input: {
 }) {
   return updateInvitationStatus({
     actionType: AuditActionType.COURSE_INVITATION_SENT,
-    description: "Confirmed secure manual delivery of an individual course invitation.",
+    description: "Recorded successful email delivery of an individual course invitation.",
     invitationId: input.invitationId,
     session: input.session,
     targetStatus: CourseInvitationStatus.SENT,
@@ -695,8 +707,7 @@ async function prepareInvitationResend(input: {
   session: AuthSession | null;
 }, validateManagementScope: boolean): Promise<CourseInvitationMutationResult> {
   const now = new Date();
-  const expiresAt =
-    input.expiresAt ?? new Date(now.getTime() + DEFAULT_INVITATION_TTL_MS);
+  const expiresAt = input.expiresAt ?? createCourseInvitationExpiry(now);
   if (
     expiresAt.getTime() <= now.getTime() ||
     expiresAt.getTime() > now.getTime() + MAX_INVITATION_TTL_MS
@@ -937,23 +948,19 @@ export async function resolveCourseInvitationAcceptance(input: {
   if (invitation.status === CourseInvitationStatus.CANCELLED) {
     return { state: "cancelled", success: false };
   }
-  if (
-    invitation.status === CourseInvitationStatus.EXPIRED ||
-    invitation.expiresAt.getTime() <= now.getTime()
-  ) {
-    return { state: "expired", success: false };
-  }
-
   const sessionMatches = Boolean(
     input.session?.userId &&
       input.session.email &&
       normalizeCourseInvitationEmail(input.session.email) === invitation.invitedEmail,
   );
   if (invitation.status === CourseInvitationStatus.ACTIVATED) {
-    if (!sessionMatches || invitation.activatedUserId !== input.session?.userId) {
-      return { state: "unavailable", success: false };
-    }
+    const authentication = !input.session
+      ? "required"
+      : sessionMatches && invitation.activatedUserId === input.session.userId
+        ? "matching"
+        : "mismatch";
     return {
+      authentication,
       context: {
         courseSlug: invitation.course.slug,
         courseTitle: invitation.course.title,
@@ -962,6 +969,12 @@ export async function resolveCourseInvitationAcceptance(input: {
       state: "already-activated",
       success: true,
     };
+  }
+  if (
+    invitation.status === CourseInvitationStatus.EXPIRED ||
+    invitation.expiresAt.getTime() <= now.getTime()
+  ) {
+    return { state: "expired", success: false };
   }
   if (invitation.status !== CourseInvitationStatus.SENT) {
     return { state: "unavailable", success: false };
@@ -982,6 +995,106 @@ export async function resolveCourseInvitationAcceptance(input: {
     state: "available",
     success: true,
   };
+}
+
+export async function reconcileInvitedSupabaseLearnerProfile(input: {
+  authProviderId: string;
+  email: string;
+  plaintextToken: string;
+}): Promise<{ success: true; userId: string } | { success: false }> {
+  const token = input.plaintextToken.trim();
+  const email = normalizeCourseInvitationEmail(input.email);
+  if (!token || !input.authProviderId || !EMAIL_PATTERN.test(email)) {
+    return { success: false };
+  }
+
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const tokenHash = hashCourseInvitationToken(token);
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`course-invitation-profile:${tokenHash}`}))`;
+        const invitation = await tx.courseInvitation.findUnique({
+          where: { tokenHash },
+        });
+        if (
+          !invitation ||
+          invitation.invitedEmail !== email ||
+          (invitation.status !== CourseInvitationStatus.SENT &&
+            invitation.status !== CourseInvitationStatus.ACTIVATED) ||
+          (invitation.status !== CourseInvitationStatus.ACTIVATED &&
+            invitation.expiresAt.getTime() <= Date.now())
+        ) {
+          return { success: false } as const;
+        }
+
+        const participantRole = await tx.role.upsert({
+          create: {
+            description: "Learner access to courses, progress, and certificates.",
+            key: RoleKey.PARTICIPANT,
+            name: "Participant",
+          },
+          update: {},
+          where: { key: RoleKey.PARTICIPANT },
+        });
+        const existing = await tx.user.findUnique({ where: { email } });
+        if (
+          existing?.authProviderId &&
+          existing.authProviderId !== input.authProviderId
+        ) {
+          return { success: false } as const;
+        }
+
+        const user = existing
+          ? await tx.user.update({
+              data: {
+                authProvider: "supabase",
+                authProviderId: input.authProviderId,
+                fullName: invitation.invitedName,
+                jobTitle: invitation.invitedRoleOrPosition,
+                organizationId: invitation.organizationId,
+                preferredLanguage: existing.preferredLanguage ?? "English",
+                primaryCohortId: invitation.cohortId,
+                status: UserStatus.ACTIVE,
+              },
+              where: { id: existing.id },
+            })
+          : await tx.user.create({
+              data: {
+                authProvider: "supabase",
+                authProviderId: input.authProviderId,
+                email,
+                fullName: invitation.invitedName,
+                jobTitle: invitation.invitedRoleOrPosition,
+                organizationId: invitation.organizationId,
+                preferredLanguage: "English",
+                primaryCohortId: invitation.cohortId,
+                status: UserStatus.ACTIVE,
+              },
+            });
+
+        await tx.userRoleAssignment.upsert({
+          create: {
+            assignedById: invitation.invitedByUserId,
+            isActive: true,
+            roleId: participantRole.id,
+            userId: user.id,
+          },
+          update: {
+            assignedById: invitation.invitedByUserId,
+            isActive: true,
+          },
+          where: {
+            userId_roleId: { roleId: participantRole.id, userId: user.id },
+          },
+        });
+
+        return { success: true, userId: user.id } as const;
+      },
+      { isolationLevel: "Serializable" },
+    );
+  } catch {
+    return { success: false };
+  }
 }
 
 function activeRoleWhere(now: Date) {
@@ -1230,7 +1343,7 @@ async function activateCourseInvitationTransaction(input: {
           (invitation.cohortId && learner.primaryCohortId !== invitation.cohortId) ||
           organization?.status !== OrganizationStatus.ACTIVE ||
           course?.status !== CourseStatus.PUBLISHED ||
-          course.visibility !== CourseVisibility.ASSIGNED_ONLY ||
+          !isInvitationCourseVisibilityEligible(course.visibility) ||
           course.archivedAt ||
           !invitation.courseVersionId ||
           !courseVersion ||
@@ -1267,7 +1380,7 @@ async function activateCourseInvitationTransaction(input: {
         invitation.expiresAt.getTime() <= input.now.getTime() ||
         organization?.status !== OrganizationStatus.ACTIVE ||
         course?.status !== CourseStatus.PUBLISHED ||
-        course.visibility !== CourseVisibility.ASSIGNED_ONLY ||
+        !isInvitationCourseVisibilityEligible(course.visibility) ||
         course.archivedAt ||
         !invitation.courseVersionId ||
         !courseVersion ||

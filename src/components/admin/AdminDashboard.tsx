@@ -26,17 +26,17 @@ const invitationSteps = [
   },
   {
     description:
-      "Enter the learner name and email, then confirm the organization, course, and expiry.",
+      "Enter the learner name and email, then select the approved organization and course.",
     title: "Enter learner details",
   },
   {
     description:
-      "Select Create invitation, copy the secure link, and send it privately through the approved manual channel.",
-    title: "Create and deliver",
+      "Select Send invitation. The Hub emails the secure five-day activation link directly to the learner.",
+    title: "Send invitation",
   },
   {
     description:
-      "Confirm delivery, then use the invitation list to monitor activation or prepare a replacement link.",
+      "Use the invitation list to monitor activation, resend a failed or expired invitation, or revoke unused access.",
     title: "Monitor status",
   },
 ] as const;

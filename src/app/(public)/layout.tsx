@@ -1,5 +1,6 @@
 import { PublicShell } from "@/components/shell/PublicShell";
 import { getCurrentSession } from "@/lib/auth/server";
+import { isControlledHubAccess } from "@/lib/hub-access-policy";
 
 export default async function PublicLayout({
   children,
@@ -8,5 +9,9 @@ export default async function PublicLayout({
 }>) {
   const session = await getCurrentSession();
 
-  return <PublicShell session={session}>{children}</PublicShell>;
+  return (
+    <PublicShell controlledAccess={isControlledHubAccess()} session={session}>
+      {children}
+    </PublicShell>
+  );
 }

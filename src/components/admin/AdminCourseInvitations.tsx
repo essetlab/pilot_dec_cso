@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { CourseInvitationStatus } from "@/generated/prisma/enums";
+import type { AdminCourseInvitationDisplayStatus } from "@/lib/admin-course-invitation-workflow";
+import { deactivateAdminCourseAssignmentAction } from "@/lib/admin-course-actions";
 import {
   ActionButton,
   AlertMessage,
@@ -26,13 +27,13 @@ type InvitationOptions = Awaited<
 >;
 
 const statusPresentation = {
-  [CourseInvitationStatus.DRAFT]: { label: "Draft", tone: "gray" },
-  [CourseInvitationStatus.PENDING]: { label: "Delivery pending", tone: "orange" },
-  [CourseInvitationStatus.SENT]: { label: "Sent", tone: "blue" },
-  [CourseInvitationStatus.ACTIVATED]: { label: "Activated", tone: "green" },
-  [CourseInvitationStatus.EXPIRED]: { label: "Expired", tone: "gold" },
-  [CourseInvitationStatus.CANCELLED]: { label: "Cancelled", tone: "red" },
-  [CourseInvitationStatus.FAILED]: { label: "Delivery failed", tone: "red" },
+  ACTIVATED: { label: "Activated", tone: "green" },
+  CANCELLED: { label: "Cancelled", tone: "red" },
+  COMPLETED: { label: "Completed", tone: "green" },
+  DELIVERY_FAILED: { label: "Delivery failed", tone: "red" },
+  IN_PROGRESS: { label: "In Progress", tone: "blue" },
+  INVITATION_EXPIRED: { label: "Invitation Expired", tone: "gold" },
+  INVITED: { label: "Invited", tone: "blue" },
 } as const;
 
 const notices: Record<string, { message: string; tone: "error" | "success" }> = {
@@ -41,7 +42,7 @@ const notices: Record<string, { message: string; tone: "error" | "success" }> = 
     tone: "success",
   },
   "manual-delivery-confirmed": {
-    message: "Manual delivery was explicitly confirmed and the invitation is now marked sent.",
+    message: "Invitation delivery was recorded and the learner can use the emailed link.",
     tone: "success",
   },
   "invalid-expiry": {
@@ -62,7 +63,7 @@ const notices: Record<string, { message: string; tone: "error" | "success" }> = 
   },
 };
 
-function InvitationStatusBadge({ status }: { status: CourseInvitationStatus }) {
+function InvitationStatusBadge({ status }: { status: AdminCourseInvitationDisplayStatus }) {
   const presentation = statusPresentation[status];
   return <StatusBadge label={presentation.label} tone={presentation.tone} />;
 }
@@ -133,7 +134,7 @@ function Filters({ data }: { data: ListData }) {
         <span className="sr-only">Invitation status</span>
         <select className={selectClass + " w-full"} defaultValue={data.filters.status ?? ""} name="status">
           <option value="">All statuses</option>
-          {Object.values(CourseInvitationStatus).map((status) => (
+          {(Object.keys(statusPresentation) as AdminCourseInvitationDisplayStatus[]).map((status) => (
             <option key={status} value={status}>{statusPresentation[status].label}</option>
           ))}
         </select>
@@ -330,11 +331,24 @@ export function AdminCourseInvitationDetail({
         </div>
         <aside className="space-y-6">
           <Panel title="Delivery and actions">
-            <p className="text-sm leading-6 text-muted-text">Send the secure link privately. Copy it when it appears because it cannot be shown again later.</p>
+            <p className="text-sm leading-6 text-muted-text">The Hub sends secure invitation emails directly. Resending creates a fresh five-day invitation and invalidates the earlier link.</p>
             {detail.canPrepareLink ? <div className="mt-5"><CourseInvitationPrepareLinkForm invitationId={detail.id} /></div> : <p className="mt-4 rounded-[16px] border border-design-border bg-soft-bg p-4 text-sm text-muted-text">No secure-link action is available for this invitation.</p>}
           </Panel>
           <Panel title="Activation result">
             {detail.activatedUser ? <p className="text-sm leading-6 text-muted-text">Activated by <span className="font-semibold text-dark-ink">{detail.activatedUser}</span>. One individual course assignment is linked to this invitation.</p> : <p className="text-sm leading-6 text-muted-text">No course assignment has been created by this invitation yet.</p>}
+            {detail.activatedUserHref ? (
+              <div className="mt-5 grid gap-3">
+                <ActionButton href={detail.activatedUserHref} variant="secondary">View learner status</ActionButton>
+                <ActionButton href="/admin/courses" variant="secondary">Assign another course</ActionButton>
+                {detail.courseAssignmentId ? (
+                  <form action={deactivateAdminCourseAssignmentAction}>
+                    <input name="assignmentId" type="hidden" value={detail.courseAssignmentId} />
+                    <input name="courseId" type="hidden" value={detail.courseId} />
+                    <ActionButton type="submit" variant="danger">Remove course access</ActionButton>
+                  </form>
+                ) : null}
+              </div>
+            ) : null}
           </Panel>
         </aside>
       </div>

@@ -6,6 +6,8 @@ import { isRateLimited } from "@/lib/auth/rate-limit";
 import { registerOpenLearner } from "@/lib/open-registration-workflow";
 import { isControlledLearnerRole, isControlledRegion } from "@/lib/controlled-options";
 import { resolveCourseInvitationToken } from "@/lib/course-invitation-workflow";
+import { getCourseInvitationToken } from "@/lib/course-invitation-session";
+import { isControlledHubAccess } from "@/lib/hub-access-policy";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -47,13 +49,34 @@ function safeErrorType(error: unknown) {
 
 export async function registerOpenLearnerAction(formData: FormData) {
   let email = formText(formData, "email").toLowerCase();
-  const next = safeNextPath(formData.get("next"));
+  const controlledAccess = isControlledHubAccess();
+  const invitationToken = await getCourseInvitationToken();
+  const next = controlledAccess
+    ? "/course-invitations/reconcile"
+    : safeNextPath(formData.get("next"));
   let organizationName = formText(formData, "organization");
   let region = formText(formData, "region");
   let jobTitle = formText(formData, "jobTitle");
   let roleOther = formText(formData, "roleOther");
 
-  if (next) {
+  if (controlledAccess && !invitationToken) {
+    redirect("/register?error=invitation-required");
+  }
+
+  if (controlledAccess) {
+    const invitation = await resolveCourseInvitationToken(invitationToken);
+    if (!invitation.success) {
+      redirect(`/register?error=${encodeURIComponent(invitation.code)}`);
+    }
+    email = invitation.context.invitedEmail;
+    organizationName = invitation.context.organization.name;
+    region = invitation.context.organization.region && isControlledRegion(invitation.context.organization.region)
+      ? invitation.context.organization.region
+      : "Other / not listed";
+    jobTitle = invitation.context.invitedRoleOrPosition ?? jobTitle;
+    roleOther = "";
+    formData.set("fullName", invitation.context.invitedName);
+  } else if (next) {
     const nextUrl = new URL(next, "https://hub.invalid");
     const token = nextUrl.pathname === "/course-invitations/accept"
       ? nextUrl.searchParams.get("token") ?? ""
@@ -97,6 +120,7 @@ export async function registerOpenLearnerAction(formData: FormData) {
     result = await registerOpenLearner({
       confirmPassword: formText(formData, "confirmPassword"),
       consentAccepted: formData.get("consentAccepted") === "on",
+      courseInvitationToken: invitationToken,
       email,
       fullName: formText(formData, "fullName"),
       jobTitle,
@@ -128,12 +152,23 @@ export async function registerOpenLearnerAction(formData: FormData) {
   }
 
   if (!result.success) {
+    if (result.code === "account-exists") {
+      redirect("/sign-in?next=%2Fcourse-invitations%2Freconcile");
+    }
     const params = new URLSearchParams({ error: result.code });
     if (next) {
       params.set("next", next);
     }
 
     redirect(`/register?${params.toString()}`);
+  }
+
+  if (
+    controlledAccess &&
+    result.authProvider === "supabase" &&
+    !result.emailConfirmationRequired
+  ) {
+    redirect("/course-invitations/reconcile");
   }
 
   const params = new URLSearchParams({

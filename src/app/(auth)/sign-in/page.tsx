@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ActionButton, AlertMessage, StatusBadge } from "@/components/ui";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
+import { isControlledHubAccess } from "@/lib/hub-access-policy";
 type PageProps = {
   searchParams: Promise<{
     next?: string;
@@ -33,6 +34,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
   const { next, error, notice } = await searchParams;
   const isAdministratorSignIn = next === "/admin" || next?.startsWith("/admin/");
   const usesSupabaseSignIn = Boolean(readSupabasePublicConfig());
+  const controlledAccess = isControlledHubAccess();
   const signInErrorMessage = error
     ? signInErrorMessages[error] ?? "Confirm your credentials and try again."
     : null;
@@ -154,7 +156,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
 
       {/* Alternative actions */}
       <div className="border-t border-design-border pt-4 text-center text-xs text-muted-text">
-        {!isAdministratorSignIn ? (
+        {!isAdministratorSignIn && !controlledAccess ? (
           <p>
             New learner?{" "}
             <Link className="font-bold text-dec-blue underline hover:text-deep-navy" href="/register">

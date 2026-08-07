@@ -17,12 +17,15 @@ import {
   HRBA_EXTERNAL_COURSE_ID,
   HRBA_EXTERNAL_COURSE_VERSION_ID,
 } from "./external-course-config";
+import { resolveCourseInvitationToken } from "./course-invitation-workflow";
+import { isControlledHubAccess } from "./hub-access-policy";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type OpenRegistrationInput = {
   confirmPassword: string;
   consentAccepted: boolean;
+  courseInvitationToken?: string;
   email: string;
   fullName: string;
   jobTitle: string;
@@ -39,14 +42,16 @@ export type OpenRegistrationResult =
       code: "created";
       emailConfirmationRequired: boolean;
       success: true;
-      userId: string;
+      userId?: string;
     }
   | {
       code:
+        | "account-exists"
         | "invalid-email"
         | "invalid-language"
         | "invalid-region"
         | "invalid-role"
+        | "invitation-required"
         | "missing-fields"
         | "password-mismatch"
         | "profile-link-failed"
@@ -63,7 +68,7 @@ type AuthRegistrationResult =
       emailConfirmationRequired: boolean;
       provider: "supabase";
       success: true;
-      userId: string;
+      userId: string | null;
     }
   | {
       code: "registration-not-completed" | "supabase-registration-failed";
@@ -104,6 +109,7 @@ async function registerAuthIdentity(
   password: string,
   supabaseClient?: SupabaseClient,
   authOrigin = getPublicAppUrl(),
+  confirmationNext = "/sign-in?notice=email-confirmed",
 ): Promise<AuthRegistrationResult> {
   if (!readSupabasePublicConfig()) {
     return { provider: "local" };
@@ -117,15 +123,42 @@ async function registerAuthIdentity(
     };
   }
 
+  const callbackUrl = new URL("/auth/callback", authOrigin);
+  callbackUrl.searchParams.set("next", confirmationNext);
   const { data, error } = await supabaseClient.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${authOrigin}/auth/callback?next=/sign-in?notice=email-confirmed`,
+      emailRedirectTo: callbackUrl.toString(),
     },
   });
 
   if (error) {
+    if (isDuplicateAccountError(error.message)) {
+      const signIn = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (signIn.data.user?.id) {
+        return {
+          emailConfirmationRequired: false,
+          provider: "supabase",
+          success: true,
+          userId: signIn.data.user.id,
+        };
+      }
+
+      const resent = await supabaseClient.auth.resend({
+        email,
+        options: { emailRedirectTo: callbackUrl.toString() },
+        type: "signup",
+      });
+      if (!resent.error) {
+        return {
+          emailConfirmationRequired: true,
+          provider: "supabase",
+          success: true,
+          userId: null,
+        };
+      }
+    }
     return {
       code: isDuplicateAccountError(error.message)
         ? "registration-not-completed"
@@ -182,6 +215,7 @@ export function buildOpenRegistrationUserCreateData(input: {
 }
 
 async function createOpenRegistrationProfile(input: {
+  assignDefaultHrba: boolean;
   authProvider: "local" | "supabase";
   authProviderId?: string | null;
   email: string;
@@ -228,7 +262,10 @@ async function createOpenRegistrationProfile(input: {
       },
     });
 
-    const hrbaCourse = await tx.course.findFirst({
+    let hrbaAssignmentId: string | null = null;
+    let hrbaCourseVersionId: string | null = null;
+    if (input.assignDefaultHrba) {
+      const hrbaCourse = await tx.course.findFirst({
       select: {
         createdById: true,
         id: true,
@@ -247,12 +284,12 @@ async function createOpenRegistrationProfile(input: {
       },
     });
 
-    const hrbaVersion = hrbaCourse?.versions[0];
-    if (!hrbaCourse || !hrbaVersion) {
-      throw new Error("HRBA_COURSE_UNAVAILABLE");
-    }
+      const hrbaVersion = hrbaCourse?.versions[0];
+      if (!hrbaCourse || !hrbaVersion) {
+        throw new Error("HRBA_COURSE_UNAVAILABLE");
+      }
 
-    const hrbaAssignment = await tx.courseAssignment.upsert({
+      const hrbaAssignment = await tx.courseAssignment.upsert({
       create: {
         assignedById: hrbaCourse.createdById,
         assignmentType: "USER",
@@ -272,21 +309,29 @@ async function createOpenRegistrationProfile(input: {
           targetUserId: user.id,
         },
       },
-    });
+      });
+      hrbaAssignmentId = hrbaAssignment.id;
+      hrbaCourseVersionId = hrbaVersion.id;
+    }
 
     await tx.auditLog.create({
       data: {
         actionType: AuditActionType.USER_CREATED,
         actorUserId: user.id,
-        description: "Created an individual Hub learner account through open registration.",
+        description: input.assignDefaultHrba
+          ? "Created an individual Hub learner account through open registration."
+          : "Created an individual Hub learner account through a DEC course invitation.",
         entityId: user.id,
         entityType: "User",
         metadataJson: {
           consentAcknowledged: true,
-          hrbaAssignmentId: hrbaAssignment.id,
-          hrbaCourseVersionId: hrbaVersion.id,
+          ...(hrbaAssignmentId
+            ? { hrbaAssignmentId, hrbaCourseVersionId }
+            : { controlledInvitationRegistration: true }),
           organizationLinkCreated: false,
-          registrationChannel: "open-registration",
+          registrationChannel: input.assignDefaultHrba
+            ? "open-registration"
+            : "course-invitation",
         },
       },
     });
@@ -300,12 +345,26 @@ export async function registerOpenLearner(
   supabaseClient?: SupabaseClient,
   authOrigin?: string,
 ): Promise<OpenRegistrationResult> {
-  const email = normalizeOpenRegistrationEmail(input.email);
-  const fullName = normalizeText(input.fullName);
-  const organizationName = normalizeText(input.organizationName);
-  const jobTitle = resolveControlledLearnerRole(input.jobTitle, input.roleOther);
+  const controlledAccess = isControlledHubAccess();
+  let email = normalizeOpenRegistrationEmail(input.email);
+  let fullName = normalizeText(input.fullName);
+  let organizationName = normalizeText(input.organizationName);
+  let jobTitle = resolveControlledLearnerRole(input.jobTitle, input.roleOther);
   const preferredLanguage = normalizeText(input.preferredLanguage);
   const region = normalizeText(input.region);
+
+  if (controlledAccess) {
+    const invitation = await resolveCourseInvitationToken(
+      input.courseInvitationToken ?? "",
+    );
+    if (!invitation.success) {
+      return { code: "invitation-required", success: false };
+    }
+    email = invitation.context.invitedEmail;
+    fullName = invitation.context.invitedName;
+    organizationName = invitation.context.organization.name;
+    jobTitle = invitation.context.invitedRoleOrPosition ?? jobTitle;
+  }
 
   if (
     !email ||
@@ -352,7 +411,10 @@ export async function registerOpenLearner(
     where: { email },
   });
   if (existingUser) {
-    return { code: "registration-not-completed", success: false };
+    return {
+      code: controlledAccess ? "account-exists" : "registration-not-completed",
+      success: false,
+    };
   }
 
   const authRegistration = await registerAuthIdentity(
@@ -360,26 +422,40 @@ export async function registerOpenLearner(
     input.password,
     supabaseClient,
     authOrigin,
+    controlledAccess
+      ? "/course-invitations/reconcile"
+      : "/sign-in?notice=email-confirmed",
   );
   if ("success" in authRegistration && !authRegistration.success) {
     return { code: authRegistration.code, success: false };
   }
 
   const isSupabaseRegistration =
-    authRegistration.provider === "supabase" && "userId" in authRegistration;
+    authRegistration.provider === "supabase" &&
+    "userId" in authRegistration &&
+    Boolean(authRegistration.userId);
 
   try {
-    const user = await createOpenRegistrationProfile({
-      authProvider: isSupabaseRegistration ? "supabase" : "local",
-      authProviderId: isSupabaseRegistration ? authRegistration.userId : null,
-      email,
-      fullName,
-      jobTitle,
-      passwordHash: isSupabaseRegistration ? null : hashPassword(input.password),
-      preferredLanguage,
-      region,
-      selfReportedOrganizationName: organizationName,
-    });
+    const user =
+      authRegistration.provider === "supabase" &&
+      "userId" in authRegistration &&
+      !authRegistration.userId
+        ? null
+        : await createOpenRegistrationProfile({
+            assignDefaultHrba: !controlledAccess,
+            authProvider: isSupabaseRegistration ? "supabase" : "local",
+            authProviderId:
+              isSupabaseRegistration && "userId" in authRegistration
+                ? authRegistration.userId
+                : null,
+            email,
+            fullName,
+            jobTitle,
+            passwordHash: isSupabaseRegistration ? null : hashPassword(input.password),
+            preferredLanguage,
+            region,
+            selfReportedOrganizationName: organizationName,
+          });
 
     return {
       authProvider: isSupabaseRegistration ? "supabase" : "local",
@@ -389,7 +465,7 @@ export async function registerOpenLearner(
           ? authRegistration.emailConfirmationRequired
           : false,
       success: true,
-      userId: user.id,
+      ...(user ? { userId: user.id } : {}),
     };
   } catch (error) {
     if (error instanceof Error && error.message === "ACCOUNT_ALREADY_EXISTS") {

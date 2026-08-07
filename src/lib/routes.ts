@@ -20,7 +20,6 @@ export const publicNav: NavItem[] = [
   { href: "/courses", label: "Courses" },
   { href: "/verify-certificate", label: "Verify Certificate" },
   { href: "/sign-in", label: "Sign in" },
-  { href: "/register", label: "Register" },
 ];
 
 export const learnerNav: NavItem[] = [

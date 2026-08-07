@@ -4,7 +4,6 @@ import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   cancelCourseInvitationAction,
-  confirmCourseInvitationDeliveryAction,
   createCourseInvitationAction,
   prepareCourseInvitationLinkAction,
   type ManualCourseInvitationActionState,
@@ -57,7 +56,6 @@ function ManualDeliveryPanel({
   delivery: NonNullable<ManualCourseInvitationActionState["delivery"]>;
   message: string;
 }) {
-  const [copyStatus, setCopyStatus] = useState("");
   const expiresAt = new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -67,38 +65,23 @@ function ManualDeliveryPanel({
         ["Learner", delivery.invitedName ? `${delivery.invitedName} (${delivery.invitedEmail})` : delivery.invitedEmail],
         ["Organization", delivery.organizationName],
         ["Course", delivery.courseTitle],
-        ["Status", delivery.status === "DRAFT" ? "Ready for manual delivery" : delivery.status],
+        ["Status", delivery.status === "SENT" ? "Invited" : "Delivery failed"],
         ["Expires", expiresAt],
       ]
     : [];
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(delivery.url);
-      setCopyStatus("Link copied. Share it only through the designated private channel.");
-    } catch {
-      setCopyStatus("Copy was unavailable. Select the link and copy it manually.");
-    }
-  }
-
   return (
     <section
       aria-labelledby="manual-delivery-heading"
-      className="rounded-[24px] border border-amber-300 bg-amber-50 p-5 shadow-soft sm:p-6"
+      className="rounded-[24px] border border-dec-blue/25 bg-dec-blue/10 p-5 shadow-soft sm:p-6"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge label="Manual secure delivery" tone="gold" />
-        <StatusBadge label={delivery.status === "DRAFT" ? "Ready for delivery" : delivery.status} tone="orange" />
+        <StatusBadge label={delivery.status === "SENT" ? "Invitation sent" : "Delivery failed"} tone={delivery.status === "SENT" ? "green" : "red"} />
       </div>
       <h2 className="mt-4 text-xl font-semibold text-deep-navy" id="manual-delivery-heading" tabIndex={-1}>
-        {summaryFields.length > 0 ? "Invitation created" : "Share this replacement link now"}
+        {delivery.status === "SENT" ? "Invitation sent" : "Invitation saved"}
       </h2>
-      <p className="mt-2 text-sm leading-6 text-amber-950">{message}</p>
-      <p className="mt-2 text-sm leading-6 text-amber-950">
-        This link is shown only at this delivery moment and cannot be recovered later.
-        Send it only to the intended learner through a designated private channel. Do not
-        place it in reports, screenshots, group chats, or public messages.
-      </p>
+      <p className="mt-2 text-sm leading-6 text-[#26536c]">{message}</p>
 
       {summaryFields.length > 0 ? (
         <dl className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -111,30 +94,7 @@ function ManualDeliveryPanel({
         </dl>
       ) : null}
 
-      <label className="mt-5 block text-sm font-semibold text-dark-ink" htmlFor="manual-invitation-url">
-        Secure invitation link
-        <input
-          className={inputClass}
-          id="manual-invitation-url"
-          onFocus={(event) => event.currentTarget.select()}
-          readOnly
-          value={delivery.url}
-        />
-      </label>
-      <p aria-live="polite" className="mt-2 min-h-6 text-sm font-medium text-amber-900">
-        {copyStatus}
-      </p>
-
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <ActionButton onClick={copyLink} type="button" variant="warning">
-          Copy secure link
-        </ActionButton>
-        <form action={confirmCourseInvitationDeliveryAction}>
-          <input name="invitationId" type="hidden" value={delivery.invitationId} />
-          <ActionButton type="submit" variant="success">
-            Confirm link was delivered
-          </ActionButton>
-        </form>
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <ActionButton href={`/admin/course-invitations/${delivery.invitationId}`} variant="secondary">
           View invitation status
         </ActionButton>
@@ -168,7 +128,7 @@ export function CourseInvitationCreateForm({
       ? "No active organization is available. Add an organization before creating an invitation."
       : null,
     options.courses.length === 0
-      ? "No governed course is available. Publish an assigned-only course before creating an invitation."
+      ? "No eligible published course is available. Publish a course before creating an invitation."
       : null,
   ].filter((message): message is string => Boolean(message));
 
@@ -181,14 +141,14 @@ export function CourseInvitationCreateForm({
   }, [state.code, state.field]);
 
   useEffect(() => {
-    if (!state.success || !state.delivery) {
+    if (!state.delivery) {
       return;
     }
 
     document.getElementById("manual-delivery-heading")?.focus();
-  }, [state.delivery, state.success]);
+  }, [state.delivery]);
 
-  if (state.success && state.delivery) {
+  if (state.delivery) {
     return <ManualDeliveryPanel delivery={state.delivery} message={state.message} />;
   }
 
@@ -210,9 +170,9 @@ export function CourseInvitationCreateForm({
         </AlertMessage>
       ) : (
         <section className="rounded-[20px] border border-dec-blue/25 bg-dec-blue/10 p-5 text-sm leading-6 text-[#26536c]">
-          <h2 className="font-semibold text-deep-navy">Invite one learner to HRBA</h2>
+          <h2 className="font-semibold text-deep-navy">Invite one learner to a course</h2>
           <p className="mt-2">
-            Enter the learner details, confirm the organization and course, then create a secure link for private manual delivery.
+            Enter the approved learner details and course. The Hub will email the secure invitation directly.
           </p>
         </section>
       )}
@@ -292,32 +252,20 @@ export function CourseInvitationCreateForm({
             ))}
           </select>
           <span className="mt-2 block font-normal leading-6 text-muted-text">
-            Only published courses that require governed access are shown. The latest published version is selected automatically.
+            Eligible published pilot courses are shown. The latest published version is selected automatically.
           </span>
         </label>
       </div>
 
       <input name="courseVersionId" type="hidden" value={courseVersionId} />
 
-      <label className="max-w-sm text-sm font-semibold text-dark-ink" htmlFor="course-invitation-expiryDays">
-        Invitation expiry
-        <select className={inputClass} defaultValue="7" id="course-invitation-expiryDays" name="expiryDays" required>
-          <option value="1">1 day</option>
-          <option value="3">3 days</option>
-          <option value="7">7 days</option>
-          <option value="14">14 days</option>
-          <option value="30">30 days</option>
-        </select>
-      </label>
-
       <div className="rounded-[18px] border border-dec-blue/20 bg-dec-blue/10 p-4 text-sm leading-6 text-[#26536c]">
-        A secure one-time link will appear after creation. Copy it for private manual delivery.
-        Course access is created only after the invited email signs in and accepts.
+        The Hub sends a secure personal invitation to the learner. It remains valid for five days and is not consumed when opened.
       </div>
 
       <div>
         <SubmitButton disabled={blockingMessages.length > 0 || !organizationId || !courseId || !courseVersionId}>
-          Create invitation
+          Send invitation
         </SubmitButton>
         {blockingMessages.length === 0 && (!organizationId || !courseId) ? (
           <p className="mt-2 text-sm font-medium text-red-700">
@@ -335,37 +283,26 @@ export function CourseInvitationPrepareLinkForm({ invitationId }: { invitationId
     initialManualCourseInvitationState,
   );
 
-  if (state.success && state.delivery) {
+  if (state.delivery) {
     return <ManualDeliveryPanel delivery={state.delivery} message={state.message} />;
   }
 
   return (
     <form action={action} className="rounded-[20px] border border-design-border bg-soft-bg p-5">
       <input name="invitationId" type="hidden" value={invitationId} />
-      <h2 className="text-lg font-semibold text-deep-navy">Prepare a replacement link</h2>
+      <h2 className="text-lg font-semibold text-deep-navy">Resend invitation</h2>
       <p className="mt-2 text-sm leading-6 text-muted-text">
-        This invalidates the previous unused link. The replacement appears once and is
-        not marked sent until you confirm delivery.
+        The Hub sends a fresh five-day invitation and invalidates the previous unused link.
       </p>
       {state.code !== "idle" && !state.success ? (
         <div className="mt-4" aria-live="assertive">
-          <AlertMessage title="Link was not prepared" tone="error">
+          <AlertMessage title="Invitation was not resent" tone="error">
             {state.message}
           </AlertMessage>
         </div>
       ) : null}
-      <label className="mt-4 block max-w-xs text-sm font-semibold text-dark-ink">
-        New expiry
-        <select className={inputClass} defaultValue="7" name="expiryDays">
-          <option value="1">1 day</option>
-          <option value="3">3 days</option>
-          <option value="7">7 days</option>
-          <option value="14">14 days</option>
-          <option value="30">30 days</option>
-        </select>
-      </label>
       <div className="mt-4">
-        <SubmitButton>Prepare replacement link</SubmitButton>
+        <SubmitButton>Resend invitation</SubmitButton>
       </div>
     </form>
   );
@@ -376,14 +313,14 @@ export function CourseInvitationCancelForm({ invitationId }: { invitationId: str
     <form
       action={cancelCourseInvitationAction}
       onSubmit={(event) => {
-        if (!window.confirm("Cancel this invitation? Its current link will stop working immediately.")) {
+        if (!window.confirm("Revoke this unused invitation? Its current link will stop working immediately.")) {
           event.preventDefault();
         }
       }}
     >
       <input name="invitationId" type="hidden" value={invitationId} />
       <ActionButton type="submit" variant="danger">
-        Cancel invitation
+      Revoke invitation
       </ActionButton>
     </form>
   );

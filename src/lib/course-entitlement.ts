@@ -1,6 +1,7 @@
 import { CourseVisibility } from "../generated/prisma/enums";
 import { prisma } from "./prisma";
 import { HRBA_EXTERNAL_COURSE_SLUG } from "./external-course-config";
+import { isControlledHubAccess } from "./hub-access-policy";
 
 type CourseEntitlementInput = {
   courseId: string;
@@ -37,9 +38,9 @@ export async function hasLearnerCourseEntitlement(input: CourseEntitlementInput)
     return false;
   }
 
-  // HRBA is an individual-assignment pilot course. This remains fail-closed even
-  // if a stale database record is temporarily still marked PUBLIC.
-  if (isHrbaCourseSlug(input.courseSlug)) {
+  // Controlled pilot access and HRBA both remain fail-closed even when a course
+  // is publicly visible in the catalogue.
+  if (isControlledHubAccess() || isHrbaCourseSlug(input.courseSlug)) {
     return hasActiveIndividualCourseAssignment(input.userId, input.courseId);
   }
 

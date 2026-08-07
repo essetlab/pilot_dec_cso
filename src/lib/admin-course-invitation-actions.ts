@@ -9,12 +9,10 @@ import {
 import { getCurrentSession } from "./auth/server";
 import { isRateLimited } from "./auth/rate-limit";
 import { resolveControlledLearnerRole } from "./controlled-options";
+import { createCourseInvitationExpiry } from "./hub-access-policy";
 import {
   cancelCourseInvitation,
-  markManagedCourseInvitationSent,
 } from "./course-invitation-workflow";
-
-const ALLOWED_EXPIRY_DAYS = new Set([1, 3, 7, 14, 30]);
 
 export type ManualCourseInvitationActionState = {
   code: string;
@@ -26,9 +24,8 @@ export type ManualCourseInvitationActionState = {
     invitedName?: string;
     organizationName?: string;
     status: string;
-    url: string;
   };
-  field?: "courseId" | "expiryDays" | "invitedEmail" | "invitedName" | "invitedRoleOrPosition" | "organizationId";
+  field?: "courseId" | "invitedEmail" | "invitedName" | "invitedRoleOrPosition" | "organizationId";
   message: string;
   success: boolean;
 };
@@ -73,14 +70,6 @@ function formText(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function expiryDate(formData: FormData) {
-  const days = Number(formText(formData, "expiryDays"));
-  if (!Number.isInteger(days) || !ALLOWED_EXPIRY_DAYS.has(days)) {
-    return null;
-  }
-  return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-}
-
 const errorFields: Partial<Record<string, ManualCourseInvitationActionState["field"]>> = {
   "already-assigned": "invitedEmail",
   "conflicting-assignment": "invitedEmail",
@@ -92,7 +81,6 @@ const errorFields: Partial<Record<string, ManualCourseInvitationActionState["fie
   "ineligible-user": "invitedEmail",
   "invalid-course-state": "courseId",
   "invalid-email": "invitedEmail",
-  "invalid-expiry": "expiryDays",
   "invalid-input": "invitedName",
   "invalid-role": "invitedRoleOrPosition",
   "invalid-version-state": "courseId",
@@ -122,10 +110,7 @@ export async function createCourseInvitationAction(
   _previousState: ManualCourseInvitationActionState,
   formData: FormData,
 ): Promise<ManualCourseInvitationActionState> {
-  const expiresAt = expiryDate(formData);
-  if (!expiresAt) {
-    return failure("invalid-expiry");
-  }
+  const expiresAt = createCourseInvitationExpiry();
 
   const session = await getCurrentSession();
   if (session?.userId && isRateLimited(`course-invitation-create:${session.userId}`, 20, 10 * 60 * 1000)) {
@@ -155,7 +140,7 @@ export async function createCourseInvitationAction(
 
   revalidateInvitationPaths(result.invitation.id);
   return {
-    code: "manual-delivery-ready",
+    code: result.delivered ? "invitation-sent" : "invitation-delivery-failed",
     delivery: {
       courseTitle: result.summary?.courseTitle,
       expiresAt: result.invitation.expiresAt.toISOString(),
@@ -164,11 +149,11 @@ export async function createCourseInvitationAction(
       invitedName: result.summary?.invitedName,
       organizationName: result.summary?.organizationName,
       status: result.invitation.status,
-      url: result.deliveryUrl,
     },
-    message:
-      "A one-time link is ready for immediate secure delivery. The invitation is not marked sent.",
-    success: true,
+    message: result.delivered
+      ? "The invitation email was sent successfully."
+      : "The invitation was created, but email delivery failed. Use Resend invitation when delivery is available.",
+    success: result.delivered,
   };
 }
 
@@ -176,10 +161,7 @@ export async function prepareCourseInvitationLinkAction(
   _previousState: ManualCourseInvitationActionState,
   formData: FormData,
 ): Promise<ManualCourseInvitationActionState> {
-  const expiresAt = expiryDate(formData);
-  if (!expiresAt) {
-    return failure("invalid-expiry");
-  }
+  const expiresAt = createCourseInvitationExpiry();
 
   const invitationId = formText(formData, "invitationId");
   const session = await getCurrentSession();
@@ -196,29 +178,17 @@ export async function prepareCourseInvitationLinkAction(
   }
 
   return {
-    code: "manual-delivery-ready",
+    code: result.delivered ? "invitation-resent" : "invitation-delivery-failed",
     delivery: {
       expiresAt: result.invitation.expiresAt.toISOString(),
       invitationId: result.invitation.id,
       status: result.invitation.status,
-      url: result.deliveryUrl,
     },
-    message:
-      "The earlier unused link is now invalid. Share this replacement link only with the intended learner.",
-    success: true,
+    message: result.delivered
+      ? "A fresh five-day invitation was sent. The previous link is no longer valid."
+      : "The previous link was replaced, but delivery failed. Resend remains available.",
+    success: result.delivered,
   };
-}
-
-export async function confirmCourseInvitationDeliveryAction(formData: FormData) {
-  const invitationId = formText(formData, "invitationId");
-  const session = await getCurrentSession();
-  const result = await markManagedCourseInvitationSent({ invitationId, session });
-
-  revalidateInvitationPaths(invitationId);
-  const notice = result.success ? "manual-delivery-confirmed" : result.code;
-  redirect(
-    `/admin/course-invitations/${encodeURIComponent(invitationId)}?adminNotice=${encodeURIComponent(notice)}`,
-  );
 }
 
 export async function cancelCourseInvitationAction(formData: FormData) {

@@ -9,7 +9,11 @@ import { ActionButton } from "@/components/ui";
 import type { AuthSession } from "@/lib/auth/session-codec";
 import { cx } from "@/components/ui/utils";
 
-type PublicShellProps = { children: ReactNode; session?: AuthSession | null };
+type PublicShellProps = {
+  children: ReactNode;
+  controlledAccess?: boolean;
+  session?: AuthSession | null;
+};
 type NavItem = { href: string; label: string; exact?: boolean };
 
 const publicItems: NavItem[] = [
@@ -93,11 +97,13 @@ function PublicNav({ isOverlay }: { isOverlay: boolean }) {
 }
 
 function MobileNav({
+  controlledAccess,
   session,
   onClose,
   onKeyDown,
   panelRef,
 }: {
+  controlledAccess: boolean;
   session?: AuthSession | null;
   onClose: () => void;
   onKeyDown: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
@@ -159,13 +165,15 @@ function MobileNav({
               >
                 Sign in
               </Link>
-              <Link
-                className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#1679b0] px-4 font-semibold tracking-[-0.01em] text-white transition-all hover:bg-[#115f8b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
-                href="/register"
-                onClick={onClose}
-              >
-                Register
-              </Link>
+              {!controlledAccess ? (
+                <Link
+                  className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#1679b0] px-4 font-semibold tracking-[-0.01em] text-white transition-all hover:bg-[#115f8b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dec-green"
+                  href="/register"
+                  onClick={onClose}
+                >
+                  Register
+                </Link>
+              ) : null}
             </>
           )}
         </div>
@@ -174,7 +182,13 @@ function MobileNav({
   );
 }
 
-export function PublicHeader({ session = null }: { session?: AuthSession | null }) {
+export function PublicHeader({
+  controlledAccess = true,
+  session = null,
+}: {
+  controlledAccess?: boolean;
+  session?: AuthSession | null;
+}) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const usesLandingShell = isHome || pathname === "/courses";
@@ -295,9 +309,11 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
               >
                 Sign in
               </Link>
-              <ActionButton className="text-[0.95rem]" href="/register" size="md">
-                Register
-              </ActionButton>
+              {!controlledAccess ? (
+                <ActionButton className="text-[0.95rem]" href="/register" size="md">
+                  Register
+                </ActionButton>
+              ) : null}
             </>
           )}
         </div>
@@ -320,6 +336,7 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
       <div id="mobile-public-menu">
         {mobileOpen ? (
           <MobileNav
+            controlledAccess={controlledAccess}
             onClose={closeMenu}
             onKeyDown={handleMenuKeyDown}
             panelRef={mobilePanelRef}
@@ -331,13 +348,18 @@ export function PublicHeader({ session = null }: { session?: AuthSession | null 
   );
 }
 
-export function PublicFooter() {
+export function PublicFooter({ controlledAccess = true }: { controlledAccess?: boolean }) {
   const currentYear = new Date().getFullYear();
   const pathname = usePathname();
   const usesLandingShell = pathname === "/" || pathname === "/courses";
   const footerGroups = [
     { heading: "Platform", links: footerPlatformLinks },
-    { heading: "Account", links: footerAccountLinks },
+    {
+      heading: "Account",
+      links: controlledAccess
+        ? footerAccountLinks.filter((item) => item.href !== "/register")
+        : footerAccountLinks,
+    },
     { heading: "Help & Support", links: footerSupportLinks },
     { heading: "Policies & Legal", links: footerPolicyLinks },
     { heading: "Accessibility", links: footerAccessibilityLinks },
@@ -496,7 +518,11 @@ export function PublicFooter() {
   );
 }
 
-export function PublicShell({ children, session = null }: PublicShellProps) {
+export function PublicShell({
+  children,
+  controlledAccess = true,
+  session = null,
+}: PublicShellProps) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isCatalogueIndex = pathname === "/courses";
@@ -508,7 +534,7 @@ export function PublicShell({ children, session = null }: PublicShellProps) {
       >
         Skip to main content
       </a>
-      <PublicHeader session={session} />
+      <PublicHeader controlledAccess={controlledAccess} session={session} />
       <main
         className={cx(
           "flex flex-1 flex-col",
@@ -522,7 +548,7 @@ export function PublicShell({ children, session = null }: PublicShellProps) {
       >
         {children}
       </main>
-      <PublicFooter />
+      <PublicFooter controlledAccess={controlledAccess} />
     </div>
   );
 }

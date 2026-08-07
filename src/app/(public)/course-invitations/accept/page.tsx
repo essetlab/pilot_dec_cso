@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { CourseInvitationAcceptance } from "@/components/public/CourseInvitationAcceptance";
 import { StatusBadge } from "@/components/ui";
 import { getCurrentSession } from "@/lib/auth/server";
+import { getCourseInvitationToken } from "@/lib/course-invitation-session";
 import { resolveCourseInvitationAcceptance } from "@/lib/course-invitation-workflow";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -15,17 +17,26 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ state?: string; token?: string }>;
 };
 
 export default async function CourseInvitationAcceptPage({ searchParams }: PageProps) {
-  const { token = "" } = await searchParams;
+  const { state: requestedState, token: legacyToken = "" } = await searchParams;
+  if (legacyToken) {
+    redirect(`/course-invitations/start?token=${encodeURIComponent(legacyToken)}`);
+  }
+  const token = await getCourseInvitationToken();
   const session = await getCurrentSession();
-  const resolution = await resolveCourseInvitationAcceptance({
-    plaintextToken: token,
-    session,
-  });
-  const returnPath = `/course-invitations/accept?token=${encodeURIComponent(token)}`;
+  const resolution = token
+    ? await resolveCourseInvitationAcceptance({ plaintextToken: token, session })
+    : {
+        state:
+          requestedState === "cancelled" || requestedState === "expired"
+            ? requestedState
+            : "unavailable" as "cancelled" | "expired" | "unavailable",
+        success: false as const,
+      };
+  const returnPath = "/course-invitations/reconcile";
   const showContext =
     resolution.success &&
     (resolution.state === "already-activated" ||
@@ -85,7 +96,7 @@ export default async function CourseInvitationAcceptPage({ searchParams }: PageP
 
             <div className="mt-6">
               <CourseInvitationAcceptance
-                authentication={resolution.success && resolution.state === "available" ? resolution.authentication : undefined}
+                authentication={resolution.success ? resolution.authentication : undefined}
                 context={showContext && resolution.success ? {
                   courseSlug: resolution.context.courseSlug,
                   courseTitle: resolution.context.courseTitle,

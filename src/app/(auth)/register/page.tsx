@@ -8,6 +8,8 @@ import {
   isControlledRegion,
 } from "@/lib/controlled-options";
 import { resolveCourseInvitationToken } from "@/lib/course-invitation-workflow";
+import { getCourseInvitationToken } from "@/lib/course-invitation-session";
+import { isControlledHubAccess } from "@/lib/hub-access-policy";
 import { registerOpenLearnerAction } from "./actions";
 
 type PageProps = {
@@ -18,6 +20,9 @@ type PageProps = {
 };
 
 const errorMessage: Record<string, string> = {
+  "invitation-required": "A valid DEC course invitation is required to activate a learner account.",
+  "expired": "This invitation has expired. Ask DEC to resend it.",
+  "cancelled": "This invitation was revoked. Contact DEC if you still require access.",
   "invalid-email": "Enter a valid email address.",
   "invalid-language": "Choose a supported preferred language.",
   "invalid-region": "Choose a region from the list.",
@@ -89,9 +94,26 @@ type InvitationRegistrationContext = {
 
 export default async function RegisterPage({ searchParams }: PageProps) {
   const { error, next } = await searchParams;
+  const controlledAccess = isControlledHubAccess();
   let invitation: InvitationRegistrationContext | null = null;
 
-  if (next) {
+  if (controlledAccess) {
+    const token = await getCourseInvitationToken();
+    const resolution = token ? await resolveCourseInvitationToken(token) : null;
+    if (resolution?.success) {
+      const region = resolution.context.organization.region;
+      invitation = {
+        cohortName: resolution.context.cohortName,
+        courseTitle: resolution.context.course.title,
+        courseVersionNumber: resolution.context.courseVersionNumber,
+        email: resolution.context.invitedEmail,
+        invitedName: resolution.context.invitedName,
+        organizationName: resolution.context.organization.name,
+        region: region && isControlledRegion(region) ? region : "Other / not listed",
+        role: resolution.context.invitedRoleOrPosition,
+      };
+    }
+  } else if (next) {
     try {
       const nextUrl = new URL(next, "https://hub.invalid");
       const token = nextUrl.pathname === "/course-invitations/accept"
@@ -116,6 +138,25 @@ export default async function RegisterPage({ searchParams }: PageProps) {
     } catch {
       invitation = null;
     }
+  }
+
+  if (controlledAccess && !invitation) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <StatusBadge label="DEC-controlled access" tone="blue" />
+          <h1 className="mt-4 text-2xl font-bold text-deep-navy">Registration is by invitation</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-text">
+            DEC approves each learner and course. Open the personal invitation sent to your email to activate a new account.
+          </p>
+        </div>
+        {error ? <AlertMessage tone="error" title="Invitation unavailable">{errorMessage[error] ?? errorMessage["invitation-required"]}</AlertMessage> : null}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ActionButton href="/sign-in">Sign in</ActionButton>
+          <ActionButton href="/support" variant="secondary">Get support</ActionButton>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -161,6 +202,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
             label="Full name"
             name="fullName"
             placeholder="Enter your full name"
+            readOnly={Boolean(invitation)}
           />
           <TextInput
             autoComplete="email"

@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import { ActionButton, AlertMessage } from "@/components/ui";
 
 type AcceptanceProps = {
@@ -14,12 +11,6 @@ type AcceptanceProps = {
   returnPath: string;
   state: "already-activated" | "available" | "cancelled" | "expired" | "unavailable";
 };
-
-type ActivationState =
-  | { kind: "idle" }
-  | { kind: "loading" }
-  | { kind: "error" }
-  | { courseSlug: string; kind: "success"; replay: boolean };
 
 function Summary({ context }: { context: NonNullable<AcceptanceProps["context"]> }) {
   return (
@@ -52,53 +43,6 @@ export function CourseInvitationAcceptance({
   returnPath,
   state,
 }: AcceptanceProps) {
-  const [activation, setActivation] = useState<ActivationState>({ kind: "idle" });
-
-  async function acceptInvitation() {
-    setActivation({ kind: "loading" });
-    const token = new URLSearchParams(window.location.search).get("token") ?? "";
-    if (!token) {
-      setActivation({ kind: "error" });
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/course-invitations/activate", {
-        body: JSON.stringify({ token }),
-        cache: "no-store",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      });
-      const result = await response.json();
-      if (!response.ok || !result.success || !result.access?.courseSlug) {
-        setActivation({ kind: "error" });
-        return;
-      }
-      setActivation({
-        courseSlug: result.access.courseSlug,
-        kind: "success",
-        replay: result.code === "already-activated",
-      });
-    } catch {
-      setActivation({ kind: "error" });
-    }
-  }
-
-  if (activation.kind === "success") {
-    return (
-      <div aria-live="polite" className="space-y-5">
-        <AlertMessage title={activation.replay ? "Invitation already accepted" : "Invitation accepted"} tone="success">
-          Your individual access to the invited course is ready.
-        </AlertMessage>
-        {context ? <Summary context={context} /> : null}
-        <ActionButton href={`/learn/courses/${activation.courseSlug}`} size="lg">
-          Start course
-        </ActionButton>
-      </div>
-    );
-  }
-
   if (state === "cancelled" || state === "expired" || state === "unavailable") {
     const copy =
       state === "cancelled"
@@ -114,7 +58,7 @@ export function CourseInvitationAcceptance({
     );
   }
 
-  if (state === "already-activated" && context) {
+  if (state === "already-activated" && context && authentication === "matching") {
     return (
       <div className="space-y-5">
         <AlertMessage title="Invitation already accepted" tone="success">
@@ -122,6 +66,20 @@ export function CourseInvitationAcceptance({
         </AlertMessage>
         <Summary context={context} />
         <ActionButton href={`/learn/courses/${context.courseSlug}`} size="lg">Start course</ActionButton>
+      </div>
+    );
+  }
+
+  if (state === "already-activated" && context && authentication === "required") {
+    return (
+      <div className="space-y-5">
+        <AlertMessage title="Your account is already active" tone="success">
+          Sign in with the invited email address to continue to your approved course.
+        </AlertMessage>
+        <Summary context={context} />
+        <ActionButton href={`/sign-in?next=${encodeURIComponent(returnPath)}`} size="lg">
+          Sign in to continue
+        </ActionButton>
       </div>
     );
   }
@@ -148,7 +106,7 @@ export function CourseInvitationAcceptance({
         </AlertMessage>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <ActionButton href={`/sign-in?next=${encodeURIComponent(returnPath)}`} size="lg">Sign in to accept</ActionButton>
-          <ActionButton href={`/register?next=${encodeURIComponent(returnPath)}`} size="lg" variant="secondary">Create account using the invited email</ActionButton>
+          <ActionButton href="/register" size="lg" variant="secondary">Activate a new account</ActionButton>
         </div>
       </div>
     );
@@ -161,21 +119,8 @@ export function CourseInvitationAcceptance({
         <div className="rounded-[18px] border border-dec-green/30 bg-dec-green/15 p-4 text-sm leading-6 text-[#426f1c]">
           Accepting creates one individual assignment for this exact course version. It does not grant organization-wide access.
         </div>
-        {activation.kind === "error" ? (
-          <div aria-live="assertive">
-            <AlertMessage title="Invitation could not be accepted" tone="error">
-              The invitation is no longer available or your account does not match its invitation details. No access was changed.
-            </AlertMessage>
-          </div>
-        ) : null}
-        <ActionButton
-          disabled={activation.kind === "loading"}
-          loading={activation.kind === "loading"}
-          onClick={acceptInvitation}
-          size="lg"
-          type="button"
-        >
-          Accept invitation
+        <ActionButton href={returnPath} size="lg">
+          Activate course access
         </ActionButton>
       </div>
     );

@@ -2,6 +2,7 @@ import {
   CourseInvitationStatus,
   CourseStatus,
   CourseVisibility,
+  EnrollmentStatus,
   OrganizationStatus,
   RoleKey,
   UserStatus,
@@ -11,12 +12,18 @@ import type { AuthSession } from "./auth/session-codec";
 import { isControlledRegion } from "./controlled-options";
 import {
   createManagedCourseInvitation,
+  markCourseInvitationFailed,
+  markManagedCourseInvitationSent,
   prepareManagedCourseInvitationResend,
 } from "./course-invitation-workflow";
+import { sendCourseInvitationEmail } from "./email";
+import {
+  createCourseInvitationExpiry,
+  isControlledHubAccess,
+} from "./hub-access-policy";
 import { prisma } from "./prisma";
 
 const LIST_LIMIT = 100;
-const INVITATION_STATUSES = new Set(Object.values(CourseInvitationStatus));
 
 export type AdminCourseInvitationFilters = {
   cohortId?: string;
@@ -27,13 +34,22 @@ export type AdminCourseInvitationFilters = {
   status?: string;
 };
 
+export type AdminCourseInvitationDisplayStatus =
+  | "ACTIVATED"
+  | "CANCELLED"
+  | "COMPLETED"
+  | "DELIVERY_FAILED"
+  | "IN_PROGRESS"
+  | "INVITATION_EXPIRED"
+  | "INVITED";
+
 export type CourseInvitationDeliveryResult =
   | {
       code: string;
       success: false;
     }
   | {
-      deliveryUrl: string;
+      delivered: boolean;
       invitation: {
         expiresAt: Date;
         id: string;
@@ -61,6 +77,45 @@ function formatDate(value: Date | null) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(value);
+}
+
+function invitationStatusWhere(status?: string): Prisma.CourseInvitationWhereInput {
+  const now = new Date();
+  if (status === "INVITED") {
+    return {
+      expiresAt: { gt: now },
+      status: {
+        in: [
+          CourseInvitationStatus.DRAFT,
+          CourseInvitationStatus.PENDING,
+          CourseInvitationStatus.SENT,
+        ],
+      },
+    };
+  }
+  if (status === "INVITATION_EXPIRED") {
+    return {
+      OR: [
+        { status: CourseInvitationStatus.EXPIRED },
+        {
+          expiresAt: { lte: now },
+          status: {
+            in: [
+              CourseInvitationStatus.DRAFT,
+              CourseInvitationStatus.PENDING,
+              CourseInvitationStatus.SENT,
+            ],
+          },
+        },
+      ],
+    };
+  }
+  if (status === "DELIVERY_FAILED") return { status: CourseInvitationStatus.FAILED };
+  if (status === "CANCELLED") return { status: CourseInvitationStatus.CANCELLED };
+  if (["ACTIVATED", "IN_PROGRESS", "COMPLETED"].includes(status ?? "")) {
+    return { status: CourseInvitationStatus.ACTIVATED };
+  }
+  return {};
 }
 
 async function requireInvitationManager(session: AuthSession | null) {
@@ -124,7 +179,9 @@ export async function getAdminCourseInvitationOptions(session: AuthSession | nul
       where: {
         archivedAt: null,
         status: CourseStatus.PUBLISHED,
-        visibility: CourseVisibility.ASSIGNED_ONLY,
+        visibility: isControlledHubAccess()
+          ? { in: [CourseVisibility.ASSIGNED_ONLY, CourseVisibility.PUBLIC] }
+          : CourseVisibility.ASSIGNED_ONLY,
         versions: { some: { archivedAt: null, status: CourseStatus.PUBLISHED } },
       },
     }),
@@ -165,14 +222,19 @@ export async function getAdminCourseInvitationList(
           },
         }
       : {}),
-    ...(status && INVITATION_STATUSES.has(status as CourseInvitationStatus)
-      ? { status: status as CourseInvitationStatus }
-      : {}),
+    ...invitationStatusWhere(status),
   };
 
   const [records, total, options] = await Promise.all([
     prisma.courseInvitation.findMany({
       include: {
+        activatedUser: {
+          select: {
+            enrollments: {
+              select: { courseId: true, progressPercent: true, status: true },
+            },
+          },
+        },
         cohort: { select: { name: true } },
         course: { select: { title: true } },
         courseVersion: { select: { versionNumber: true } },
@@ -187,11 +249,7 @@ export async function getAdminCourseInvitationList(
     getAdminCourseInvitationOptions(session),
   ]);
 
-  return {
-    filters,
-    limit: LIST_LIMIT,
-    options,
-    records: records.map((record) => ({
+  const mappedRecords = records.map((record) => ({
       activatedAt: formatDate(record.activatedAt),
       cohort: record.cohort?.name ?? "Not assigned",
       course: record.course.title,
@@ -203,12 +261,27 @@ export async function getAdminCourseInvitationList(
       id: record.id,
       organization: record.organization.name,
       sentAt: formatDate(record.sentAt),
-      status: record.status,
+      status: displayStatus({
+        courseId: record.courseId,
+        enrollments: record.activatedUser?.enrollments ?? [],
+        expiresAt: record.expiresAt,
+        status: record.status,
+      }),
       version: record.courseVersion
         ? `Version ${record.courseVersion.versionNumber}`
         : "No version",
-    })),
-    total,
+    }));
+  const progressStatuses = new Set(["ACTIVATED", "IN_PROGRESS", "COMPLETED"]);
+  const effectiveRecords = status && progressStatuses.has(status)
+    ? mappedRecords.filter((record) => record.status === status)
+    : mappedRecords;
+
+  return {
+    filters,
+    limit: LIST_LIMIT,
+    options,
+    records: effectiveRecords,
+    total: status && progressStatuses.has(status) ? effectiveRecords.length : total,
   };
 }
 
@@ -220,9 +293,18 @@ export async function getAdminCourseInvitationDetail(
 
   const invitation = await prisma.courseInvitation.findUnique({
     include: {
-      activatedUser: { select: { fullName: true } },
+      activatedUser: {
+        select: {
+          enrollments: {
+            select: { courseId: true, progressPercent: true, status: true },
+          },
+          fullName: true,
+          id: true,
+        },
+      },
       cohort: { select: { name: true } },
       course: { select: { slug: true, title: true } },
+      courseAssignment: { select: { id: true, isActive: true } },
       courseVersion: { select: { versionNumber: true } },
       invitedBy: { select: { fullName: true } },
       organization: { select: { name: true } },
@@ -253,18 +335,17 @@ export async function getAdminCourseInvitationDetail(
       CourseInvitationStatus.SENT,
       CourseInvitationStatus.FAILED,
     ]).has(invitation.status),
-    canConfirmDelivery: new Set<CourseInvitationStatus>([
-      CourseInvitationStatus.DRAFT,
-      CourseInvitationStatus.PENDING,
-    ]).has(invitation.status),
     canPrepareLink: new Set<CourseInvitationStatus>([
       CourseInvitationStatus.DRAFT,
+      CourseInvitationStatus.PENDING,
       CourseInvitationStatus.SENT,
+      CourseInvitationStatus.EXPIRED,
       CourseInvitationStatus.FAILED,
     ]).has(invitation.status),
     cancelledAt: formatDate(invitation.cancelledAt),
     cohort: invitation.cohort?.name ?? "Not assigned",
     course: invitation.course.title,
+    adminCourseHref: `/admin/courses/${invitation.courseId}`,
     courseHref: `/learn/courses/${invitation.course.slug}`,
     createdAt: formatDate(invitation.createdAt),
     createdBy: invitation.invitedBy.fullName,
@@ -277,11 +358,24 @@ export async function getAdminCourseInvitationDetail(
       description: entry.description,
     })),
     id: invitation.id,
+    activatedUserId: invitation.activatedUser?.id ?? null,
+    activatedUserHref: invitation.activatedUser
+      ? `/admin/users/${invitation.activatedUser.id}`
+      : null,
+    courseAssignmentId: invitation.courseAssignment?.isActive
+      ? invitation.courseAssignment.id
+      : null,
+    courseId: invitation.courseId,
     invitedName: invitation.invitedName,
     invitedRoleOrPosition: invitation.invitedRoleOrPosition,
     organization: invitation.organization.name,
     sentAt: formatDate(invitation.sentAt),
-    status: invitation.status,
+    status: displayStatus({
+      courseId: invitation.courseId,
+      enrollments: invitation.activatedUser?.enrollments ?? [],
+      expiresAt: invitation.expiresAt,
+      status: invitation.status,
+    }),
     version: invitation.courseVersion
       ? `Version ${invitation.courseVersion.versionNumber}`
       : "No version",
@@ -308,7 +402,7 @@ export function getTrustedCourseInvitationOrigin() {
 }
 
 function deliveryUrl(origin: string, plaintextToken: string) {
-  const url = new URL("/course-invitations/accept", origin);
+  const url = new URL("/course-invitations/start", origin);
   url.searchParams.set("token", plaintextToken);
   return url.toString();
 }
@@ -317,12 +411,13 @@ export async function createAdminCourseInvitation(input: {
   cohortId?: string | null;
   courseId: string;
   courseVersionId: string;
-  expiresAt: Date;
+  expiresAt?: Date;
   invitedEmail: string;
   invitedName: string;
   invitedRoleOrPosition?: string | null;
   organizationId: string;
   region?: string;
+  sendEmail?: typeof sendCourseInvitationEmail;
   session: AuthSession | null;
 }): Promise<CourseInvitationDeliveryResult> {
   const origin = getTrustedCourseInvitationOrigin();
@@ -342,7 +437,9 @@ export async function createAdminCourseInvitation(input: {
         archivedAt: null,
         id: input.courseId,
         status: CourseStatus.PUBLISHED,
-        visibility: CourseVisibility.ASSIGNED_ONLY,
+        visibility: isControlledHubAccess()
+          ? { in: [CourseVisibility.ASSIGNED_ONLY, CourseVisibility.PUBLIC] }
+          : CourseVisibility.ASSIGNED_ONLY,
       },
     }),
   ]);
@@ -359,7 +456,12 @@ export async function createAdminCourseInvitation(input: {
     return { code: "invalid-region", success: false };
   }
 
-  const result = await createManagedCourseInvitation(input);
+  const result = await createManagedCourseInvitation({
+    ...input,
+    expiresAt: isControlledHubAccess()
+      ? createCourseInvitationExpiry()
+      : input.expiresAt,
+  });
   if (!result.success) {
     return result;
   }
@@ -367,9 +469,28 @@ export async function createAdminCourseInvitation(input: {
     return { code: "unavailable", success: false };
   }
 
+  const email = await (input.sendEmail ?? sendCourseInvitationEmail)({
+    courseTitle: course.title,
+    email: input.invitedEmail.trim().toLowerCase(),
+    invitationUrl: deliveryUrl(origin, result.plaintextToken),
+    invitedName: input.invitedName.trim(),
+  });
+  const deliveryStatus = email.delivered
+    ? await markManagedCourseInvitationSent({
+        invitationId: result.invitation.id,
+        session: input.session,
+      })
+    : await markCourseInvitationFailed({
+        invitationId: result.invitation.id,
+        session: input.session,
+      });
+  if (!deliveryStatus.success) {
+    return deliveryStatus;
+  }
+
   return {
-    deliveryUrl: deliveryUrl(origin, result.plaintextToken),
-    invitation: result.invitation,
+    delivered: email.delivered,
+    invitation: deliveryStatus.invitation,
     summary: {
       courseTitle: course.title,
       invitedEmail: input.invitedEmail.trim().toLowerCase(),
@@ -381,8 +502,9 @@ export async function createAdminCourseInvitation(input: {
 }
 
 export async function prepareAdminCourseInvitationLink(input: {
-  expiresAt: Date;
+  expiresAt?: Date;
   invitationId: string;
+  sendEmail?: typeof sendCourseInvitationEmail;
   session: AuthSession | null;
 }): Promise<CourseInvitationDeliveryResult> {
   const origin = getTrustedCourseInvitationOrigin();
@@ -390,7 +512,23 @@ export async function prepareAdminCourseInvitationLink(input: {
     return { code: "missing-app-origin", success: false };
   }
 
-  const result = await prepareManagedCourseInvitationResend(input);
+  const current = await prisma.courseInvitation.findUnique({
+    include: {
+      course: { select: { title: true } },
+      organization: { select: { name: true } },
+    },
+    where: { id: input.invitationId },
+  });
+  if (!current) {
+    return { code: "not-found", success: false };
+  }
+
+  const result = await prepareManagedCourseInvitationResend({
+    ...input,
+    expiresAt: isControlledHubAccess()
+      ? createCourseInvitationExpiry()
+      : input.expiresAt,
+  });
   if (!result.success) {
     return result;
   }
@@ -398,9 +536,71 @@ export async function prepareAdminCourseInvitationLink(input: {
     return { code: "unavailable", success: false };
   }
 
+  const email = await (input.sendEmail ?? sendCourseInvitationEmail)({
+    courseTitle: current.course.title,
+    email: current.invitedEmail,
+    invitationUrl: deliveryUrl(origin, result.plaintextToken),
+    invitedName: current.invitedName,
+  });
+  const deliveryStatus = email.delivered
+    ? await markManagedCourseInvitationSent({
+        invitationId: result.invitation.id,
+        session: input.session,
+      })
+    : await markCourseInvitationFailed({
+        invitationId: result.invitation.id,
+        session: input.session,
+      });
+  if (!deliveryStatus.success) {
+    return deliveryStatus;
+  }
+
   return {
-    deliveryUrl: deliveryUrl(origin, result.plaintextToken),
-    invitation: result.invitation,
+    delivered: email.delivered,
+    invitation: deliveryStatus.invitation,
+    summary: {
+      courseTitle: current.course.title,
+      invitedEmail: current.invitedEmail,
+      invitedName: current.invitedName,
+      organizationName: current.organization.name,
+    },
     success: true,
   };
+}
+
+function displayStatus(input: {
+  courseId: string;
+  enrollments: Array<{
+    courseId: string;
+    progressPercent: number;
+    status: EnrollmentStatus;
+  }>;
+  expiresAt: Date;
+  status: CourseInvitationStatus;
+}): AdminCourseInvitationDisplayStatus {
+  if (input.status === CourseInvitationStatus.ACTIVATED) {
+    const enrollment = input.enrollments.find(
+      (record) => record.courseId === input.courseId,
+    );
+    if (
+      enrollment?.status === EnrollmentStatus.COMPLETED ||
+      (enrollment?.progressPercent ?? 0) >= 100
+    ) {
+      return "COMPLETED";
+    }
+    return enrollment ? "IN_PROGRESS" : "ACTIVATED";
+  }
+  if (input.status === CourseInvitationStatus.CANCELLED) {
+    return "CANCELLED";
+  }
+  if (input.status === CourseInvitationStatus.FAILED) {
+    return "DELIVERY_FAILED";
+  }
+  if (
+    input.status === CourseInvitationStatus.EXPIRED ||
+    input.expiresAt.getTime() <= Date.now()
+  ) {
+    return "INVITATION_EXPIRED";
+  }
+  return "INVITED";
 }
