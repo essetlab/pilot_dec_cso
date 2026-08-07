@@ -7,6 +7,7 @@ import {
   type ExternalCourseEventMessage,
   hasProhibitedExternalCourseIdentifier,
   isExternalCourseEventMessage,
+  isTrustedExternalCourseMessageEvent,
   isValidExternalCourseEvidenceId,
   EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
@@ -153,10 +154,11 @@ export function ExternalCourseFrame({
     }
 
     function handleMessage(event: MessageEvent) {
-      if (
-        event.origin !== launchData.allowedOrigin ||
-        event.source !== courseFrame.current?.contentWindow
-      ) {
+      if (!isTrustedExternalCourseMessageEvent(
+        event,
+        launchData.allowedOrigin,
+        courseFrame.current?.contentWindow,
+      )) {
         return;
       }
 

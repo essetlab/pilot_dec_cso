@@ -184,3 +184,15 @@ export type ExternalCourseLaunchContextMessage = {
   courseSlug: string;
   learnerStateKey: string;
 };
+
+export function isTrustedExternalCourseMessageEvent(
+  event: Pick<MessageEvent, "origin" | "source">,
+  expectedOrigin: string,
+  expectedSource: MessageEventSource | null | undefined,
+) {
+  return Boolean(
+    expectedSource &&
+    event.origin === expectedOrigin &&
+    event.source === expectedSource
+  );
+}
