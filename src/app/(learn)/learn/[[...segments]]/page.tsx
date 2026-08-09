@@ -403,15 +403,7 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
     if (!launchData) {
       notFound();
     }
-    return (
-      <CoursePlayerShell
-        session={session}
-        courseTitle={launchData.courseTitle}
-        currentStage="External Course Content"
-      >
-        <ExternalCourseFrame launchData={launchData} />
-      </CoursePlayerShell>
-    );
+    return <ExternalCourseFrame launchData={launchData} />;
   }
 
   if (

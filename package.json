@@ -36,6 +36,7 @@
     "verify:s7-hrba-supabase-compat": "node --import jiti/register scripts/verify-s7-hrba-supabase-compat.ts",
     "verify:external-course-contract": "node --import jiti/register scripts/verify-external-course-contract.ts",
     "verify:external-course-csp": "node --import jiti/register scripts/verify-external-course-csp.ts",
+    "verify:external-course-learning-view": "node --import jiti/register scripts/verify-external-course-learning-view.ts",
     "verify:external-course-learner-isolation": "node --import jiti/register scripts/verify-external-course-learner-isolation.ts",
     "verify:s8-env-readiness": "node --import jiti/register scripts/verify-s8-env-readiness.ts",
     "verify:p2d-onboarding-access": "node --import jiti/register scripts/verify-p2d-onboarding-access.ts",
