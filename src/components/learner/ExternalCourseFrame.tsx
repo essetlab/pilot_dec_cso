@@ -12,6 +12,7 @@ import {
   isValidExternalCourseEvidenceId,
   EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
+  EXTERNAL_COURSE_RESUME_RESULT_MESSAGE,
   type ExternalCourseLaunchData,
   type ExternalCourseProgressMessage,
 } from "@/lib/external-course-types";
@@ -89,6 +90,7 @@ export function ExternalCourseFrame({
   const hasStabilizedFrame = useRef(false);
   const courseFrame = useRef<HTMLIFrameElement | null>(null);
   const frameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     async function persistProgress(progressMessage: ExternalCourseProgressMessage) {
@@ -109,6 +111,7 @@ export function ExternalCourseFrame({
       const response = await fetch("/api/external-course-progress", {
         body: JSON.stringify({
           assessment: progressMessage.assessment,
+          baseRevision: progressMessage.baseRevision,
           completed: progressMessage.completed,
           completedModuleIds: progressMessage.completedModuleIds,
           courseSlug: progressMessage.courseSlug,
@@ -116,8 +119,10 @@ export function ExternalCourseFrame({
           currentScreenId: progressMessage.currentScreenId,
           iframeOrigin: launchData.allowedOrigin,
           learnerStateKey: progressMessage.learnerStateKey,
+          legacyBootstrap: progressMessage.legacyBootstrap,
           launchToken: launchData.launchToken,
           progressPercent: progressMessage.progressPercent,
+          resumeState: progressMessage.resumeState,
           sentAt: progressMessage.sentAt,
           type: progressMessage.type,
           version: progressMessage.version,
@@ -133,17 +138,54 @@ export function ExternalCourseFrame({
         certificateCode?: string | null;
         error?: string;
         progressPercent?: number;
+        conflict?: boolean;
+        resumeRevision?: string;
+        resumeState?: ExternalCourseLaunchData["resumeState"];
         success?: boolean;
       };
 
       if (!response.ok || !result.success) {
         hasSubmittedCompletion.current = false;
+        if (result.conflict && result.resumeRevision) {
+          courseFrame.current?.contentWindow?.postMessage({
+            type: EXTERNAL_COURSE_RESUME_RESULT_MESSAGE,
+            version: 1,
+            courseSlug: launchData.courseSlug,
+            status: "conflict",
+            resumeRevision: result.resumeRevision,
+            resumeState: result.resumeState ?? null,
+          }, launchData.allowedOrigin);
+          setStatus("ready");
+          setMessage("Progress refreshed from your latest saved session.");
+          return;
+        }
+        if (progressMessage.resumeState && result.resumeRevision) {
+          courseFrame.current?.contentWindow?.postMessage({
+            type: EXTERNAL_COURSE_RESUME_RESULT_MESSAGE,
+            version: 1,
+            courseSlug: launchData.courseSlug,
+            status: "rejected",
+            resumeRevision: result.resumeRevision,
+            resumeState: result.resumeState ?? launchData.resumeState,
+            error: result.error,
+          }, launchData.allowedOrigin);
+        }
         setStatus("error");
         setMessage("We could not save your progress. Please check your connection and try again.");
         return;
       }
 
       setProgressPercent(result.progressPercent ?? progressMessage.progressPercent);
+      if (result.resumeRevision) {
+        courseFrame.current?.contentWindow?.postMessage({
+          type: EXTERNAL_COURSE_RESUME_RESULT_MESSAGE,
+          version: 1,
+          courseSlug: launchData.courseSlug,
+          status: "accepted",
+          resumeRevision: result.resumeRevision,
+          resumeState: result.resumeState ?? null,
+        }, launchData.allowedOrigin);
+      }
       setStatus(progressMessage.completed ? "completed" : "ready");
       setMessage(
         progressMessage.completed
@@ -152,6 +194,16 @@ export function ExternalCourseFrame({
             : "Your results are saved."
           : "Progress saved.",
       );
+    }
+
+    function queueProgress(progressMessage: ExternalCourseProgressMessage) {
+      saveQueue.current = saveQueue.current
+        .then(() => persistProgress(progressMessage))
+        .catch(() => {
+          hasSubmittedCompletion.current = false;
+          setStatus("error");
+          setMessage("We could not save your progress. Please check your connection and try again.");
+        });
     }
 
     function handleMessage(event: MessageEvent) {
@@ -173,6 +225,9 @@ export function ExternalCourseFrame({
             {
               courseSlug: launchData.courseSlug,
               learnerStateKey: launchData.learnerStateKey,
+              resumeRevision: launchData.resumeRevision,
+              resumeState: launchData.resumeState,
+              trustedAssessmentState: launchData.trustedAssessmentState,
               type: EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
               version: 1,
             },
@@ -200,15 +255,18 @@ export function ExternalCourseFrame({
           return;
         }
 
-        void persistProgress({
+        queueProgress({
           assessment: progressEvent.assessment,
+          baseRevision: progressEvent.baseRevision,
           completed: progressEvent.event === "course_completed",
           completedModuleIds: progressEvent.completedModuleIds ?? [],
           courseSlug: progressEvent.courseSlug,
           currentModuleId: progressEvent.currentModuleId ?? null,
           currentScreenId: progressEvent.currentScreenId ?? null,
           learnerStateKey: progressEvent.learnerStateKey,
+          legacyBootstrap: progressEvent.legacyBootstrap,
           progressPercent: progressEvent.progressPercent ?? 0,
+          resumeState: progressEvent.resumeState,
           sentAt: progressEvent.sentAt,
           type: EXTERNAL_COURSE_PROGRESS_MESSAGE,
           version: 1,
@@ -224,7 +282,7 @@ export function ExternalCourseFrame({
         return;
       }
 
-      void persistProgress(event.data);
+      queueProgress(event.data);
     }
 
     window.addEventListener("message", handleMessage);
