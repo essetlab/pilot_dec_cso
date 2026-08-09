@@ -51,7 +51,7 @@ export default async function AuthLayout({
             <p>
               Need assistance accessing your account?{" "}
               <Link href="/support" className="font-semibold text-dec-blue underline hover:text-deep-navy">
-                Open registration guidance
+                Get account access help
               </Link>
             </p>
           </footer>

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { ActionButton, AlertMessage } from "@/components/ui";
 
 type AcceptanceProps = {
+  accountState?: "existing" | "new";
   authentication?: "matching" | "mismatch" | "required";
   context?: {
     courseSlug: string;
@@ -38,6 +40,7 @@ function Summary({ context }: { context: NonNullable<AcceptanceProps["context"]>
 }
 
 export function CourseInvitationAcceptance({
+  accountState,
   authentication,
   context,
   returnPath,
@@ -98,15 +101,34 @@ export function CourseInvitationAcceptance({
   }
 
   if (authentication === "required" && context) {
+    if (accountState === "existing") {
+      return (
+        <div className="space-y-5">
+          <Summary context={context} />
+          <AlertMessage title="Sign in to continue" tone="info">
+            Your Learning Hub account is already active. Sign in with the invited email address to access this assigned course.
+          </AlertMessage>
+          <ActionButton href={`/sign-in?next=${encodeURIComponent(returnPath)}`} size="lg">
+            Sign in to continue
+          </ActionButton>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-5">
         <Summary context={context} />
-        <AlertMessage title="Use the invited email address" tone="info">
-          Sign in with the email address that received this invitation. If you do not yet have an account, register with that same address and return here after confirmation.
-        </AlertMessage>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <ActionButton href={`/sign-in?next=${encodeURIComponent(returnPath)}`} size="lg">Sign in to accept</ActionButton>
-          <ActionButton href="/register" size="lg" variant="secondary">Activate a new account</ActionButton>
+        <ActionButton href={`/register?next=${encodeURIComponent(returnPath)}`} size="lg">
+          Activate your account
+        </ActionButton>
+        <div className="text-center text-xs text-muted-text">
+          Already have an account?{" "}
+          <Link
+            className="font-semibold text-dec-blue underline underline-offset-2 hover:text-deep-navy"
+            href={`/sign-in?next=${encodeURIComponent(returnPath)}`}
+          >
+            Sign in
+          </Link>
         </div>
       </div>
     );

@@ -9,7 +9,7 @@ export default function SupportPage() {
       sections={[
         {
           title: "Account and access help",
-          body: "Create an individual Hub account with an email address you can confirm. Registration does not require an invitation or access code. Contact the programme support channel if account confirmation or sign-in does not work.",
+          body: "Open the personal invitation sent to your email, create your password, and confirm your address to activate your Learning Hub account. Contact the programme support channel if account confirmation or sign-in does not work.",
         },
         {
           title: "Course launch help",

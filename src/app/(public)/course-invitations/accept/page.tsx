@@ -41,6 +41,16 @@ export default async function CourseInvitationAcceptPage({ searchParams }: PageP
     resolution.success &&
     (resolution.state === "already-activated" ||
       resolution.authentication !== "mismatch");
+  const isNewLearner =
+    resolution.success &&
+    resolution.state === "available" &&
+    resolution.authentication === "required" &&
+    resolution.accountState === "new";
+  const isExistingLearner =
+    resolution.success &&
+    resolution.authentication === "required" &&
+    (resolution.state === "already-activated" ||
+      (resolution.state === "available" && resolution.accountState === "existing"));
 
   return (
     <div className="min-h-screen bg-light-bg flex flex-col lg:flex-row">
@@ -88,14 +98,25 @@ export default async function CourseInvitationAcceptPage({ searchParams }: PageP
                 </span>
                 <StatusBadge label="Secure Invite" tone="green" />
               </div>
-              <h2 className="mt-2 text-2xl font-bold text-deep-navy">Accept invitation</h2>
+              <h2 className="mt-2 text-2xl font-bold text-deep-navy">
+                {isNewLearner
+                  ? "Activate your account"
+                  : isExistingLearner
+                    ? "Sign in to continue"
+                    : "Accept invitation"}
+              </h2>
               <p className="mt-2 text-xs leading-5 text-muted-text">
-                Your account and invitation email must match before course access can be granted.
+                {isNewLearner
+                  ? "Create your password to activate your Learning Hub account and access the course assigned to you."
+                  : isExistingLearner
+                    ? "Use the email and password for your active Learning Hub account."
+                    : "Your account and invitation email must match before course access can be granted."}
               </p>
             </div>
 
             <div className="mt-6">
               <CourseInvitationAcceptance
+                accountState={resolution.success && resolution.state === "available" ? resolution.accountState : undefined}
                 authentication={resolution.success ? resolution.authentication : undefined}
                 context={showContext && resolution.success ? {
                   courseSlug: resolution.context.courseSlug,

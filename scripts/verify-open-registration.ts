@@ -55,11 +55,8 @@ assert.match(
   /cleanPresentationText\(selfReportedOrganizationName\)/,
 );
 assert.match(page, /Create your account/);
-assert.match(page, /Registration includes access to available courses\./);
-assert.match(
-  page,
-  /Please note that some courses may require invitation or assignment from DEC\./,
-);
+assert.match(page, /Register with your email address, confirm your account/);
+assert.doesNotMatch(page, /Registration includes access to available courses\./);
 assert.match(page, /Select your region/);
 assert.match(page, /Preferred language/);
 

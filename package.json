@@ -47,6 +47,7 @@
     "verify:course-invitation-activation": "node --import jiti/register scripts/verify-course-invitation-activation.ts",
     "verify:course-invitation-management": "node --import jiti/register scripts/verify-course-invitation-management.ts",
     "verify:controlled-course-access": "node --import jiti/register scripts/verify-controlled-course-access.ts",
+    "verify:invited-learner-ux": "node --import jiti/register scripts/verify-invited-learner-ux.ts",
     "verify:auth-recovery": "node --import jiti/register scripts/verify-auth-recovery.ts",
     "configure:pilot-readiness": "node --import jiti/register scripts/configure-pilot-readiness-reference-data.ts",
     "verify:pilot-readiness": "node --import jiti/register scripts/verify-pilot-readiness.ts",

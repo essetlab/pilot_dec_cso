@@ -170,15 +170,12 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           <StatusBadge label="Individual Account" tone="green" />
         </div>
         <h1 className="mt-2 text-2xl font-bold text-deep-navy">
-          Create your account
+          {invitation ? "Activate your account" : "Create your account"}
         </h1>
         <p className="mt-2 text-xs leading-5 text-muted-text">
           {invitation
-            ? "Create your account with the invited email, then return to accept the exact course invitation."
+            ? "Create your password to activate your Learning Hub account and access the course assigned to you."
             : "Register with your email address, confirm your account, and explore available learning opportunities."}
-        </p>
-        <p className="mt-2 text-2xs leading-normal text-muted-text">
-          Registration includes access to available courses. Please note that some courses may require invitation or assignment from DEC.
         </p>
       </div>
 
@@ -375,11 +372,25 @@ export default async function RegisterPage({ searchParams }: PageProps) {
             </span>
           </label>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <AuthSubmitButton>Create account</AuthSubmitButton>
-            <ActionButton href="/sign-in" variant="secondary">
-              Back to sign in
-            </ActionButton>
+          <div className="space-y-3">
+            <AuthSubmitButton>{invitation ? "Activate your account" : "Create account"}</AuthSubmitButton>
+            {invitation ? (
+              <p className="text-center text-xs text-muted-text">
+                Already have an account?{" "}
+                <Link
+                  className="font-semibold text-dec-blue underline underline-offset-2 hover:text-deep-navy"
+                  href={`/sign-in?next=${encodeURIComponent("/course-invitations/reconcile")}`}
+                >
+                  Sign in
+                </Link>
+              </p>
+            ) : (
+              <div className="flex justify-center">
+                <ActionButton href="/sign-in" variant="secondary">
+                  Back to sign in
+                </ActionButton>
+              </div>
+            )}
           </div>
         </div>
       </form>

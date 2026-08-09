@@ -169,6 +169,7 @@ export type CourseInvitationAcceptanceResolution =
       success: false;
     }
   | {
+      accountState: "existing" | "new";
       authentication: "matching" | "mismatch" | "required";
       context: {
         courseSlug: string;
@@ -982,7 +983,16 @@ export async function resolveCourseInvitationAcceptance(input: {
     return { state: "unavailable", success: false };
   }
 
+  const invitedUser = await prisma.user.findUnique({
+    select: { authProviderId: true, status: true },
+    where: { email: invitation.invitedEmail },
+  });
+
   return {
+    accountState:
+      invitedUser?.status === UserStatus.ACTIVE && invitedUser.authProviderId
+        ? "existing"
+        : "new",
     authentication: !input.session
       ? "required"
       : sessionMatches

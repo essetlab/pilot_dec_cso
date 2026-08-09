@@ -55,7 +55,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
         <p className="mt-2 text-xs leading-5 text-muted-text">
           {isAdministratorSignIn
             ? "Staff credentials will return you directly to invitation management."
-            : "Sign in with the email and password created during learner registration."}
+            : "Sign in with the email and password you created when activating your Learning Hub account."}
         </p>
       </div>
 
