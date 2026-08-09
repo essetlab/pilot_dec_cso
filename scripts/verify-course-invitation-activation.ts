@@ -160,6 +160,7 @@ try {
     "inactive-organization",
     "inactive-cohort",
     "unpublished-course",
+    "external",
   ];
   const createdUsers: { email: string; fullName: string; id: string }[] = [];
   for (const label of userLabels) {
@@ -243,6 +244,24 @@ try {
       visibility: CourseVisibility.ASSIGNED_ONLY,
     },
   });
+  const externalCourse = await prisma.course.create({
+    data: {
+      analysisMetadataJson: {
+        externalCourse: {
+          allowedOrigins: ["https://external-course.example.test"],
+          launchUrl: "https://external-course.example.test",
+          provider: "hrba-vite",
+        },
+      },
+      assignedCreatorId: users.admin.id,
+      createdById: users.admin.id,
+      shortDescription: "B2 fictional external restricted course.",
+      slug: courseSlug("external"),
+      status: CourseStatus.PUBLISHED,
+      title: "B2 Fictional External Restricted Course",
+      visibility: CourseVisibility.ASSIGNED_ONLY,
+    },
+  });
   const unpublishedCourse = await prisma.course.create({
     data: {
       assignedCreatorId: users.admin.id,
@@ -278,6 +297,14 @@ try {
       versionNumber: 1,
     },
   });
+  const externalCourseVersion = await prisma.courseVersion.create({
+    data: {
+      courseId: externalCourse.id,
+      createdById: users.admin.id,
+      status: CourseStatus.PUBLISHED,
+      versionNumber: 1,
+    },
+  });
   const unpublishedVersion = await prisma.courseVersion.create({
     data: {
       courseId: unpublishedCourse.id,
@@ -301,6 +328,22 @@ try {
   });
   assert.equal(successfulActivation.success, true);
   assert.equal(successfulActivation.code, "activated");
+  assert.equal(successfulActivation.access.isExternalCourse, false);
+
+  const externalFixture = await createSentInvitation({
+    courseId: externalCourse.id,
+    courseVersionId: externalCourseVersion.id,
+    email: users.external.email,
+    invitedByUserId: users.admin.id,
+    organizationId: activeOrganization.id,
+  });
+  const externalActivation = await activateCourseInvitation({
+    plaintextToken: externalFixture.plaintextToken,
+    session: sessionFor(users.external),
+  });
+  assert.equal(externalActivation.success, true);
+  assert.equal(externalActivation.code, "activated");
+  assert.equal(externalActivation.access.isExternalCourse, true);
 
   const linkedSuccessUser = await prisma.user.findUniqueOrThrow({
     where: { id: users.success.id },

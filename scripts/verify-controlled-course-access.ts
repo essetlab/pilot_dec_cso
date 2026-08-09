@@ -198,6 +198,11 @@ const checks: Record<string, boolean> = {
     invitationReconcile.includes("reconcileInvitedSupabaseLearnerProfile") &&
     invitationReconcile.includes("activateCourseInvitation") &&
     invitationReconcile.includes("response.cookies.delete"),
+  externalInvitationRoutesToIntegratedPlayer:
+    invitationWorkflow.includes("isExternalHrbaCourseMetadata") &&
+    invitationWorkflow.includes("isExternalCourse:") &&
+    invitationReconcile.includes("result.access.isExternalCourse") &&
+    invitationReconcile.includes("`${coursePath}/external`"),
 };
 
 for (const [name, passed] of Object.entries(checks)) {

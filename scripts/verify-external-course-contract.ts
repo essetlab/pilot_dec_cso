@@ -35,7 +35,9 @@ const validCallback = {
   version: 1,
 } as const;
 const obsoleteHrbaOrigin = "https://pilot-hrba-e-learn-v1-wajj.vercel.app";
-const qaHrbaOrigin = "https://pilot-hrba-qa-859c1a3.vercel.app";
+const formerProtectedHrbaOrigin =
+  "https://pilot-hrba-e-learn-v1-m8p2y1dzx-girumteenexus-8292s-projects.vercel.app";
+const qaHrbaOrigin = "https://hrba-explicit-qa.example.test";
 const originalCourseUrl = process.env.HRBA_EXTERNAL_COURSE_URL;
 const originalAllowedOrigins = process.env.HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS;
 
@@ -54,6 +56,11 @@ assert(
 assert(
   !getHrbaExternalCourseAllowedOrigins().includes(obsoleteHrbaOrigin),
   "The obsolete Wajj origin remains allowed by default.",
+);
+assert(
+  HRBA_PRODUCTION_COURSE_URL === "https://pilot-hrba-qa-859c1a3.vercel.app" &&
+    !getHrbaExternalCourseAllowedOrigins().includes(formerProtectedHrbaOrigin),
+  "The authoritative stable origin is not the default or the former protected origin remains allowed.",
 );
 
 process.env.HRBA_EXTERNAL_COURSE_URL = qaHrbaOrigin;
@@ -80,6 +87,15 @@ try {
   obsoleteUrlRejected = true;
 }
 assert(obsoleteUrlRejected, "The obsolete Wajj launch URL was accepted.");
+
+process.env.HRBA_EXTERNAL_COURSE_URL = formerProtectedHrbaOrigin;
+let formerProtectedUrlRejected = false;
+try {
+  getHrbaExternalCourseUrl();
+} catch {
+  formerProtectedUrlRejected = true;
+}
+assert(formerProtectedUrlRejected, "The former protected HRBA launch URL was accepted.");
 
 assert(
   getExternalCourseMetadata({

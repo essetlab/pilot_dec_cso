@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const productionOrigin = "https://enhanced-hrba-pilot.vercel.app";
-const qaOrigin =
+const productionOrigin = "https://pilot-hrba-qa-859c1a3.vercel.app";
+const qaOrigin = "https://hrba-explicit-qa.example.test";
+const formerProtectedOrigin =
   "https://pilot-hrba-e-learn-v1-m8p2y1dzx-girumteenexus-8292s-projects.vercel.app";
 const obsoleteOrigin = "https://pilot-hrba-e-learn-v1-wajj.vercel.app";
 const localOrigin = "http://localhost:5173";
@@ -36,6 +37,10 @@ assert(
 assert(
   !contentSecurityPolicy.includes(localOrigin),
   "The localhost HRBA origin remains in the CSP.",
+);
+assert(
+  !contentSecurityPolicy.includes(formerProtectedOrigin),
+  "The former protected HRBA origin remains in the CSP.",
 );
 
 if (qaMode) {
@@ -78,6 +83,7 @@ if (qaMode) {
       {
         defaultProductionOriginPresent: true,
         explicitQaOriginOnly: true,
+        formerProtectedOriginAbsent: true,
         localhostOriginAbsent: true,
         obsoleteWajjOriginAbsent: true,
       },

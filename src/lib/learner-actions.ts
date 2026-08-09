@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { submitCourseFeedback } from "./feedback-workflow";
 import { hasLearnerCourseEntitlement } from "./course-entitlement";
+import { isExternalHrbaCourseMetadata } from "./external-course-config";
 
 export type ActionState = {
   success: boolean;
@@ -103,6 +104,13 @@ export async function markLessonCompleteAction(
 
     if (!course || course.archivedAt) {
       return { success: false, error: "Course not found" };
+    }
+
+    if (isExternalHrbaCourseMetadata(course.analysisMetadataJson)) {
+      return {
+        success: false,
+        error: "External course progress must be recorded through the integrated course player",
+      };
     }
 
     // 4. Latest published version exists
@@ -279,6 +287,13 @@ export async function submitFinalTestAttemptAction(
 
     if (!course || course.archivedAt) {
       return { success: false, error: "Course not found" };
+    }
+
+    if (isExternalHrbaCourseMetadata(course.analysisMetadataJson)) {
+      return {
+        success: false,
+        error: "External course assessment must be recorded through the integrated course player",
+      };
     }
 
     // 4. Latest published version exists

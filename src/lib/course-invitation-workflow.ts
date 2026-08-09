@@ -14,6 +14,7 @@ import {
   createCourseInvitationExpiry,
   isControlledHubAccess,
 } from "./hub-access-policy";
+import { isExternalHrbaCourseMetadata } from "./external-course-config";
 import { prisma } from "./prisma";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -152,6 +153,7 @@ export type CourseInvitationActivationResult =
         courseId: string;
         courseSlug: string;
         courseVersionId: string;
+        isExternalCourse: boolean;
       };
       code: "activated" | "already-activated";
       success: true;
@@ -1177,6 +1179,7 @@ async function withCourseInvitationActivationLock<T>(
 }
 
 function activationAccess(input: {
+  analysisMetadataJson: unknown;
   courseId: string;
   courseSlug: string;
   courseVersionId: string | null;
@@ -1189,6 +1192,7 @@ function activationAccess(input: {
     courseId: input.courseId,
     courseSlug: input.courseSlug,
     courseVersionId: input.courseVersionId,
+    isExternalCourse: isExternalHrbaCourseMetadata(input.analysisMetadataJson),
   };
 }
 
@@ -1296,6 +1300,7 @@ async function activateCourseInvitationTransaction(input: {
       });
       const course = await tx.course.findUnique({
         select: {
+          analysisMetadataJson: true,
           archivedAt: true,
           id: true,
           slug: true,
@@ -1366,6 +1371,7 @@ async function activateCourseInvitationTransaction(input: {
 
         return {
           access: activationAccess({
+            analysisMetadataJson: course.analysisMetadataJson,
             courseId: course.id,
             courseSlug: course.slug,
             courseVersionId: invitation.courseVersionId,
@@ -1472,6 +1478,7 @@ async function activateCourseInvitationTransaction(input: {
 
       return {
         access: activationAccess({
+          analysisMetadataJson: course.analysisMetadataJson,
           courseId: course.id,
           courseSlug: course.slug,
           courseVersionId: invitation.courseVersionId,

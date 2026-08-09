@@ -113,7 +113,9 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
             } else if (segments.length === 3 && segments[2] === "final-test") {
               course = await getLearnerCourseBySlug(segments[1]);
 
-              if (course && course.courseVersionId && session.userId) {
+              if (course?.isExternalCourse) {
+                // Redirected to the integrated player outside this try/catch boundary.
+              } else if (course && course.courseVersionId && session.userId) {
                 const dbUser = await prisma.user.findUnique({
                   where: { id: session.userId },
                 });
@@ -303,6 +305,16 @@ export default async function LearnerPage({ params, searchParams }: PageProps) {
     if (managedExternalState.integrationMode === "hub_tracked") {
       notFound();
     }
+  }
+
+  if (
+    course?.isExternalCourse &&
+    segments[0] === "courses" &&
+    typeof segments[1] === "string" &&
+    (segments.length === 2 ||
+      (segments.length === 3 && segments[2] === "final-test"))
+  ) {
+    redirect(`/learn/courses/${encodeURIComponent(segments[1])}/external`);
   }
 
   if (actualRoute === "/learn") {

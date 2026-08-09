@@ -9,13 +9,14 @@ export const HRBA_EXTERNAL_COURSE_QUIZ_ID = "QUIZ-HRBA-EXTERNAL-COMPLETION";
 export const HRBA_EXTERNAL_COURSE_QUESTION_ID = "QQ-HRBA-EXTERNAL-COMPLETION";
 
 export const HRBA_PRODUCTION_COURSE_URL =
-  "https://enhanced-hrba-pilot.vercel.app";
+  "https://pilot-hrba-qa-859c1a3.vercel.app";
 export const HRBA_PRODUCTION_COURSE_ORIGIN =
   new URL(HRBA_PRODUCTION_COURSE_URL).origin;
 export const DEFAULT_HRBA_EXTERNAL_COURSE_URL = HRBA_PRODUCTION_COURSE_URL;
 
 const OBSOLETE_HRBA_EXTERNAL_COURSE_ORIGINS = new Set([
   "https://pilot-hrba-e-learn-v1-wajj.vercel.app",
+  "https://pilot-hrba-e-learn-v1-m8p2y1dzx-girumteenexus-8292s-projects.vercel.app",
 ]);
 
 export type ExternalCourseMetadata = {

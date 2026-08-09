@@ -24,6 +24,23 @@ for (const path of [
 }
 assert.match(source("src/lib/course-data.ts"), /progress: 0,/);
 
+const learnerPage = source("src/app/(learn)/learn/[[...segments]]/page.tsx");
+assert.match(learnerPage, /course\?\.isExternalCourse/);
+assert.match(
+  learnerPage,
+  /redirect\(`\/learn\/courses\/\$\{encodeURIComponent\(segments\[1\]\)\}\/external`\)/,
+);
+assert.match(learnerPage, /segments\[2\] === "final-test"/);
+
+const learnerActions = source("src/lib/learner-actions.ts");
+assert.equal(
+  (learnerActions.match(/isExternalHrbaCourseMetadata\(course\.analysisMetadataJson\)/g) ?? [])
+    .length,
+  2,
+);
+assert.match(learnerActions, /External course progress must be recorded through the integrated course player/);
+assert.match(learnerActions, /External course assessment must be recorded through the integrated course player/);
+
 const catalogue = source("src/lib/public-course-catalogue.ts");
 assert.match(catalogue, /accessState: "available_open"/);
 const registration = source("src/lib/open-registration-workflow.ts");

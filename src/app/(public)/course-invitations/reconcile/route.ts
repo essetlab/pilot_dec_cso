@@ -51,8 +51,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const coursePath = `/learn/courses/${encodeURIComponent(result.access.courseSlug)}`;
   const response = NextResponse.redirect(
-    new URL(`/learn/courses/${encodeURIComponent(result.access.courseSlug)}`, request.url),
+    new URL(result.access.isExternalCourse ? `${coursePath}/external` : coursePath, request.url),
   );
   response.cookies.delete(COURSE_INVITATION_COOKIE_NAME);
   return response;
