@@ -96,6 +96,13 @@ function parseAssessment(value: unknown): ExternalCourseAssessmentResult | null 
 }
 
 export async function POST(request: NextRequest) {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (Number.isFinite(contentLength) && contentLength > 600_000) {
+    return NextResponse.json(
+      { success: false, error: "Resume payload is too large" },
+      { status: 413 },
+    );
+  }
   const body = await request.json().catch(() => null);
 
   if (!body || typeof body !== "object") {
@@ -142,8 +149,26 @@ export async function POST(request: NextRequest) {
   }
 
   const session = await getCurrentSession();
+  const baseRevision = record.baseRevision === undefined
+    ? undefined
+    : record.baseRevision === null
+      ? null
+      : asString(record.baseRevision);
+  if (record.baseRevision !== undefined && record.baseRevision !== null && !baseRevision) {
+    return NextResponse.json(
+      { success: false, error: "Invalid resume revision" },
+      { status: 400 },
+    );
+  }
+  if (record.legacyBootstrap !== undefined && typeof record.legacyBootstrap !== "boolean") {
+    return NextResponse.json(
+      { success: false, error: "Invalid legacy bootstrap flag" },
+      { status: 400 },
+    );
+  }
   const result = await recordExternalCourseProgress({
     assessment,
+    baseRevision,
     completed: record.completed === true,
     completedModuleIds: asStringArray(record.completedModuleIds),
     courseSlug: asString(record.courseSlug),
@@ -151,14 +176,18 @@ export async function POST(request: NextRequest) {
     currentScreenId: asNullableString(record.currentScreenId),
     iframeOrigin: asString(record.iframeOrigin),
     learnerStateKey: asString(record.learnerStateKey),
+    legacyBootstrap: record.legacyBootstrap === true,
     launchToken: asString(record.launchToken),
     progressPercent,
+    resumeState: Object.hasOwn(record, "resumeState") ? record.resumeState : undefined,
     sentAt: asString(record.sentAt),
     session,
   });
 
   if (!result.success) {
-    return NextResponse.json(result, { status: result.error === "Unauthorized" ? 401 : 400 });
+    return NextResponse.json(result, {
+      status: result.error === "Unauthorized" ? 401 : result.conflict ? 409 : 400,
+    });
   }
 
   return NextResponse.json(result);

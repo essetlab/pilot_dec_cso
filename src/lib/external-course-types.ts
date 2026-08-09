@@ -1,9 +1,16 @@
+import type {
+  HrbaResumeState,
+  HrbaTrustedAssessmentState,
+} from "./hrba-resume-contract";
+
 export const EXTERNAL_COURSE_PROGRESS_MESSAGE = "cso-learning-hub:external-course-progress";
 export const EXTERNAL_COURSE_EVENT_MESSAGE = "cso-learning-hub:external-course-event";
 export const EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE =
   "cso-learning-hub:external-course-launch-context";
 export const EXTERNAL_COURSE_RESULT_MESSAGE =
   "cso-learning-hub:external-course-result";
+export const EXTERNAL_COURSE_RESUME_RESULT_MESSAGE =
+  "cso-learning-hub:external-course-resume-result";
 
 const externalCourseEvidenceUuidV4Pattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -119,6 +126,9 @@ export type ExternalCourseProgressMessage = {
   currentScreenId: string | null;
   sentAt: string;
   assessment?: ExternalCourseAssessmentResult;
+  baseRevision?: string | null;
+  legacyBootstrap?: boolean;
+  resumeState?: HrbaResumeState;
 };
 
 export type ExternalCourseEventMessage = {
@@ -137,6 +147,9 @@ export type ExternalCourseEventMessage = {
     message?: string;
   };
   progressPercent?: number;
+  baseRevision?: string | null;
+  legacyBootstrap?: boolean;
+  resumeState?: HrbaResumeState;
 };
 
 const externalCourseEvents = new Set<ExternalCourseEventName>([
@@ -224,6 +237,9 @@ export type ExternalCourseLaunchData = {
   learnerStateKey: string;
   resumeScreenId?: string | null;
   supportsSecureNewTab?: boolean;
+  resumeRevision?: string;
+  resumeState?: HrbaResumeState | null;
+  trustedAssessmentState?: HrbaTrustedAssessmentState;
 };
 
 export type ExternalCourseLaunchContextMessage = {
@@ -235,4 +251,17 @@ export type ExternalCourseLaunchContextMessage = {
   courseSlug: string;
   learnerStateKey: string;
   resumeScreenId?: string | null;
+  resumeRevision?: string;
+  resumeState?: HrbaResumeState | null;
+  trustedAssessmentState?: HrbaTrustedAssessmentState;
+};
+
+export type ExternalCourseResumeResultMessage = {
+  type: typeof EXTERNAL_COURSE_RESUME_RESULT_MESSAGE;
+  version: 1;
+  courseSlug: string;
+  status: "accepted" | "conflict" | "rejected";
+  resumeRevision: string;
+  resumeState: HrbaResumeState | null;
+  error?: string;
 };

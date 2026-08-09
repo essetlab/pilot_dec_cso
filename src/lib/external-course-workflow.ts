@@ -45,6 +45,15 @@ import type {
   ExternalCoursePersistenceResult,
 } from "./external-course-types";
 import { isValidExternalCourseEvidenceId } from "./external-course-types";
+import {
+  deriveHrbaProgressPercent,
+  extractStoredHrbaResumeState,
+  type HrbaResumeState,
+  type HrbaTrustedAssessmentState,
+  validateHrbaProgressSummary,
+  validateHrbaResumeState,
+  withHrbaResumeRevision,
+} from "./hrba-resume-contract";
 import type { AuthSession } from "./auth/session-codec";
 import { prisma } from "./prisma";
 import { hasLearnerCourseEntitlement } from "./course-entitlement";
@@ -188,6 +197,47 @@ type ExternalAssessmentEvidenceContext = {
 };
 
 class ExternalCourseEvidenceConflictError extends Error {}
+class ExternalCourseResumeConflictError extends Error {}
+
+function asJsonRecord(value: Prisma.JsonValue | null): Record<string, Prisma.JsonValue> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, Prisma.JsonValue>
+    : {};
+}
+
+function getTrustedAssessmentState(
+  attempt: {
+    answersJson: Prisma.JsonValue | null;
+    externalEvidenceId: string | null;
+    maxScore: number | null;
+    passed: boolean;
+    percentage: number | null;
+    score: number | null;
+    submittedAt: Date | null;
+  } | null,
+): HrbaTrustedAssessmentState {
+  if (!attempt?.externalEvidenceId
+    || attempt.maxScore === null
+    || attempt.percentage === null
+    || attempt.score === null
+    || !attempt.submittedAt) return null;
+  const answers = asJsonRecord(attempt.answersJson);
+  const assessment = answers.assessment;
+  const attemptNumber = assessment && typeof assessment === "object" && !Array.isArray(assessment)
+    && typeof assessment.attemptNumber === "number"
+    ? assessment.attemptNumber
+    : null;
+  if (!Number.isInteger(attemptNumber) || (attemptNumber ?? 0) < 1) return null;
+  return {
+    attemptNumber: attemptNumber as number,
+    evidenceId: attempt.externalEvidenceId,
+    maxScore: attempt.maxScore,
+    passed: attempt.passed,
+    percentage: Math.round(attempt.percentage),
+    score: attempt.score,
+    submittedAt: attempt.submittedAt.toISOString(),
+  };
+}
 
 function isUniqueConstraintError(error: unknown) {
   return (
@@ -1445,6 +1495,23 @@ export async function getExternalCourseLaunchData(
     iframeUrl.searchParams.set("courseSlug", course.slug);
     iframeUrl.searchParams.set("launchToken", launchToken);
 
+    const storedResumeState = extractStoredHrbaResumeState(lessonProgress.progressJson);
+    const resumeRevision = lessonProgress.updatedAt.toISOString();
+    const latestAssessmentAttempt = await prisma.quizAttempt.findFirst({
+      orderBy: [
+        { submittedAt: "desc" },
+        { createdAt: "desc" },
+      ],
+      where: {
+        courseId: course.id,
+        courseVersionId: version.id,
+        externalLearnerStateKeyHash: hashExternalCourseLaunchToken(learnerStateKey),
+        quizId: HRBA_EXTERNAL_COURSE_QUIZ_ID,
+        status: { in: [QuizAttemptStatus.SUBMITTED, QuizAttemptStatus.PASSED, QuizAttemptStatus.FAILED] },
+        userId: user.id,
+      },
+    });
+
     return {
       allowedOrigin,
       ...(assessmentState ? { assessmentState } : {}),
@@ -1466,6 +1533,15 @@ export async function getExternalCourseLaunchData(
           }
         : {}),
       supportsSecureNewTab: trackedConfig.supportsSecureNewTab,
+      ...(courseSlug === HRBA_EXTERNAL_COURSE_SLUG
+        ? {
+            resumeRevision,
+            resumeState: storedResumeState
+              ? withHrbaResumeRevision(storedResumeState, resumeRevision)
+              : null,
+            trustedAssessmentState: getTrustedAssessmentState(latestAssessmentAttempt),
+          }
+        : {}),
     };
   } catch (error) {
     console.warn("getExternalCourseLaunchData database error, attempting fallback:", error);
@@ -1484,7 +1560,10 @@ export async function getExternalCourseLaunchData(
       iframeSrc: "https://pilot-hrba-e-learn-v1-wajj.vercel.app?embed=portal&courseSlug=" + HRBA_EXTERNAL_COURSE_SLUG + "&launchToken=mock_launch_token",
       launchToken: "mock_launch_token",
       learnerStateKey: "mock_learner_state_key",
-      supportsSecureNewTab: true,
+      resumeRevision: new Date(0).toISOString(),
+      resumeState: null,
+      supportsSecureNewTab: false,
+      trustedAssessmentState: null,
     };
   }
 
@@ -1510,6 +1589,7 @@ export async function getExternalCourseLaunchData(
 
 export async function recordExternalCourseProgress({
   assessment,
+  baseRevision,
   completed,
   completedModuleIds,
   courseSlug,
@@ -1517,12 +1597,15 @@ export async function recordExternalCourseProgress({
   currentScreenId,
   iframeOrigin,
   learnerStateKey,
+  legacyBootstrap,
   launchToken,
   progressPercent,
+  resumeState,
   sentAt,
   session,
 }: {
   assessment?: ExternalCourseAssessmentResult;
+  baseRevision?: string | null;
   completed: boolean;
   completedModuleIds: string[];
   courseSlug: string;
@@ -1530,8 +1613,10 @@ export async function recordExternalCourseProgress({
   currentScreenId: string | null;
   iframeOrigin: string;
   learnerStateKey: string;
+  legacyBootstrap?: boolean;
   launchToken: string;
   progressPercent: number;
+  resumeState?: unknown;
   sentAt: string;
   session: AuthSession | null;
 }, options: {
@@ -1674,6 +1759,112 @@ export async function recordExternalCourseProgress({
     enrollment.progressPercent,
     progressPercent,
   );
+  const isHrbaResumeCourse = courseSlug === HRBA_EXTERNAL_COURSE_SLUG;
+  const lessonProgress = await prisma.lessonProgress.findUnique({
+    where: {
+      enrollmentId_lessonId: {
+        enrollmentId: enrollment.id,
+        lessonId: trackedConfig.lessonId,
+      },
+    },
+  });
+  if (!lessonProgress) {
+    return { success: false, error: "Learning progress not initialized" };
+  }
+  const progressRecord = asJsonRecord(lessonProgress.progressJson);
+  const hasStoredResumeState = Object.hasOwn(progressRecord, "resumeState");
+  const storedResumeState = extractStoredHrbaResumeState(lessonProgress.progressJson);
+  if (isHrbaResumeCourse && hasStoredResumeState && !storedResumeState) {
+    return { success: false, error: "Stored resume state is invalid" };
+  }
+  const authoritativeConflictState = () => ({
+    resumeRevision: lessonProgress.updatedAt.toISOString(),
+    resumeState: storedResumeState
+      ? withHrbaResumeRevision(storedResumeState, lessonProgress.updatedAt.toISOString())
+      : null,
+  });
+  const rejectResume = (error: string) => ({
+    success: false as const,
+    error,
+    ...authoritativeConflictState(),
+  });
+  let acceptedResumeState: HrbaResumeState | null = null;
+  if (isHrbaResumeCourse) {
+    if (!validateHrbaProgressSummary(completedModuleIds, currentModuleId, currentScreenId)) {
+      return {
+        success: false,
+        error: "Invalid HRBA progress summary",
+        ...authoritativeConflictState(),
+      };
+    }
+
+    if (resumeState !== undefined) {
+      const validatedResume = validateHrbaResumeState(resumeState);
+      if (!validatedResume.success) {
+        return {
+          success: false,
+          error: validatedResume.error,
+          ...authoritativeConflictState(),
+        };
+      }
+      acceptedResumeState = validatedResume.state;
+      if (baseRevision !== acceptedResumeState.baseRevision
+        || baseRevision !== lessonProgress.updatedAt.toISOString()) {
+        return {
+          success: false,
+          conflict: true,
+          error: "Resume state conflict",
+          resumeRevision: lessonProgress.updatedAt.toISOString(),
+          resumeState: storedResumeState
+            ? withHrbaResumeRevision(storedResumeState, lessonProgress.updatedAt.toISOString())
+            : null,
+        };
+      }
+      if (legacyBootstrap && storedResumeState) {
+        return {
+          success: false,
+          conflict: true,
+          error: "Legacy bootstrap is closed",
+          resumeRevision: lessonProgress.updatedAt.toISOString(),
+          resumeState: withHrbaResumeRevision(storedResumeState, lessonProgress.updatedAt.toISOString()),
+        };
+      }
+      if (storedResumeState) {
+        const previousModules = storedResumeState.completedModuleIds;
+        const nextModules = acceptedResumeState.completedModuleIds;
+        if (previousModules.some((moduleId) => !nextModules.includes(moduleId))) {
+          return rejectResume("Completed modules cannot regress");
+        }
+        if (nextModules.length > previousModules.length + 1) {
+          return rejectResume("Completed modules cannot skip prerequisites");
+        }
+      }
+      const summaryModules = completedModuleIds.filter((moduleId) => moduleId !== "final_assessment");
+      if (JSON.stringify(summaryModules) !== JSON.stringify(acceptedResumeState.completedModuleIds)
+        || acceptedResumeState.navigation.currentModuleId !== currentModuleId
+        || acceptedResumeState.navigation.currentScreenId !== currentScreenId) {
+        return rejectResume("Resume state does not match progress summary");
+      }
+    } else if (legacyBootstrap) {
+      return rejectResume("Legacy bootstrap requires resume state");
+    }
+  }
+
+  const authoritativeCompletedModuleIds = isHrbaResumeCourse
+    ? acceptedResumeState?.completedModuleIds
+      ?? storedResumeState?.completedModuleIds
+      ?? completedModuleIds.filter((moduleId) => moduleId !== "final_assessment")
+    : completedModuleIds;
+  const authoritativeCurrentModuleId = isHrbaResumeCourse
+    ? acceptedResumeState?.navigation.currentModuleId
+      ?? storedResumeState?.navigation.currentModuleId
+      ?? currentModuleId
+    : currentModuleId;
+  const authoritativeCurrentScreenId = isHrbaResumeCourse
+    ? acceptedResumeState?.navigation.currentScreenId
+      ?? storedResumeState?.navigation.currentScreenId
+      ?? currentScreenId
+    : currentScreenId;
 
   const validContextFrom = Math.max(
     enrollment.enrolledAt.getTime(),
@@ -1750,8 +1941,8 @@ export async function recordExternalCourseProgress({
       completedModuleIds,
       courseId: course.id,
       courseVersionId: version.id,
-      currentModuleId,
-      currentScreenId,
+      currentModuleId: authoritativeCurrentModuleId,
+      currentScreenId: authoritativeCurrentScreenId,
       iframeOrigin,
       learnerStateKeyHash,
       maxScore: normalizedAssessment.maxScore,
@@ -1834,17 +2025,26 @@ export async function recordExternalCourseProgress({
     return { success: false, error: "Assessment evidence is required for completion" };
   }
 
+  const allRequiredModulesComplete =
+    !isHrbaResumeCourse || authoritativeCompletedModuleIds.length === 5;
+  if (isHrbaResumeCourse && normalizedAssessment && !allRequiredModulesComplete) {
+    return { success: false, error: "Course prerequisites are incomplete" };
+  }
+
   const shouldComplete =
     alreadyCompleted ||
     (
       completed &&
+      allRequiredModulesComplete &&
       (!course.finalTestRequired || assessmentPassed)
     );
-  const effectiveProgress = shouldComplete
-    ? 100
-    : completed && course.finalTestRequired
-      ? Math.min(boundedProgress, 99)
-      : boundedProgress;
+  const effectiveProgress = isHrbaResumeCourse
+    ? deriveHrbaProgressPercent(authoritativeCompletedModuleIds, shouldComplete)
+    : shouldComplete
+      ? 100
+      : completed && course.finalTestRequired
+        ? Math.min(boundedProgress, 99)
+        : boundedProgress;
 
   const persistCompletion = () =>
     runTransaction(async (tx) => {
@@ -1891,49 +2091,93 @@ export async function recordExternalCourseProgress({
         where: { id: enrollment.id },
       });
 
-      await tx.lessonProgress.upsert({
-        create: {
-          completedAt: shouldComplete ? persistedAt : null,
-          enrollmentId: enrollment.id,
+      let resumeRevision: string | undefined;
+      let persistedResumeState: HrbaResumeState | null = null;
+
+      if (isHrbaResumeCourse) {
+        resumeRevision = persistedAt.toISOString();
+        persistedResumeState = acceptedResumeState
+          ? withHrbaResumeRevision(acceptedResumeState, resumeRevision)
+          : storedResumeState;
+        const nextProgressJson = toJson({
+          ...progressRecord,
+          completedModuleIds: authoritativeCompletedModuleIds,
+          currentModuleId: authoritativeCurrentModuleId,
+          currentScreenId: authoritativeCurrentScreenId,
+          iframeOrigin,
+          ...(persistedResumeState ? { resumeState: persistedResumeState } : {}),
+          source: "external-course-postmessage",
+        });
+        const lessonUpdate = {
+          completedAt: shouldComplete ? (lessonProgress.completedAt ?? persistedAt) : null,
           lastAccessedAt: persistedAt,
-          lessonId: trackedConfig.lessonId,
-          progressJson: toJson({
-            completedModuleIds,
-            currentModuleId,
-            currentScreenId,
-            iframeOrigin,
-            source: "external-course-postmessage",
-          }),
-          startedAt: persistedAt,
+          progressJson: nextProgressJson,
           status: shouldComplete
             ? LessonProgressStatus.COMPLETED
             : LessonProgressStatus.IN_PROGRESS,
-        },
-        update: alreadyCompleted
-          ? {
-              lastAccessedAt: persistedAt,
-            }
-          : {
-              completedAt: shouldComplete ? persistedAt : null,
-              lastAccessedAt: persistedAt,
-              progressJson: toJson({
-                completedModuleIds,
-                currentModuleId,
-                currentScreenId,
-                iframeOrigin,
-                source: "external-course-postmessage",
-              }),
-              status: shouldComplete
-                ? LessonProgressStatus.COMPLETED
-                : LessonProgressStatus.IN_PROGRESS,
+          updatedAt: persistedAt,
+        };
+
+        if (acceptedResumeState) {
+          const conditionalUpdate = await tx.lessonProgress.updateMany({
+            data: lessonUpdate,
+            where: {
+              id: lessonProgress.id,
+              updatedAt: new Date(baseRevision as string),
             },
-        where: {
-          enrollmentId_lessonId: {
+          });
+          if (conditionalUpdate.count !== 1) {
+            throw new ExternalCourseResumeConflictError("Resume state conflict");
+          }
+        } else {
+          await tx.lessonProgress.update({
+            data: lessonUpdate,
+            where: { id: lessonProgress.id },
+          });
+        }
+      } else {
+        await tx.lessonProgress.upsert({
+          create: {
+            completedAt: shouldComplete ? persistedAt : null,
             enrollmentId: enrollment.id,
+            lastAccessedAt: persistedAt,
             lessonId: trackedConfig.lessonId,
+            progressJson: toJson({
+              completedModuleIds,
+              currentModuleId,
+              currentScreenId,
+              iframeOrigin,
+              source: "external-course-postmessage",
+            }),
+            startedAt: persistedAt,
+            status: shouldComplete
+              ? LessonProgressStatus.COMPLETED
+              : LessonProgressStatus.IN_PROGRESS,
           },
-        },
-      });
+          update: alreadyCompleted
+            ? { lastAccessedAt: persistedAt }
+            : {
+                completedAt: shouldComplete ? persistedAt : null,
+                lastAccessedAt: persistedAt,
+                progressJson: toJson({
+                  completedModuleIds,
+                  currentModuleId,
+                  currentScreenId,
+                  iframeOrigin,
+                  source: "external-course-postmessage",
+                }),
+                status: shouldComplete
+                  ? LessonProgressStatus.COMPLETED
+                  : LessonProgressStatus.IN_PROGRESS,
+              },
+          where: {
+            enrollmentId_lessonId: {
+              enrollmentId: enrollment.id,
+              lessonId: trackedConfig.lessonId,
+            },
+          },
+        });
+      }
 
       if (shouldComplete) {
         const existingCertificate = await tx.certificate.findUnique({
@@ -2009,7 +2253,19 @@ export async function recordExternalCourseProgress({
         }
       }
 
-      return { assessmentAttempt, certificateCode, certificateStatus };
+      return {
+        assessmentAttempt,
+        certificateCode,
+        certificateStatus,
+        ...(isHrbaResumeCourse && resumeRevision
+          ? {
+              resumeRevision,
+              resumeState: persistedResumeState
+                ? withHrbaResumeRevision(persistedResumeState, resumeRevision)
+                : null,
+            }
+          : {}),
+      };
     });
 
   let persistenceResult:
@@ -2021,6 +2277,23 @@ export async function recordExternalCourseProgress({
       persistenceResult = await persistCompletion();
       break;
     } catch (error) {
+      if (error instanceof ExternalCourseResumeConflictError) {
+        const authoritative = await prisma.lessonProgress.findUnique({
+          where: { id: lessonProgress.id },
+        });
+        const authoritativeState = authoritative
+          ? extractStoredHrbaResumeState(authoritative.progressJson)
+          : null;
+        return {
+          success: false,
+          conflict: true,
+          error: error.message,
+          resumeRevision: authoritative?.updatedAt.toISOString() ?? lessonProgress.updatedAt.toISOString(),
+          resumeState: authoritativeState && authoritative
+            ? withHrbaResumeRevision(authoritativeState, authoritative.updatedAt.toISOString())
+            : null,
+        };
+      }
       if (error instanceof ExternalCourseEvidenceConflictError) {
         return { success: false, error: error.message };
       }
@@ -2074,5 +2347,7 @@ export async function recordExternalCourseProgress({
     certificateStatus: persistenceResult.certificateStatus,
     completed: shouldComplete,
     progressPercent: effectiveProgress,
+    resumeRevision: persistenceResult.resumeRevision,
+    resumeState: persistenceResult.resumeState,
   };
 }
