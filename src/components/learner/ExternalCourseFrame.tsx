@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ActionButton, AlertMessage, SectionHeader, StatusBadge } from "@/components/ui";
+import { BrandMark } from "@/components/shell/BrandMark";
 import {
   type ExternalCourseAssessmentResult,
   type ExternalCourseEventMessage,
@@ -84,7 +85,7 @@ export function ExternalCourseFrame({
     launchData.initialProgressPercent ?? 0,
   );
   const [status, setStatus] = useState<"ready" | "saving" | "completed" | "error">("ready");
-  const [message, setMessage] = useState("Waiting for course progress...");
+  const [message, setMessage] = useState("Progress saves automatically.");
   const [frameKey, setFrameKey] = useState(0);
   const [frameStatus, setFrameStatus] = useState<"loading" | "stabilizing" | "ready">("loading");
   const hasSubmittedCompletion = useRef(false);
@@ -168,7 +169,7 @@ export function ExternalCourseFrame({
       if (!response.ok || !result.success) {
         hasSubmittedCompletion.current = false;
         setStatus("error");
-        setMessage(result.error ?? "Progress could not be saved.");
+        setMessage("We could not save your progress. Please check your connection and try again.");
         return;
       }
 
@@ -177,8 +178,8 @@ export function ExternalCourseFrame({
       setMessage(
         progressMessage.completed
           ? result.certificateCode
-            ? `Course completed. Certificate issued: ${result.certificateCode}.`
-            : "Course completion saved. Certificate eligibility depends on the final assessment result."
+            ? "Your certificate is ready."
+            : "Your results are saved."
           : "Progress saved.",
       );
     }
@@ -218,7 +219,7 @@ export function ExternalCourseFrame({
             },
             launchData.allowedOrigin,
           );
-          setMessage("Course ready.");
+          setMessage("Your course is ready.");
           return;
         }
 
@@ -229,14 +230,14 @@ export function ExternalCourseFrame({
 
         if (event.data.event === "integration_error") {
           setStatus("error");
-          setMessage(event.data.error?.message ?? "The external course reported an integration error.");
+          setMessage("The course reported an issue. Please refresh this page and try again.");
           return;
         }
 
         const progressEvent = event.data as ExternalCourseEventMessage;
         if (progressEvent.learnerStateKey !== launchData.learnerStateKey) {
           setStatus("error");
-          setMessage("The course progress belongs to a different learner context.");
+          setMessage("We could not verify this course progress. Please refresh this page and try again.");
           return;
         }
 
@@ -319,120 +320,93 @@ export function ExternalCourseFrame({
     setFrameStatus("ready");
   }
 
-  function handleReloadCourse() {
-    if (frameTimer.current) {
-      clearTimeout(frameTimer.current);
-      frameTimer.current = null;
-    }
-
-    hasStabilizedFrame.current = true;
-    setFrameStatus("loading");
-    setFrameKey((currentKey) => currentKey + 1);
-  }
-
   return (
-    <div className="space-y-6">
-      <section className="rounded-[28px] bg-deep-navy p-6 text-white shadow-hero lg:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <StatusBadge label="Embedded course" tone="green" />
-            <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight sm:text-5xl">
+    <div className="flex h-dvh min-h-[480px] flex-col overflow-hidden bg-white text-slate-900">
+      <header className="relative z-20 shrink-0 border-b border-slate-200 bg-white shadow-sm">
+        <div className="flex h-14 min-w-0 items-center gap-2 px-2 sm:h-16 sm:gap-4 sm:px-4 lg:px-6">
+          <BrandMark compact titleClassName="hidden text-slate-900 lg:block" />
+          <div className="hidden h-7 w-px bg-slate-200 sm:block" />
+          <Link
+            aria-label="Back to My Learning"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue sm:text-sm"
+            href="/learn/my-courses"
+          >
+            <span aria-hidden="true">←</span>
+            <span className="hidden sm:inline">Back to My Learning</span>
+          </Link>
+
+          <div className="min-w-0 flex-1 text-center">
+            <p className="hidden truncate text-sm font-semibold text-slate-900 md:block">
               {launchData.courseTitle}
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/75">
-              {isResumeOnlyTrackedCourse
-                ? "Complete the interactive course below. Your portal progress updates automatically as you move through the course."
-                : "Complete the interactive course below. Your portal progress and certificate will update automatically when the course completion signal is received."}
             </p>
+            <p className="hidden text-[11px] text-slate-500 xl:block">Progress saves automatically</p>
           </div>
-          <div className="rounded-[22px] border border-white/15 bg-white/10 p-5 lg:w-[320px]">
-            <p className="text-sm font-semibold text-white">Portal progress</p>
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/15">
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="w-16 sm:w-28 lg:w-36">
+              <div className="flex items-center justify-between gap-2 text-[10px] font-semibold text-slate-600 sm:text-xs">
+                <span className="hidden sm:inline">Course progress</span>
+                <span className="ml-auto">{progressPercent}%</span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-dec-green transition-[width]"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+            <Link
+              className="inline-flex min-h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dec-blue sm:px-3.5 sm:text-sm"
+              href="/learn/my-courses"
+            >
+              Exit Course
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {completed || error ? (
+        <div
+          className={`relative z-10 shrink-0 border-b px-4 py-2 text-center text-sm font-medium ${
+            completed
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-rose-200 bg-rose-50 text-rose-900"
+          }`}
+          role={error ? "alert" : "status"}
+        >
+          <span className="font-semibold">{completed ? "Course completed." : "Progress not saved."}</span>{" "}
+          {message}
+        </div>
+      ) : null}
+
+      <main className="relative min-h-0 flex-1 overflow-hidden bg-white">
+        {!frameReady ? (
+          <div className="absolute inset-0 z-10 grid place-items-center bg-white px-6 text-center">
+            <div className="max-w-sm">
               <div
-                className="h-full rounded-full bg-dec-green transition-[width]"
-                style={{ width: `${progressPercent}%` }}
+                aria-hidden="true"
+                className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-dec-blue"
               />
+              <p className="mt-4 text-lg font-semibold text-slate-900">Preparing your course...</p>
+              <p className="mt-2 text-sm text-slate-500">Your progress will save automatically.</p>
             </div>
-            <p className="mt-3 text-sm font-semibold text-white">{progressPercent}%</p>
           </div>
-        </div>
-      </section>
-
-      {completed ? (
-        <AlertMessage tone="success" title="Completion recorded">
-          {message} You can review your certificate from the Certificates page.
-        </AlertMessage>
-      ) : null}
-
-      {error ? (
-        <AlertMessage tone="error" title="Progress not saved">
-          {message} Refresh this page after checking your connection.
-        </AlertMessage>
-      ) : null}
-
-      <section className="overflow-hidden rounded-[24px] border border-design-border bg-white-surface shadow-card">
-        <div className="border-b border-design-border p-5">
-          <SectionHeader
-            eyebrow="Course app"
-            title={isResumeOnlyTrackedCourse
-              ? `Interactive ${launchData.courseTitle} learning experience`
-              : "Interactive HRBA learning experience"}
-            description={isResumeOnlyTrackedCourse
-              ? "The course opens in a secure embedded frame and reports progress back to the portal."
-              : "The course opens in a secure embedded frame and reports completion back to the portal."}
-            action={
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <ActionButton type="button" variant="secondary" onClick={handleReloadCourse}>
-                  Reload course
-                </ActionButton>
-                {launchData.supportsSecureNewTab !== false ? (
-                  <ActionButton
-                    forceDocumentNavigation
-                    href={launchData.iframeSrc}
-                    rel="noreferrer"
-                    target="_blank"
-                    variant="outline"
-                  >
-                    Open course in new tab
-                  </ActionButton>
-                ) : null}
-                <ActionButton href="/learn/my-courses" variant="secondary">
-                  Back to My Courses
-                </ActionButton>
-              </div>
-            }
-          />
-        </div>
-        <div className="relative min-h-[720px] bg-white">
-          {!frameReady ? (
-            <div className="absolute inset-0 z-10 grid justify-items-center bg-white px-6 pt-14 text-center sm:pt-20">
-              <div className="max-w-md">
-                <StatusBadge label="Course app" tone="blue" />
-                <p className="mt-4 text-2xl font-semibold text-strong-text">
-                  Preparing your course...
-                </p>
-                <p className="mt-3 text-sm leading-6 text-muted-text">
-                  We are stabilizing the embedded lesson view so the course opens cleanly.
-                </p>
-              </div>
-            </div>
-          ) : null}
-          <iframe
-            key={`${launchData.iframeSrc}:${frameKey}`}
-            allow="clipboard-read; clipboard-write; fullscreen"
-            aria-hidden={!frameReady}
-            className={`h-[78vh] min-h-[720px] w-full bg-white transition-opacity duration-200 ${
-              frameReady ? "opacity-100" : "opacity-0"
-            }`}
-            onLoad={handleFrameLoad}
-            ref={courseFrame}
-            referrerPolicy="strict-origin-when-cross-origin"
-            sandbox="allow-downloads allow-forms allow-popups allow-same-origin allow-scripts"
-            src={launchData.iframeSrc}
-            title={launchData.courseTitle}
-          />
-        </div>
-      </section>
+        ) : null}
+        <iframe
+          key={`${launchData.iframeSrc}:${frameKey}`}
+          allow="clipboard-read; clipboard-write"
+          aria-hidden={!frameReady}
+          className={`block h-full min-h-0 w-full border-0 bg-white transition-opacity duration-200 ${
+            frameReady ? "opacity-100" : "opacity-0"
+          }`}
+          onLoad={handleFrameLoad}
+          ref={courseFrame}
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-downloads allow-forms allow-popups allow-same-origin allow-scripts"
+          src={launchData.iframeSrc}
+          title={launchData.courseTitle}
+        />
+      </main>
     </div>
   );
 }
