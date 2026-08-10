@@ -16,6 +16,8 @@ export const PM_EXTERNAL_COURSE_VERSION_ID = "PCV-PM-EXTERNAL-VITE-V1";
 export const PM_EXTERNAL_COURSE_MODULE_ID = "MOD-PM-EXTERNAL-VITE";
 export const PM_EXTERNAL_COURSE_LESSON_ID = "LES-PM-EXTERNAL-VITE";
 export const PM_EXTERNAL_COURSE_BLOCK_ID = "BLK-PM-EXTERNAL-VITE-LAUNCH";
+export const PM_EXTERNAL_COURSE_QUIZ_ID = "QUIZ-PM-EXTERNAL-COMPLETION";
+export const PM_EXTERNAL_COURSE_QUESTION_ID = "QQ-PM-EXTERNAL-COMPLETION";
 export const PM_EXTERNAL_COURSE_TITLE =
   "Project Management for Local and Grassroots CSOs";
 export const PM_EXTERNAL_COURSE_THUMBNAIL =
@@ -79,6 +81,9 @@ export type ExternalCourseMetadata = {
 };
 
 export type TrackedExternalCourseConfig = {
+  assessmentQuizId: string;
+  assessmentQuestionId: string;
+  assessmentMaxScore?: number;
   courseId: string;
   courseSlug: string;
   courseVersionId: string;
@@ -88,6 +93,9 @@ export type TrackedExternalCourseConfig = {
   internalCourseId?: string;
   canonicalScreenIds?: readonly string[];
   enforceMonotonicProgress: boolean;
+  failedAttemptCooldownMs: number;
+  passThreshold: number;
+  requiresPriorPassingAssessmentForCompletion: boolean;
   supportsSecureNewTab: boolean;
 };
 
@@ -151,6 +159,8 @@ export function buildPmExternalCourseMetadata(): ExternalCourseMetadata {
 
 const trackedExternalCourses: readonly TrackedExternalCourseConfig[] = [
   {
+    assessmentQuizId: HRBA_EXTERNAL_COURSE_QUIZ_ID,
+    assessmentQuestionId: HRBA_EXTERNAL_COURSE_QUESTION_ID,
     courseId: HRBA_EXTERNAL_COURSE_ID,
     courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
     courseVersionId: HRBA_EXTERNAL_COURSE_VERSION_ID,
@@ -158,9 +168,15 @@ const trackedExternalCourses: readonly TrackedExternalCourseConfig[] = [
     moduleId: HRBA_EXTERNAL_COURSE_MODULE_ID,
     provider: "hrba-vite",
     enforceMonotonicProgress: false,
+    failedAttemptCooldownMs: 0,
+    passThreshold: 80,
+    requiresPriorPassingAssessmentForCompletion: false,
     supportsSecureNewTab: true,
   },
   {
+    assessmentQuizId: PM_EXTERNAL_COURSE_QUIZ_ID,
+    assessmentQuestionId: PM_EXTERNAL_COURSE_QUESTION_ID,
+    assessmentMaxScore: 25,
     courseId: PM_EXTERNAL_COURSE_ID,
     courseSlug: PM_EXTERNAL_COURSE_SLUG,
     courseVersionId: PM_EXTERNAL_COURSE_VERSION_ID,
@@ -170,6 +186,9 @@ const trackedExternalCourses: readonly TrackedExternalCourseConfig[] = [
     internalCourseId: PM_EXTERNAL_COURSE_INTERNAL_ID,
     canonicalScreenIds: PM_CANONICAL_SCREEN_IDS,
     enforceMonotonicProgress: true,
+    failedAttemptCooldownMs: 15 * 60 * 1000,
+    passThreshold: 80,
+    requiresPriorPassingAssessmentForCompletion: true,
     supportsSecureNewTab: false,
   },
 ];

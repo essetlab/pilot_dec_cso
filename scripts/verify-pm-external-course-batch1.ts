@@ -10,6 +10,8 @@ import {
   PM_CANONICAL_SCREEN_IDS,
   PM_EXTERNAL_COURSE_ID,
   PM_EXTERNAL_COURSE_INTERNAL_ID,
+  PM_EXTERNAL_COURSE_QUESTION_ID,
+  PM_EXTERNAL_COURSE_QUIZ_ID,
   PM_EXTERNAL_COURSE_SLUG,
   PM_EXTERNAL_COURSE_THUMBNAIL,
   PM_EXTERNAL_COURSE_TITLE,
@@ -44,6 +46,12 @@ assert(pm.courseVersionId === PM_EXTERNAL_COURSE_VERSION_ID, "PM version ID is u
 assert(pm.provider === "project-management-vite", "PM provider is invalid.");
 assert(pm.internalCourseId === PM_EXTERNAL_COURSE_INTERNAL_ID, "PM internal ID was not reused.");
 assert(pm.enforceMonotonicProgress, "PM progress must be monotonic.");
+assert(pm.assessmentQuizId === PM_EXTERNAL_COURSE_QUIZ_ID, "PM quiz ID is unstable.");
+assert(pm.assessmentQuestionId === PM_EXTERNAL_COURSE_QUESTION_ID, "PM question ID is unstable.");
+assert(pm.assessmentMaxScore === 25, "PM maximum assessment score changed.");
+assert(pm.passThreshold === 80, "PM pass threshold changed.");
+assert(pm.failedAttemptCooldownMs === 15 * 60 * 1000, "PM retry cooldown changed.");
+assert(pm.requiresPriorPassingAssessmentForCompletion, "PM completion can bypass the assessment pass.");
 assert(!pm.supportsSecureNewTab, "PM tracked launches must stay in the secure frame.");
 assert(PM_EXTERNAL_COURSE_INTERNAL_ID === "project-management", "PM internal ID changed.");
 assert(PM_CANONICAL_SCREEN_IDS.length === 32, "PM canonical screen count is not 32.");
@@ -94,7 +102,7 @@ assert(catalogue.includes('launchMode: "embedded"'), "PM is not an embedded trac
 
 const workflow = source("src/lib/external-course-workflow.ts");
 assert(workflow.includes("hasLearnerCourseEntitlement"), "Launch entitlement enforcement is missing.");
-assert(workflow.includes("tokenRecord.expiresAt.getTime() <= Date.now()"), "Expired tokens are not rejected.");
+assert(workflow.includes("tokenRecord.expiresAt.getTime() <= serverNow.getTime()"), "Expired tokens are not rejected.");
 assert(workflow.includes("tokenRecord.allowedOrigin !== iframeOrigin"), "Exact iframe origin validation is missing.");
 assert(workflow.includes("tokenRecord.courseSlug !== courseSlug"), "Course-slug validation is missing.");
 assert(workflow.includes("lessonId: trackedConfig.lessonId"), "Tracked lesson selection is not generic.");

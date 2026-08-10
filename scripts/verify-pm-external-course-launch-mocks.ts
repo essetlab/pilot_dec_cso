@@ -76,6 +76,15 @@ function stub(target: object, key: string, replacement: unknown) {
 }
 
 let assigned = true;
+let launchAttempts: Array<{
+  createdAt: Date;
+  externalEvidenceId: string;
+  maxScore: number;
+  passed: boolean;
+  percentage: number;
+  score: number;
+  submittedAt: Date;
+}> = [];
 let launchProgressJson: unknown = { currentScreenId: "PM-M4-05" };
 let tokenExpired = false;
 
@@ -86,6 +95,8 @@ stub(prisma.course, "findUnique", async () => course);
 stub(prisma.enrollment, "upsert", async () => enrollment);
 stub(prisma.enrollment, "findUnique", async () => enrollment);
 stub(prisma.lessonProgress, "upsert", async () => ({ progressJson: launchProgressJson }));
+stub(prisma.quizAttempt, "findMany", async () => launchAttempts);
+stub(prisma.certificate, "findUnique", async () => null);
 stub(prisma.externalCourseLaunchToken, "deleteMany", async () => ({ count: 0 }));
 stub(prisma.externalCourseLaunchToken, "create", async () => ({ id: "launch" }));
 stub(prisma.externalCourseLaunchToken, "findUnique", async () => ({
@@ -111,6 +122,26 @@ try {
   assert(assignedLaunch.supportsSecureNewTab === false, "PM tracked new-tab launch is enabled.");
   assert(!assignedLaunch.iframeSrc.includes("userId="), "Raw user ID leaked into the iframe URL.");
   assert(!assignedLaunch.iframeSrc.includes("enrollmentId="), "Raw enrollment ID leaked into the iframe URL.");
+
+  const failedAt = new Date();
+  launchAttempts = [{
+    createdAt: failedAt,
+    externalEvidenceId: "afdf6b66-9d64-43f7-852f-23b1586857ed",
+    maxScore: 25,
+    passed: false,
+    percentage: 76,
+    score: 19,
+    submittedAt: failedAt,
+  }];
+  const lockedLaunch = await getExternalCourseLaunchData(PM_EXTERNAL_COURSE_SLUG, session);
+  assert(lockedLaunch?.assessmentState?.status === "locked", "A persisted failed attempt did not restore the lock.");
+  assert(lockedLaunch.assessmentState.attemptCount === 1, "The authoritative attempt count was not restored.");
+  assert(Boolean(lockedLaunch.assessmentState.retryAvailableAt), "The authoritative retry timestamp was not restored.");
+
+  launchAttempts = [{ ...launchAttempts[0], passed: true, percentage: 80, score: 20 }];
+  const passedLaunch = await getExternalCourseLaunchData(PM_EXTERNAL_COURSE_SLUG, session);
+  assert(passedLaunch?.assessmentState?.status === "passed", "A persisted passing attempt was not restored.");
+  launchAttempts = [];
 
   assigned = false;
   assert(
@@ -166,6 +197,8 @@ try {
     assignedLaunch: true,
     expiredTokenRejected: true,
     invalidResumeFallback: true,
+    lockedAssessmentHydrated: true,
+    passedAssessmentHydrated: true,
     unassignedLaunchRejected: true,
     wrongOriginRejected: true,
     wrongSlugRejected: true,

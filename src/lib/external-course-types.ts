@@ -2,6 +2,8 @@ export const EXTERNAL_COURSE_PROGRESS_MESSAGE = "cso-learning-hub:external-cours
 export const EXTERNAL_COURSE_EVENT_MESSAGE = "cso-learning-hub:external-course-event";
 export const EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE =
   "cso-learning-hub:external-course-launch-context";
+export const EXTERNAL_COURSE_RESULT_MESSAGE =
+  "cso-learning-hub:external-course-result";
 
 const externalCourseEvidenceUuidV4Pattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -63,6 +65,46 @@ export type ExternalCourseAssessmentResult = {
   percentage?: number;
   score?: number;
   submittedAt?: string;
+};
+
+export type ExternalCourseAssessmentState = {
+  attemptCount: number;
+  evidenceId?: string;
+  maxScore?: number;
+  percentage?: number;
+  retryAvailableAt?: string;
+  score?: number;
+  status: "not-started" | "locked" | "passed";
+  submittedAt?: string;
+};
+
+export type ExternalCourseResultMessage = {
+  type: typeof EXTERNAL_COURSE_RESULT_MESSAGE;
+  version: 1;
+  assessmentState?: ExternalCourseAssessmentState;
+  certificateCode?: string | null;
+  courseCompleted?: boolean;
+  courseSlug: string;
+  error?: string;
+  event: "assessment_recorded" | "course_completed";
+  evidenceId?: string;
+  progressPercent?: number;
+  success: boolean;
+};
+
+export type ExternalCoursePersistenceResult = {
+  assessmentState?: ExternalCourseAssessmentState;
+  certificateCode?: string | null;
+  certificateStatus?:
+    | "not-completed"
+    | "assessment-missing"
+    | "assessment-failed"
+    | "issued"
+    | "already-issued";
+  completed?: boolean;
+  error?: string;
+  progressPercent?: number;
+  success: boolean;
 };
 
 export type ExternalCourseProgressMessage = {
@@ -171,6 +213,9 @@ export function isExternalCourseEventMessage(value: unknown): value is ExternalC
 
 export type ExternalCourseLaunchData = {
   allowedOrigin: string;
+  assessmentState?: ExternalCourseAssessmentState;
+  certificateCode?: string | null;
+  courseCompleted?: boolean;
   courseSlug: string;
   courseTitle: string;
   iframeSrc: string;
@@ -184,6 +229,9 @@ export type ExternalCourseLaunchData = {
 export type ExternalCourseLaunchContextMessage = {
   type: typeof EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE;
   version: 1;
+  assessmentState?: ExternalCourseAssessmentState;
+  certificateCode?: string | null;
+  courseCompleted?: boolean;
   courseSlug: string;
   learnerStateKey: string;
   resumeScreenId?: string | null;

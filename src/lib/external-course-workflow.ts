@@ -31,6 +31,8 @@ import {
   PM_EXTERNAL_COURSE_ID,
   PM_EXTERNAL_COURSE_LESSON_ID,
   PM_EXTERNAL_COURSE_MODULE_ID,
+  PM_EXTERNAL_COURSE_QUESTION_ID,
+  PM_EXTERNAL_COURSE_QUIZ_ID,
   PM_EXTERNAL_COURSE_SLUG,
   PM_EXTERNAL_COURSE_THUMBNAIL,
   PM_EXTERNAL_COURSE_TITLE,
@@ -38,7 +40,9 @@ import {
 } from "./external-course-config";
 import type {
   ExternalCourseAssessmentResult,
+  ExternalCourseAssessmentState,
   ExternalCourseLaunchData,
+  ExternalCoursePersistenceResult,
 } from "./external-course-types";
 import { isValidExternalCourseEvidenceId } from "./external-course-types";
 import type { AuthSession } from "./auth/session-codec";
@@ -223,6 +227,32 @@ function buildExternalEvidenceFingerprint(
     .digest("hex");
 }
 
+function buildExternalAssessmentFingerprint(
+  context: ExternalAssessmentEvidenceContext,
+) {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        assessment: {
+          attemptNumber: context.assessment.attemptNumber,
+          evidenceId: context.assessment.evidenceId,
+          maxScore: context.maxScore,
+          passed: context.assessment.passed,
+          percentage: context.percentage,
+          score: context.score,
+          submittedAt: context.assessment.submittedAt.toISOString(),
+        },
+        courseId: context.courseId,
+        courseVersionId: context.courseVersionId,
+        iframeOrigin: context.iframeOrigin,
+        learnerStateKeyHash: context.learnerStateKeyHash,
+        quizId: context.quizId,
+        userId: context.userId,
+      }),
+    )
+    .digest("hex");
+}
+
 function getAttemptEvidenceFingerprint(answersJson: Prisma.JsonValue | null) {
   if (!answersJson || typeof answersJson !== "object" || Array.isArray(answersJson)) {
     return null;
@@ -230,6 +260,16 @@ function getAttemptEvidenceFingerprint(answersJson: Prisma.JsonValue | null) {
 
   return typeof answersJson.externalEvidenceFingerprint === "string"
     ? answersJson.externalEvidenceFingerprint
+    : null;
+}
+
+function getAttemptAssessmentFingerprint(answersJson: Prisma.JsonValue | null) {
+  if (!answersJson || typeof answersJson !== "object" || Array.isArray(answersJson)) {
+    return null;
+  }
+
+  return typeof answersJson.externalAssessmentFingerprint === "string"
+    ? answersJson.externalAssessmentFingerprint
     : null;
 }
 
@@ -257,12 +297,41 @@ function externalAttemptMatches(
   );
 }
 
-async function getExternalCompletionQuiz() {
+function externalAssessmentAttemptMatches(
+  attempt: {
+    answersJson: Prisma.JsonValue | null;
+    courseId: string;
+    courseVersionId: string;
+    externalEvidenceId: string | null;
+    externalLearnerStateKeyHash: string | null;
+    quizId: string;
+    userId: string;
+  },
+  context: ExternalAssessmentEvidenceContext,
+) {
+  return (
+    attempt.externalEvidenceId === context.assessment.evidenceId &&
+    attempt.externalLearnerStateKeyHash === context.learnerStateKeyHash &&
+    attempt.userId === context.userId &&
+    attempt.courseId === context.courseId &&
+    attempt.courseVersionId === context.courseVersionId &&
+    attempt.quizId === context.quizId &&
+    getAttemptAssessmentFingerprint(attempt.answersJson) ===
+      buildExternalAssessmentFingerprint(context)
+  );
+}
+
+async function getExternalCompletionQuiz(config: {
+  assessmentQuestionId: string;
+  assessmentQuizId: string;
+}) {
   const quiz = await prisma.quiz.findUnique({
     include: { questions: true },
-    where: { id: HRBA_EXTERNAL_COURSE_QUIZ_ID },
+    where: { id: config.assessmentQuizId },
   });
-  const question = quiz?.questions[0];
+  const question = quiz?.questions.find(
+    (candidate) => candidate.id === config.assessmentQuestionId,
+  );
 
   if (!quiz || !question) {
     return null;
@@ -274,6 +343,7 @@ async function getExternalCompletionQuiz() {
 async function upsertExternalAssessmentAttempt(
   tx: Prisma.TransactionClient,
   context: ExternalAssessmentEvidenceContext,
+  allowJourneyContextChange = false,
 ) {
   const evidenceFingerprint = buildExternalEvidenceFingerprint(context);
   const evidenceAttempt = await tx.quizAttempt.upsert({
@@ -294,6 +364,12 @@ async function upsertExternalAssessmentAttempt(
         completedModuleIds: [...context.completedModuleIds].sort(),
         currentModuleId: context.currentModuleId,
         currentScreenId: context.currentScreenId,
+        ...(allowJourneyContextChange
+          ? {
+              externalAssessmentFingerprint:
+                buildExternalAssessmentFingerprint(context),
+            }
+          : {}),
         externalEvidenceFingerprint: evidenceFingerprint,
         iframeOrigin: context.iframeOrigin,
         source: "external-course-postmessage",
@@ -317,13 +393,115 @@ async function upsertExternalAssessmentAttempt(
     where: { externalEvidenceId: context.assessment.evidenceId },
   });
 
-  if (!externalAttemptMatches(evidenceAttempt, context)) {
+  const evidenceMatches = allowJourneyContextChange
+    ? externalAssessmentAttemptMatches(evidenceAttempt, context)
+    : externalAttemptMatches(evidenceAttempt, context);
+
+  if (!evidenceMatches) {
     throw new ExternalCourseEvidenceConflictError(
       "Assessment evidence context mismatch",
     );
   }
 
   return evidenceAttempt;
+}
+
+type ExternalAssessmentAttemptSummary = {
+  createdAt: Date;
+  externalEvidenceId: string | null;
+  maxScore: number | null;
+  passed: boolean;
+  percentage: number | null;
+  score: number | null;
+  submittedAt: Date | null;
+};
+
+function buildExternalCourseAssessmentState(
+  attempts: readonly ExternalAssessmentAttemptSummary[],
+  failedAttemptCooldownMs: number,
+  serverNow: Date,
+  attemptCount = attempts.length,
+): ExternalCourseAssessmentState {
+  const latestAttempt = attempts[0];
+
+  if (!latestAttempt) {
+    return { attemptCount: 0, status: "not-started" };
+  }
+
+  const common = {
+    attemptCount,
+    ...(latestAttempt.externalEvidenceId
+      ? { evidenceId: latestAttempt.externalEvidenceId }
+      : {}),
+    ...(latestAttempt.maxScore !== null
+      ? { maxScore: latestAttempt.maxScore }
+      : {}),
+    ...(latestAttempt.percentage !== null
+      ? { percentage: latestAttempt.percentage }
+      : {}),
+    ...(latestAttempt.score !== null ? { score: latestAttempt.score } : {}),
+    submittedAt: (latestAttempt.submittedAt ?? latestAttempt.createdAt).toISOString(),
+  };
+
+  if (latestAttempt.passed) {
+    return { ...common, status: "passed" };
+  }
+
+  const retryAvailableAt = new Date(
+    latestAttempt.createdAt.getTime() + failedAttemptCooldownMs,
+  );
+
+  return retryAvailableAt.getTime() > serverNow.getTime()
+    ? {
+        ...common,
+        retryAvailableAt: retryAvailableAt.toISOString(),
+        status: "locked",
+      }
+    : { ...common, status: "not-started" };
+}
+
+async function getExternalCourseAssessmentState({
+  courseId,
+  courseVersionId,
+  learnerStateKeyHash,
+  quizId,
+  serverNow,
+  userId,
+  failedAttemptCooldownMs,
+}: {
+  courseId: string;
+  courseVersionId: string;
+  failedAttemptCooldownMs: number;
+  learnerStateKeyHash: string;
+  quizId: string;
+  serverNow: Date;
+  userId: string;
+}) {
+  const attempts = await prisma.quizAttempt.findMany({
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: {
+      createdAt: true,
+      externalEvidenceId: true,
+      maxScore: true,
+      passed: true,
+      percentage: true,
+      score: true,
+      submittedAt: true,
+    },
+    where: {
+      courseId,
+      courseVersionId,
+      externalLearnerStateKeyHash: learnerStateKeyHash,
+      quizId,
+      userId,
+    },
+  });
+
+  return buildExternalCourseAssessmentState(
+    attempts,
+    failedAttemptCooldownMs,
+    serverNow,
+  );
 }
 
 async function ensureIntegrationOwner() {
@@ -926,6 +1104,60 @@ export async function registerPmExternalCourse() {
     });
   }
 
+  await prisma.quiz.upsert({
+    create: {
+      id: PM_EXTERNAL_COURSE_QUIZ_ID,
+      courseVersionId: PM_EXTERNAL_COURSE_VERSION_ID,
+      description:
+        "Operational record for validated Project Management assessment evidence from the embedded course.",
+      isFinalTest: true,
+      maxAttempts: null,
+      passThreshold: 80,
+      retakeAllowed: true,
+      title: "Project Management external assessment record",
+    },
+    update: {
+      description:
+        "Operational record for validated Project Management assessment evidence from the embedded course.",
+      isFinalTest: true,
+      maxAttempts: null,
+      passThreshold: 80,
+      retakeAllowed: true,
+      title: "Project Management external assessment record",
+    },
+    where: { id: PM_EXTERNAL_COURSE_QUIZ_ID },
+  });
+
+  await prisma.quizQuestion.upsert({
+    create: {
+      id: PM_EXTERNAL_COURSE_QUESTION_ID,
+      configJson: toJson({
+        correctAnswer: "completed",
+        options: ["completed", "not completed"],
+        source: "external-course-postmessage",
+      }),
+      order: 1,
+      points: 1,
+      questionText: "Embedded Project Management assessment submitted",
+      quizId: PM_EXTERNAL_COURSE_QUIZ_ID,
+      type: QuizQuestionType.TRUE_FALSE,
+    },
+    update: {
+      configJson: toJson({
+        correctAnswer: "completed",
+        options: ["completed", "not completed"],
+        source: "external-course-postmessage",
+      }),
+      questionText: "Embedded Project Management assessment submitted",
+    },
+    where: {
+      quizId_order: {
+        order: 1,
+        quizId: PM_EXTERNAL_COURSE_QUIZ_ID,
+      },
+    },
+  });
+
   return course;
 }
 
@@ -1100,6 +1332,30 @@ export async function getExternalCourseLaunchData(
       courseSlug,
       lessonProgress.progressJson,
     );
+    const assessmentState = trackedConfig.assessmentMaxScore
+      ? await getExternalCourseAssessmentState({
+          courseId: course.id,
+          courseVersionId: version.id,
+          failedAttemptCooldownMs: trackedConfig.failedAttemptCooldownMs,
+          learnerStateKeyHash: hashExternalCourseLaunchToken(learnerStateKey),
+          quizId: trackedConfig.assessmentQuizId,
+          serverNow: new Date(),
+          userId: user.id,
+        })
+      : undefined;
+    const certificate =
+      trackedConfig.assessmentMaxScore !== undefined &&
+      enrollment.status === EnrollmentStatus.COMPLETED
+      ? await prisma.certificate.findUnique({
+          select: { certificateCode: true },
+          where: {
+            userId_courseVersionId: {
+              courseVersionId: version.id,
+              userId: user.id,
+            },
+          },
+        })
+      : null;
 
     const iframeUrl = new URL(metadata.launchUrl);
     const allowedOrigin = iframeUrl.origin;
@@ -1141,6 +1397,13 @@ export async function getExternalCourseLaunchData(
 
     return {
       allowedOrigin,
+      ...(assessmentState ? { assessmentState } : {}),
+      ...(trackedConfig.assessmentMaxScore
+        ? {
+            certificateCode: certificate?.certificateCode ?? null,
+            courseCompleted: enrollment.status === EnrollmentStatus.COMPLETED,
+          }
+        : {}),
       courseSlug: course.slug,
       courseTitle: course.title,
       iframeSrc: iframeUrl.toString(),
@@ -1178,6 +1441,9 @@ export async function getExternalCourseLaunchData(
   if (allowFixtures && courseSlug === PM_EXTERNAL_COURSE_SLUG) {
     return {
       allowedOrigin: "http://localhost:5173",
+      assessmentState: { attemptCount: 0, status: "not-started" },
+      certificateCode: null,
+      courseCompleted: false,
       courseSlug: PM_EXTERNAL_COURSE_SLUG,
       courseTitle: PM_EXTERNAL_COURSE_TITLE,
       iframeSrc: `http://localhost:5173?embed=portal&portalOrigin=${encodeURIComponent(getPortalOrigin())}&courseSlug=${PM_EXTERNAL_COURSE_SLUG}&launchToken=mock_launch_token`,
@@ -1218,7 +1484,16 @@ export async function recordExternalCourseProgress({
   progressPercent: number;
   sentAt: string;
   session: AuthSession | null;
-}) {
+}, options: {
+  runTransaction?: <T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>,
+  ) => Promise<T>;
+  serverNow?: Date;
+} = {}): Promise<ExternalCoursePersistenceResult> {
+  const serverNow = options.serverNow ?? new Date();
+  const runTransaction = options.runTransaction ?? ((callback) =>
+    prisma.$transaction(callback));
+
   if (!session?.userId) {
     return { success: false, error: "Unauthorized" };
   }
@@ -1250,7 +1525,7 @@ export async function recordExternalCourseProgress({
     where: { tokenHash: hashExternalCourseLaunchToken(launchToken) },
   });
 
-  if (!tokenRecord || tokenRecord.expiresAt.getTime() <= Date.now()) {
+  if (!tokenRecord || tokenRecord.expiresAt.getTime() <= serverNow.getTime()) {
     return { success: false, error: "Invalid launch token" };
   }
 
@@ -1279,7 +1554,6 @@ export async function recordExternalCourseProgress({
   }
 
   const callbackSentAt = new Date(sentAt);
-  const serverNow = new Date();
 
   if (
     !sentAt ||
@@ -1370,6 +1644,8 @@ export async function recordExternalCourseProgress({
     | null = null;
   let assessmentPassed = false;
   let evidenceContext: ExternalAssessmentEvidenceContext | null = null;
+  let existingEvidenceAttempt = false;
+  let assessmentState: ExternalCourseAssessmentState | undefined;
   const learnerStateKeyHash = hashExternalCourseLaunchToken(learnerStateKey);
 
   if (assessment && !normalizedAssessment) {
@@ -1386,14 +1662,34 @@ export async function recordExternalCourseProgress({
       return { success: false, error: "Stale assessment evidence" };
     }
 
-    externalQuiz = await getExternalCompletionQuiz();
+    externalQuiz = await getExternalCompletionQuiz(trackedConfig);
 
     if (!externalQuiz) {
       return { success: false, error: "Completion quiz is not configured" };
     }
 
-    const passThreshold =
-      externalQuiz.quiz.passThreshold ?? course.defaultPassThreshold ?? 80;
+    const passThreshold = trackedConfig.passThreshold;
+    if (
+      (externalQuiz.quiz.passThreshold ?? course.defaultPassThreshold ?? 80) !==
+      passThreshold
+    ) {
+      return { success: false, error: "Completion quiz threshold is misconfigured" };
+    }
+
+    if (trackedConfig.assessmentMaxScore !== undefined) {
+      const expectedPercentage =
+        (normalizedAssessment.score / normalizedAssessment.maxScore) * 100;
+      const expectedPassed = expectedPercentage >= passThreshold;
+
+      if (
+        normalizedAssessment.maxScore !== trackedConfig.assessmentMaxScore ||
+        Math.abs(normalizedAssessment.percentage - expectedPercentage) > 0.001 ||
+        normalizedAssessment.passed !== expectedPassed
+      ) {
+        return { success: false, error: "Assessment score is inconsistent" };
+      }
+    }
+
     assessmentPassed =
       normalizedAssessment.passed &&
       normalizedAssessment.percentage >= passThreshold;
@@ -1419,9 +1715,68 @@ export async function recordExternalCourseProgress({
     const evidenceAttempt = await prisma.quizAttempt.findUnique({
       where: { externalEvidenceId: normalizedAssessment.evidenceId },
     });
+    existingEvidenceAttempt = Boolean(evidenceAttempt);
 
-    if (evidenceAttempt && !externalAttemptMatches(evidenceAttempt, evidenceContext)) {
+    const evidenceMatches = evidenceAttempt
+      ? trackedConfig.requiresPriorPassingAssessmentForCompletion
+        ? externalAssessmentAttemptMatches(evidenceAttempt, evidenceContext)
+        : externalAttemptMatches(evidenceAttempt, evidenceContext)
+      : true;
+
+    if (!evidenceMatches) {
       return { success: false, error: "Assessment evidence context mismatch" };
+    }
+
+    if (trackedConfig.assessmentMaxScore !== undefined) {
+      assessmentState = await getExternalCourseAssessmentState({
+        courseId: course.id,
+        courseVersionId: version.id,
+        failedAttemptCooldownMs: trackedConfig.failedAttemptCooldownMs,
+        learnerStateKeyHash,
+        quizId: trackedConfig.assessmentQuizId,
+        serverNow,
+        userId: user.id,
+      });
+
+      if (!existingEvidenceAttempt) {
+        if (
+          completed &&
+          trackedConfig.requiresPriorPassingAssessmentForCompletion
+        ) {
+          return {
+            success: false,
+            error: "Passing assessment evidence must be recorded before completion",
+            assessmentState,
+          };
+        }
+
+        if (assessmentState.status === "passed") {
+          return {
+            success: false,
+            error: "Assessment has already been passed",
+            assessmentState,
+          };
+        }
+
+        if (assessmentState.status === "locked") {
+          return {
+            success: false,
+            error: "Assessment retry is locked",
+            assessmentState,
+          };
+        }
+
+        if (
+          normalizedAssessment.attemptNumber !==
+          assessmentState.attemptCount + 1
+        ) {
+          return {
+            success: false,
+            error: "Invalid assessment attempt sequence",
+            assessmentState,
+          };
+        }
+      }
     }
   }
 
@@ -1442,8 +1797,8 @@ export async function recordExternalCourseProgress({
       : boundedProgress;
 
   const persistCompletion = () =>
-    prisma.$transaction(async (tx) => {
-      const persistedAt = new Date();
+    runTransaction(async (tx) => {
+      const persistedAt = new Date(serverNow);
       let assessmentAttempt = null;
       let certificateCode: string | null = null;
       let certificateStatus:
@@ -1464,6 +1819,7 @@ export async function recordExternalCourseProgress({
         assessmentAttempt = await upsertExternalAssessmentAttempt(
           tx,
           evidenceContext,
+          trackedConfig.requiresPriorPassingAssessmentForCompletion,
         );
 
         if (!assessmentPassed) {
@@ -1603,7 +1959,7 @@ export async function recordExternalCourseProgress({
         }
       }
 
-      return { certificateCode, certificateStatus };
+      return { assessmentAttempt, certificateCode, certificateStatus };
     });
 
   let persistenceResult:
@@ -1635,6 +1991,18 @@ export async function recordExternalCourseProgress({
     return { success: false, error: "Completion persistence failed" };
   }
 
+  const persistedAssessmentState =
+    trackedConfig.assessmentMaxScore !== undefined &&
+    persistenceResult.assessmentAttempt
+      ? buildExternalCourseAssessmentState(
+          [persistenceResult.assessmentAttempt],
+          trackedConfig.failedAttemptCooldownMs,
+          serverNow,
+          (assessmentState?.attemptCount ?? 0) +
+            (existingEvidenceAttempt ? 0 : 1),
+        )
+      : assessmentState;
+
   try {
     revalidatePath(`/learn/courses/${course.slug}`);
     revalidatePath(`/learn/courses/${course.slug}/external`);
@@ -1649,6 +2017,9 @@ export async function recordExternalCourseProgress({
 
   return {
     success: true,
+    ...(persistedAssessmentState
+      ? { assessmentState: persistedAssessmentState }
+      : {}),
     certificateCode: persistenceResult.certificateCode,
     certificateStatus: persistenceResult.certificateStatus,
     completed: shouldComplete,

@@ -10,6 +10,8 @@ import {
   isValidExternalCourseEvidenceId,
   EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
   EXTERNAL_COURSE_PROGRESS_MESSAGE,
+  EXTERNAL_COURSE_RESULT_MESSAGE,
+  type ExternalCourseAssessmentState,
   type ExternalCourseLaunchData,
   type ExternalCourseProgressMessage,
 } from "@/lib/external-course-types";
@@ -130,11 +132,38 @@ export function ExternalCourseFrame({
       });
 
       const result = await response.json() as {
+        assessmentState?: ExternalCourseAssessmentState;
         certificateCode?: string | null;
+        completed?: boolean;
         error?: string;
         progressPercent?: number;
         success?: boolean;
       };
+
+      if (progressMessage.assessment || progressMessage.completed) {
+        courseFrame.current?.contentWindow?.postMessage(
+          {
+            type: EXTERNAL_COURSE_RESULT_MESSAGE,
+            version: 1,
+            ...(result.assessmentState
+              ? { assessmentState: result.assessmentState }
+              : {}),
+            certificateCode: result.certificateCode ?? null,
+            courseCompleted: result.completed === true,
+            courseSlug: launchData.courseSlug,
+            ...(result.error ? { error: result.error } : {}),
+            event: progressMessage.completed
+              ? "course_completed"
+              : "assessment_recorded",
+            ...(progressMessage.assessment?.evidenceId
+              ? { evidenceId: progressMessage.assessment.evidenceId }
+              : {}),
+            progressPercent: result.progressPercent,
+            success: response.ok && result.success === true,
+          },
+          launchData.allowedOrigin,
+        );
+      }
 
       if (!response.ok || !result.success) {
         hasSubmittedCompletion.current = false;
@@ -172,6 +201,15 @@ export function ExternalCourseFrame({
             {
               courseSlug: launchData.courseSlug,
               learnerStateKey: launchData.learnerStateKey,
+              ...(launchData.assessmentState
+                ? { assessmentState: launchData.assessmentState }
+                : {}),
+              ...(Object.hasOwn(launchData, "courseCompleted")
+                ? { courseCompleted: launchData.courseCompleted === true }
+                : {}),
+              ...(Object.hasOwn(launchData, "certificateCode")
+                ? { certificateCode: launchData.certificateCode ?? null }
+                : {}),
               ...(Object.hasOwn(launchData, "resumeScreenId")
                 ? { resumeScreenId: launchData.resumeScreenId ?? null }
                 : {}),
