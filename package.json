@@ -39,6 +39,7 @@
     "verify:external-course-learning-view": "node --import jiti/register scripts/verify-external-course-learning-view.ts",
     "verify:external-course-learner-isolation": "node --import jiti/register scripts/verify-external-course-learner-isolation.ts",
     "verify:hrba-resume-contract": "node --import jiti/register scripts/verify-hrba-resume-contract.ts",
+    "verify:resume-diagnostic-tracing": "node --import jiti/register scripts/verify-resume-diagnostic-tracing.ts",
     "verify:s8-env-readiness": "node --import jiti/register scripts/verify-s8-env-readiness.ts",
     "verify:p2d-onboarding-access": "node --import jiti/register scripts/verify-p2d-onboarding-access.ts",
     "verify:open-registration": "node --import jiti/register scripts/verify-open-registration.ts",

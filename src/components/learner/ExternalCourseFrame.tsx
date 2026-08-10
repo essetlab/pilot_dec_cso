@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/shell/BrandMark";
 import {
   type ExternalCourseAssessmentResult,
@@ -16,6 +16,15 @@ import {
   type ExternalCourseLaunchData,
   type ExternalCourseProgressMessage,
 } from "@/lib/external-course-types";
+import {
+  createResumeDiagnosticCorrelationId,
+  describeBaseRevision,
+  isExternalCourseDiagnosticMessage,
+  isResumeDiagnosticCorrelationId,
+  type ResumeDiagnosticCheckpoint,
+  type ResumeDiagnosticErrorCategory,
+  type ResumeDiagnosticStageCode,
+} from "@/lib/external-course-diagnostics";
 
 function isOptionalNumber(value: unknown) {
   return value === undefined || (typeof value === "number" && Number.isFinite(value));
@@ -72,8 +81,49 @@ function isProgressMessage(value: unknown): value is ExternalCourseProgressMessa
     typeof message.progressPercent === "number" &&
     typeof message.completed === "boolean" &&
     Array.isArray(message.completedModuleIds) &&
+    (message.diagnosticCorrelationId === undefined ||
+      isResumeDiagnosticCorrelationId(message.diagnosticCorrelationId)) &&
     isAssessmentResult(message.assessment)
   );
+}
+
+type RawProgressDiagnosticContext = {
+  correlationId: string;
+  currentModuleId: string | null;
+  currentScreenId: string | null;
+  baseRevision: "null" | "present";
+};
+
+function safeDiagnosticId(value: unknown) {
+  return typeof value === "string" && value.length > 0 && value.length <= 256
+    ? value
+    : null;
+}
+
+function getRawProgressDiagnosticContext(
+  value: unknown,
+): RawProgressDiagnosticContext | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  const isProgressEvent =
+    candidate.type === "cso-learning-hub:external-course-event" &&
+    candidate.event === "progress_updated";
+  const isProgressMessage =
+    candidate.type === EXTERNAL_COURSE_PROGRESS_MESSAGE;
+
+  if (
+    (!isProgressEvent && !isProgressMessage) ||
+    !isResumeDiagnosticCorrelationId(candidate.diagnosticCorrelationId)
+  ) {
+    return null;
+  }
+
+  return {
+    correlationId: candidate.diagnosticCorrelationId,
+    currentModuleId: safeDiagnosticId(candidate.currentModuleId),
+    currentScreenId: safeDiagnosticId(candidate.currentScreenId),
+    baseRevision: describeBaseRevision(candidate.baseRevision),
+  };
 }
 
 export function ExternalCourseFrame({
@@ -86,11 +136,50 @@ export function ExternalCourseFrame({
   const [message, setMessage] = useState("Progress saves automatically.");
   const [frameKey, setFrameKey] = useState(0);
   const [frameStatus, setFrameStatus] = useState<"loading" | "stabilizing" | "ready">("loading");
+  const [diagnosticCorrelationId] = useState(createResumeDiagnosticCorrelationId);
   const hasSubmittedCompletion = useRef(false);
   const hasStabilizedFrame = useRef(false);
   const courseFrame = useRef<HTMLIFrameElement | null>(null);
   const frameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const diagnosticQueue = useRef<Promise<void>>(Promise.resolve());
+
+  const diagnosticCheckpoint = useCallback((
+    stageCode: ResumeDiagnosticStageCode,
+    context: RawProgressDiagnosticContext,
+    result: "PASS" | "FAIL",
+    options: {
+      httpStatus?: number;
+      errorCategory?: ResumeDiagnosticErrorCategory;
+    } = {},
+  ): ResumeDiagnosticCheckpoint => {
+    return {
+      stageCode,
+      timestamp: new Date().toISOString(),
+      courseSlug: launchData.courseSlug,
+      currentModuleId: context.currentModuleId,
+      currentScreenId: context.currentScreenId,
+      baseRevision: context.baseRevision,
+      result,
+      ...options,
+      correlationId: context.correlationId,
+    };
+  }, [launchData.courseSlug]);
+
+  const reportDiagnostic = useCallback((checkpoint: ResumeDiagnosticCheckpoint) => {
+    diagnosticQueue.current = diagnosticQueue.current
+      .then(async () => {
+        await fetch("/api/external-course-diagnostic", {
+          body: JSON.stringify(checkpoint),
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          method: "POST",
+        });
+      })
+      .catch(() => undefined);
+    return diagnosticQueue.current;
+  }, []);
 
   useEffect(() => {
     async function persistProgress(progressMessage: ExternalCourseProgressMessage) {
@@ -108,33 +197,56 @@ export function ExternalCourseFrame({
       setStatus(progressMessage.completed ? "saving" : "ready");
       setProgressPercent(Math.max(0, Math.min(100, Math.round(progressMessage.progressPercent))));
 
-      const response = await fetch("/api/external-course-progress", {
-        body: JSON.stringify({
-          assessment: progressMessage.assessment,
-          baseRevision: progressMessage.baseRevision,
-          completed: progressMessage.completed,
-          completedModuleIds: progressMessage.completedModuleIds,
-          courseSlug: progressMessage.courseSlug,
-          currentModuleId: progressMessage.currentModuleId,
-          currentScreenId: progressMessage.currentScreenId,
-          iframeOrigin: launchData.allowedOrigin,
-          learnerStateKey: progressMessage.learnerStateKey,
-          legacyBootstrap: progressMessage.legacyBootstrap,
-          launchToken: launchData.launchToken,
-          progressPercent: progressMessage.progressPercent,
-          resumeState: progressMessage.resumeState,
-          sentAt: progressMessage.sentAt,
-          type: progressMessage.type,
-          version: progressMessage.version,
-        }),
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
+      const progressDiagnostic = {
+        correlationId:
+          progressMessage.diagnosticCorrelationId ?? diagnosticCorrelationId,
+        currentModuleId: progressMessage.currentModuleId,
+        currentScreenId: progressMessage.currentScreenId,
+        baseRevision: describeBaseRevision(progressMessage.baseRevision),
+      } satisfies RawProgressDiagnosticContext;
 
-      const result = await response.json() as {
+      void reportDiagnostic(
+        diagnosticCheckpoint("HUB-3", progressDiagnostic, "PASS"),
+      );
+
+      let response: Response;
+      try {
+        response = await fetch("/api/external-course-progress", {
+          body: JSON.stringify({
+            assessment: progressMessage.assessment,
+            baseRevision: progressMessage.baseRevision,
+            completed: progressMessage.completed,
+            completedModuleIds: progressMessage.completedModuleIds,
+            courseSlug: progressMessage.courseSlug,
+            currentModuleId: progressMessage.currentModuleId,
+            currentScreenId: progressMessage.currentScreenId,
+            iframeOrigin: launchData.allowedOrigin,
+            learnerStateKey: progressMessage.learnerStateKey,
+            legacyBootstrap: progressMessage.legacyBootstrap,
+            launchToken: launchData.launchToken,
+            progressPercent: progressMessage.progressPercent,
+            resumeState: progressMessage.resumeState,
+            sentAt: progressMessage.sentAt,
+            type: progressMessage.type,
+            version: progressMessage.version,
+          }),
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+        });
+      } catch (error) {
+        void reportDiagnostic(diagnosticCheckpoint(
+          "HUB-4",
+          progressDiagnostic,
+          "FAIL",
+          { errorCategory: "network_error" },
+        ));
+        throw error;
+      }
+
+      let result: {
         certificateCode?: string | null;
         error?: string;
         progressPercent?: number;
@@ -143,6 +255,29 @@ export function ExternalCourseFrame({
         resumeState?: ExternalCourseLaunchData["resumeState"];
         success?: boolean;
       };
+      try {
+        result = await response.json() as typeof result;
+      } catch (error) {
+        void reportDiagnostic(diagnosticCheckpoint(
+          "HUB-4",
+          progressDiagnostic,
+          "FAIL",
+          { errorCategory: "invalid_response", httpStatus: response.status },
+        ));
+        throw error;
+      }
+
+      void reportDiagnostic(diagnosticCheckpoint(
+        "HUB-4",
+        progressDiagnostic,
+        response.ok && result.success ? "PASS" : "FAIL",
+        {
+          ...(response.ok && result.success
+            ? {}
+            : { errorCategory: "http_error" as const }),
+          httpStatus: response.status,
+        },
+      ));
 
       if (!response.ok || !result.success) {
         hasSubmittedCompletion.current = false;
@@ -154,6 +289,8 @@ export function ExternalCourseFrame({
             status: "conflict",
             resumeRevision: result.resumeRevision,
             resumeState: result.resumeState ?? null,
+            diagnosticCorrelationId: progressDiagnostic.correlationId,
+            httpStatus: response.status,
           }, launchData.allowedOrigin);
           setStatus("ready");
           setMessage("Progress refreshed from your latest saved session.");
@@ -168,6 +305,8 @@ export function ExternalCourseFrame({
             resumeRevision: result.resumeRevision,
             resumeState: result.resumeState ?? launchData.resumeState,
             error: result.error,
+            diagnosticCorrelationId: progressDiagnostic.correlationId,
+            httpStatus: response.status,
           }, launchData.allowedOrigin);
         }
         setStatus("error");
@@ -184,6 +323,8 @@ export function ExternalCourseFrame({
           status: "accepted",
           resumeRevision: result.resumeRevision,
           resumeState: result.resumeState ?? null,
+          diagnosticCorrelationId: progressDiagnostic.correlationId,
+          httpStatus: response.status,
         }, launchData.allowedOrigin);
       }
       setStatus(progressMessage.completed ? "completed" : "ready");
@@ -207,16 +348,56 @@ export function ExternalCourseFrame({
     }
 
     function handleMessage(event: MessageEvent) {
-      if (!isTrustedExternalCourseMessageEvent(
+      const rawProgressDiagnostic = getRawProgressDiagnosticContext(event.data);
+      if (rawProgressDiagnostic) {
+        void reportDiagnostic(diagnosticCheckpoint(
+          "HUB-1",
+          rawProgressDiagnostic,
+          "PASS",
+        ));
+      }
+
+      const trustedEvent = isTrustedExternalCourseMessageEvent(
         event,
         launchData.allowedOrigin,
         courseFrame.current?.contentWindow,
-      )) {
+      );
+      if (!trustedEvent) {
+        if (rawProgressDiagnostic) {
+          const errorCategory = event.origin !== launchData.allowedOrigin
+            ? "origin_mismatch"
+            : "source_mismatch";
+          void reportDiagnostic(diagnosticCheckpoint(
+            "HUB-2",
+            rawProgressDiagnostic,
+            "FAIL",
+            { errorCategory },
+          ));
+        }
+        return;
+      }
+
+      if (isExternalCourseDiagnosticMessage(event.data)) {
+        if (
+          event.data.diagnostic.courseSlug === launchData.courseSlug &&
+          event.data.diagnostic.correlationId === diagnosticCorrelationId &&
+          event.data.diagnostic.stageCode.startsWith("HRBA-")
+        ) {
+          void reportDiagnostic(event.data.diagnostic);
+        }
         return;
       }
 
       if (isExternalCourseEventMessage(event.data)) {
         if (event.data.courseSlug !== launchData.courseSlug) {
+          if (rawProgressDiagnostic) {
+            void reportDiagnostic(diagnosticCheckpoint(
+              "HUB-2",
+              rawProgressDiagnostic,
+              "FAIL",
+              { errorCategory: "course_mismatch" },
+            ));
+          }
           return;
         }
 
@@ -228,6 +409,7 @@ export function ExternalCourseFrame({
               resumeRevision: launchData.resumeRevision,
               resumeState: launchData.resumeState,
               trustedAssessmentState: launchData.trustedAssessmentState,
+              diagnosticCorrelationId,
               type: EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
               version: 1,
             },
@@ -250,9 +432,25 @@ export function ExternalCourseFrame({
 
         const progressEvent = event.data as ExternalCourseEventMessage;
         if (progressEvent.learnerStateKey !== launchData.learnerStateKey) {
+          if (rawProgressDiagnostic) {
+            void reportDiagnostic(diagnosticCheckpoint(
+              "HUB-2",
+              rawProgressDiagnostic,
+              "FAIL",
+              { errorCategory: "learner_context_mismatch" },
+            ));
+          }
           setStatus("error");
           setMessage("We could not verify this course progress. Please refresh this page and try again.");
           return;
+        }
+
+        if (rawProgressDiagnostic) {
+          void reportDiagnostic(diagnosticCheckpoint(
+            "HUB-2",
+            rawProgressDiagnostic,
+            "PASS",
+          ));
         }
 
         queueProgress({
@@ -267,6 +465,7 @@ export function ExternalCourseFrame({
           legacyBootstrap: progressEvent.legacyBootstrap,
           progressPercent: progressEvent.progressPercent ?? 0,
           resumeState: progressEvent.resumeState,
+          diagnosticCorrelationId: progressEvent.diagnosticCorrelationId,
           sentAt: progressEvent.sentAt,
           type: EXTERNAL_COURSE_PROGRESS_MESSAGE,
           version: 1,
@@ -279,9 +478,24 @@ export function ExternalCourseFrame({
         event.data.courseSlug !== launchData.courseSlug ||
         event.data.learnerStateKey !== launchData.learnerStateKey
       ) {
+        if (rawProgressDiagnostic) {
+          void reportDiagnostic(diagnosticCheckpoint(
+            "HUB-2",
+            rawProgressDiagnostic,
+            "FAIL",
+            { errorCategory: "message_invalid" },
+          ));
+        }
         return;
       }
 
+      if (rawProgressDiagnostic) {
+        void reportDiagnostic(diagnosticCheckpoint(
+          "HUB-2",
+          rawProgressDiagnostic,
+          "PASS",
+        ));
+      }
       queueProgress(event.data);
     }
 
@@ -290,7 +504,7 @@ export function ExternalCourseFrame({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [launchData]);
+  }, [diagnosticCheckpoint, diagnosticCorrelationId, launchData, reportDiagnostic]);
 
   useEffect(() => {
     return () => {
