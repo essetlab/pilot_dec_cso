@@ -3,6 +3,8 @@ import "server-only";
 import {
   getHrbaExternalCourseAllowedOrigins,
   getHrbaExternalCourseUrl,
+  getPmExternalCourseAllowedOrigins,
+  getPmExternalCourseUrl,
 } from "./external-course-config";
 import { PILOT_CATALOGUE_COURSE_IDENTITIES } from "./catalogue-course-identities";
 import type {
@@ -58,6 +60,25 @@ export const HRBA_MODULES: PublicCatalogueModule[] = [
     title: "Final assessment and certificate",
     topics: ["Final assessment", "Certificate and continued learning"],
   },
+];
+
+export const PM_COURSE_PROMISE =
+  "Build practical skills to identify, set up, plan, implement, monitor, and close projects with local and grassroots CSO teams.";
+
+export const PM_LEARNING_OUTCOMES = [
+  "Define community needs, analyze problems and causes, and map stakeholders using participatory evidence.",
+  "Establish project governance, roles, tolerances, and an accountable Project Charter.",
+  "Develop a Work Breakdown Structure, RACI matrix, schedule, and bottom-up budget.",
+  "Manage issues, changes, monitoring, burn rate, and active project risks.",
+  "Verify deliverables, complete administrative closeout, hand over sustainably, and document learning.",
+];
+
+export const PM_MODULES: PublicCatalogueModule[] = [
+  { title: "Project identification", topics: ["Needs and evidence", "Problem analysis and stakeholders"] },
+  { title: "Project setup", topics: ["Governance and accountability", "Tolerances and Project Charter"] },
+  { title: "Project planning", topics: ["WBS, RACI, and schedule", "Costing and budget"] },
+  { title: "Project implementation", topics: ["Issue and change control", "Monitoring, burn rate, and risk"] },
+  { title: "Project closure", topics: ["Verification and administrative closeout", "Handover, sustainability, and learning"] },
 ];
 
 const CONTROLLED_CAPACITY_AREAS = [
@@ -299,17 +320,46 @@ export const PUBLIC_COURSE_CATALOGUE: readonly CatalogueCourseDefinition[] = [
       "A forthcoming course on accountable leadership, governance practice, and organizational direction for local CSOs.",
     tone: "navy",
   }),
-  comingSoonCourse({
+  {
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[2],
-    externalCourse: comingSoonExternalCourse("external_link"),
+    accessState: "invitation_required",
+    assessmentStatus: "The course includes a 25-question final assessment with an 80% pass threshold.",
+    availability: "available",
+    certificateStatus: "Certificate eligibility requires completing the course and passing the final assessment.",
+    deliveryFormat: "Hub-tracked embedded course",
+    externalCourse: {
+      approvedOrigins: getPmExternalCourseAllowedOrigins(),
+      assessmentCapability: "available",
+      certificateEligibility: "eligible",
+      completionRule: "Complete the required learning and pass the final assessment with 80% or above.",
+      courseVersion: "Approved 32-screen Project Management pilot baseline",
+      externalUrl: getPmExternalCourseUrl(),
+      launchMode: "embedded",
+      progressTrackingCapability: "hub_tracked",
+    },
+    featured: false,
+    fullDescription: `${PM_COURSE_PROMISE}\n\nThis practical 90-minute course follows five connected phases: identification, setup, planning, implementation, and closure. Learners apply the concepts through the Haro Valley case and practical CSO project decisions.`,
     imageAlt: "CSO practitioners mapping a project pathway from community needs to results.",
     imageUrl: "/images/courses/thumbnails/course-project-management-thumbnail-v2.webp",
-    integrationStatus: "integration_pending",
+    integrationStatus: "integrated",
+    intendedLearners: "Local and grassroots CSO practitioners responsible for planning, delivering, monitoring, and closing projects.",
+    language: "English",
+    learningApproach: [
+      "Short explanations grounded in the Haro Valley case",
+      "Practical decisions, calculations, and interactive checks",
+      "Module tools and a final assessment",
+      "Hub-tracked screen progress and exact resume",
+    ],
+    learningOutcomes: PM_LEARNING_OUTCOMES,
     legacyAliases: ["Project Cycle Management", "Project Management"],
-    shortDescription:
-      "A forthcoming course on planning, delivering, and learning from projects in local and grassroots CSOs.",
+    modules: PM_MODULES,
+    practicalOutputs: ["A practical project-management tool pack introduced across the five modules"],
+    proposedStructureSummary: "The active course contains 32 canonical screens across the course introduction, five modules, final assessment, and completion.",
+    resourcesAndSupport: "Course-linked resources are available inside the Project Management course. Hub support remains available through the public Support page.",
+    routeAliases: [],
+    shortDescription: PM_COURSE_PROMISE,
     tone: "green",
-  }),
+  },
   comingSoonCourse({
     ...PILOT_CATALOGUE_COURSE_IDENTITIES[3],
     imageAlt: "CSO practitioners reviewing community evidence through a continuous learning cycle.",
@@ -416,52 +466,54 @@ function definitionCapacityAreas(definition: CatalogueCourseDefinition) {
 
 export function toPublicCatalogueSummary(
   definition: CatalogueCourseDefinition,
-  existingHrba: PublicCourseSummary | null = null,
+  existingCourse: PublicCourseSummary | null = null,
 ): PublicCatalogueCourseSummary {
   const areas = definitionCapacityAreas(definition);
   const isAvailable = definition.availability === "available";
-  const existingSlug = isAvailable && existingHrba
-    ? existingHrba.slug
+  const existingSlug = isAvailable && existingCourse
+    ? existingCourse.slug
     : definition.slug;
 
   return {
     availability: definition.availability,
     ...areas,
     certificateLabel: isAvailable
-      ? existingHrba?.certificate ?? definition.certificateStatus
+      ? existingCourse?.certificate ?? definition.certificateStatus
       : definition.certificateStatus,
     deliveryFormat: definition.deliveryFormat,
     displayOrder: definition.displayOrder,
     duration: isAvailable
-      ? existingHrba?.duration ?? "90 minutes"
+      ? existingCourse?.duration ?? "90 minutes"
       : COMING_SOON_DURATION,
     featured: definition.featured,
     href: `/courses/${existingSlug}`,
-    imageAlt: existingHrba?.imageAlt ?? definition.imageAlt,
-    imageUrl: definition.imageUrl ?? existingHrba?.imageUrl ?? null,
+    imageAlt: existingCourse?.imageAlt ?? definition.imageAlt,
+    imageUrl: definition.imageUrl ?? existingCourse?.imageUrl ?? null,
     integrationStatus: definition.integrationStatus,
     language: isAvailable
-      ? existingHrba?.language ?? definition.language
+      ? existingCourse?.language ?? definition.language
       : definition.language,
     launchMode: definition.externalCourse.launchMode,
     primaryCapacityArea: areas.primaryCapacityArea,
     secondaryCapacityAreas: areas.secondaryCapacityAreas,
     shortDescription: isAvailable
-      ? existingHrba?.description ?? definition.shortDescription
+      ? existingCourse?.description ?? definition.shortDescription
       : definition.shortDescription,
     slug: existingSlug,
     title: definition.title,
-    tone: existingHrba?.tone ?? definition.tone,
+    tone: existingCourse?.tone ?? definition.tone,
   };
 }
 
 export function getPublicCatalogueSummaries(
-  existingHrba: PublicCourseSummary | null = null,
+  existingCourses: ReadonlyMap<string, PublicCourseSummary> = new Map(),
 ) {
   return PUBLIC_COURSE_CATALOGUE.map((definition) =>
     toPublicCatalogueSummary(
       definition,
-      definition.availability === "available" ? existingHrba : null,
+      definition.availability === "available"
+        ? existingCourses.get(definition.slug) ?? null
+        : null,
     ),
   );
 }

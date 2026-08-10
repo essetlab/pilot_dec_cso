@@ -23,7 +23,8 @@ import {
 } from "./learner-template";
 import {
   HRBA_EXTERNAL_COURSE_SLUG,
-  isExternalHrbaCourseMetadata,
+  PM_EXTERNAL_COURSE_SLUG,
+  isTrackedExternalCourseMetadata,
 } from "./external-course-config";
 import { prisma } from "./prisma";
 import { hasLearnerCourseEntitlement } from "./course-entitlement";
@@ -96,6 +97,10 @@ const statusLabels: Record<CourseStatus, string> = {
 const HRBA_PUBLIC_SLUGS = new Set([
   "human-rights-based-approach-practice",
   HRBA_EXTERNAL_COURSE_SLUG,
+]);
+const TRACKED_PUBLIC_SLUGS = new Set([
+  ...HRBA_PUBLIC_SLUGS,
+  PM_EXTERNAL_COURSE_SLUG,
 ]);
 
 const blockTypeLabels: Record<string, string> = {
@@ -640,7 +645,7 @@ function mapDatabaseCourseToSummary(
     id: record.id,
     imageAlt: `Course cover for ${record.title}`,
     imageUrl: record.coverImageUrl,
-    isExternalCourse: isExternalHrbaCourseMetadata(record.analysisMetadataJson),
+    isExternalCourse: isTrackedExternalCourseMetadata(record.analysisMetadataJson),
     language: record.language,
     lastUpdated: fallback.lastUpdated,
     lessons: `${lessonCount} lessons`,
@@ -808,7 +813,7 @@ function mapManagedExternalCourseToDetail(
 
 function mergeManagedExternalCatalogueRecords(
   records: DatabaseCourseRecord[],
-  existingHrba: PublicCourseSummary | null,
+  existingTrackedCourses: ReadonlyMap<string, PublicCourseSummary>,
 ) {
   const managedRecords = records
     .map((record) => ({
@@ -820,7 +825,7 @@ function mergeManagedExternalCatalogueRecords(
         Boolean(item.metadata),
     );
   const managedSlugs = new Set(managedRecords.map((item) => item.record.slug));
-  const catalogue = getPublicCatalogueSummaries(existingHrba).filter(
+  const catalogue = getPublicCatalogueSummaries(existingTrackedCourses).filter(
     (course) => !managedSlugs.has(course.slug),
   );
 
@@ -891,18 +896,26 @@ export async function getPublicCourseSummaries(
   filters: PublicCourseFilters = {},
 ): Promise<PublicCatalogueCourseSummary[]> {
   let existingHrba: PublicCourseSummary | null = null;
+  const existingTrackedCourses = new Map<string, PublicCourseSummary>();
   let catalogueRecords: DatabaseCourseRecord[] | null = null;
 
   try {
     catalogueRecords = await queryCatalogueCourseRecords();
-    const record = catalogueRecords.find(
-      (course) =>
-        HRBA_PUBLIC_SLUGS.has(course.slug) &&
-        course.status === CourseStatus.PUBLISHED &&
-        (course.visibility === CourseVisibility.PUBLIC ||
-          course.visibility === CourseVisibility.ASSIGNED_ONLY),
-    );
-    existingHrba = record ? mapDatabaseCourseToSummary(record) : null;
+    for (const record of catalogueRecords) {
+      if (
+        TRACKED_PUBLIC_SLUGS.has(record.slug) &&
+        record.status === CourseStatus.PUBLISHED &&
+        (record.visibility === CourseVisibility.PUBLIC ||
+          record.visibility === CourseVisibility.ASSIGNED_ONLY) &&
+        isTrackedExternalCourseMetadata(record.analysisMetadataJson)
+      ) {
+        const summary = mapDatabaseCourseToSummary(record);
+        existingTrackedCourses.set(record.slug, summary);
+        if (HRBA_PUBLIC_SLUGS.has(record.slug)) {
+          existingHrba = summary;
+        }
+      }
+    }
   } catch (error) {
     logCourseDataFallback("getPublicCourseSummaries", error);
   }
@@ -915,11 +928,14 @@ export async function getPublicCourseSummaries(
         course.access === "Public",
     );
     existingHrba = fallbackHrba ? toDemoSummary(fallbackHrba) : null;
+    if (existingHrba) {
+      existingTrackedCourses.set(HRBA_EXTERNAL_COURSE_SLUG, existingHrba);
+    }
   }
 
   const courses = catalogueRecords
-    ? mergeManagedExternalCatalogueRecords(catalogueRecords, existingHrba)
-    : getPublicCatalogueSummaries(existingHrba);
+    ? mergeManagedExternalCatalogueRecords(catalogueRecords, existingTrackedCourses)
+    : getPublicCatalogueSummaries(existingTrackedCourses);
 
   return filterPublicCatalogueSummaries(
     courses,
@@ -961,10 +977,13 @@ export async function getPublicCourseBySlug(
 
   const record = catalogueRecords?.find(
     (course) =>
-      HRBA_PUBLIC_SLUGS.has(course.slug) &&
+      (course.slug === definition.slug ||
+        (HRBA_PUBLIC_SLUGS.has(course.slug) &&
+          HRBA_PUBLIC_SLUGS.has(definition.slug))) &&
       course.status === CourseStatus.PUBLISHED &&
       (course.visibility === CourseVisibility.PUBLIC ||
-        course.visibility === CourseVisibility.ASSIGNED_ONLY),
+        course.visibility === CourseVisibility.ASSIGNED_ONLY) &&
+      isTrackedExternalCourseMetadata(course.analysisMetadataJson),
   );
 
   if (record) {

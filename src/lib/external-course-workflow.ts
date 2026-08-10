@@ -15,8 +15,10 @@ import {
   type Prisma,
 } from "../generated/prisma/client";
 import {
+  buildPmExternalCourseMetadata,
   buildHrbaExternalCourseMetadata,
   getExternalCourseMetadata,
+  getTrackedExternalCourseConfig,
   HRBA_EXTERNAL_COURSE_ID,
   HRBA_EXTERNAL_COURSE_LESSON_ID,
   HRBA_EXTERNAL_COURSE_MODULE_ID,
@@ -24,6 +26,15 @@ import {
   HRBA_EXTERNAL_COURSE_QUIZ_ID,
   HRBA_EXTERNAL_COURSE_SLUG,
   HRBA_EXTERNAL_COURSE_VERSION_ID,
+  isCanonicalExternalCourseScreenId,
+  PM_EXTERNAL_COURSE_BLOCK_ID,
+  PM_EXTERNAL_COURSE_ID,
+  PM_EXTERNAL_COURSE_LESSON_ID,
+  PM_EXTERNAL_COURSE_MODULE_ID,
+  PM_EXTERNAL_COURSE_SLUG,
+  PM_EXTERNAL_COURSE_THUMBNAIL,
+  PM_EXTERNAL_COURSE_TITLE,
+  PM_EXTERNAL_COURSE_VERSION_ID,
 } from "./external-course-config";
 import type {
   ExternalCourseAssessmentResult,
@@ -665,12 +676,301 @@ export async function registerHrbaExternalCourse() {
   return course;
 }
 
+async function ensurePmCapacityAreas() {
+  const definitions = [
+    {
+      id: "CAP-STRAT",
+      name: "Strategic Planning and Organizational Sustainability",
+      slug: "strategic-planning-and-organizational-sustainability",
+      sortOrder: 3,
+    },
+    {
+      id: "CAP-MEAL",
+      name: "Monitoring, Evaluation, Accountability, and Learning",
+      slug: "monitoring-evaluation-accountability-and-learning",
+      sortOrder: 7,
+    },
+    {
+      id: "CAP-FIN",
+      name: "Financial Management and Resource Mobilization",
+      slug: "financial-management-and-resource-mobilization",
+      sortOrder: 4,
+    },
+    {
+      id: "CAP-PART",
+      name: "Networking, Partnerships, and Collective Action",
+      slug: "networking-partnerships-and-collective-action",
+      sortOrder: 9,
+    },
+  ] as const;
+
+  return Promise.all(
+    definitions.map((definition) =>
+      prisma.capacityArea.upsert({
+        create: {
+          ...definition,
+          description: `${definition.name} capacity area.`,
+          isActive: true,
+        },
+        update: {
+          description: `${definition.name} capacity area.`,
+          isActive: true,
+          name: definition.name,
+          slug: definition.slug,
+          sortOrder: definition.sortOrder,
+        },
+        where: { id: definition.id },
+      }),
+    ),
+  );
+}
+
+export async function registerPmExternalCourse() {
+  const owner = await ensureIntegrationOwner();
+  const capacityAreas = await ensurePmCapacityAreas();
+  const metadata = buildPmExternalCourseMetadata();
+  const shortDescription =
+    "Build practical skills to identify, set up, plan, implement, monitor, and close projects with local and grassroots CSO teams.";
+  const longDescription =
+    "A practical 90-minute course for local and grassroots CSO practitioners covering project identification, governance and setup, work planning, roles, scheduling, budgeting, implementation control, risk management, closure, handover, and learning.";
+
+  const course = await prisma.course.upsert({
+    create: {
+      id: PM_EXTERNAL_COURSE_ID,
+      analysisMetadataJson: toJson({
+        externalCourse: metadata,
+        learnerTemplate: "external-iframe",
+      }),
+      assignedCreatorId: owner.id,
+      certificateEligible: true,
+      coverImageUrl: PM_EXTERNAL_COURSE_THUMBNAIL,
+      createdById: owner.id,
+      defaultPassThreshold: 80,
+      estimatedDurationMinutes: 90,
+      finalTestRequired: true,
+      language: "English",
+      level: CourseLevel.FOUNDATIONAL,
+      longDescription,
+      shortDescription,
+      slug: PM_EXTERNAL_COURSE_SLUG,
+      status: CourseStatus.PUBLISHED,
+      targetAudience:
+        "Local and grassroots CSO practitioners responsible for planning, delivering, monitoring, and closing projects.",
+      title: PM_EXTERNAL_COURSE_TITLE,
+      visibility: CourseVisibility.ASSIGNED_ONLY,
+    },
+    update: {
+      analysisMetadataJson: toJson({
+        externalCourse: metadata,
+        learnerTemplate: "external-iframe",
+      }),
+      archivedAt: null,
+      certificateEligible: true,
+      coverImageUrl: PM_EXTERNAL_COURSE_THUMBNAIL,
+      defaultPassThreshold: 80,
+      estimatedDurationMinutes: 90,
+      finalTestRequired: true,
+      language: "English",
+      level: CourseLevel.FOUNDATIONAL,
+      longDescription,
+      shortDescription,
+      status: CourseStatus.PUBLISHED,
+      targetAudience:
+        "Local and grassroots CSO practitioners responsible for planning, delivering, monitoring, and closing projects.",
+      title: PM_EXTERNAL_COURSE_TITLE,
+      visibility: CourseVisibility.ASSIGNED_ONLY,
+    },
+    where: { slug: PM_EXTERNAL_COURSE_SLUG },
+  });
+
+  for (const capacityArea of capacityAreas) {
+    await prisma.courseCapacityArea.upsert({
+      create: {
+        capacityAreaId: capacityArea.id,
+        courseId: course.id,
+      },
+      update: {},
+      where: {
+        courseId_capacityAreaId: {
+          capacityAreaId: capacityArea.id,
+          courseId: course.id,
+        },
+      },
+    });
+  }
+
+  await prisma.courseVersion.upsert({
+    create: {
+      id: PM_EXTERNAL_COURSE_VERSION_ID,
+      courseId: course.id,
+      createdById: owner.id,
+      publishedAt: new Date(),
+      publishedById: owner.id,
+      status: CourseStatus.PUBLISHED,
+      versionNumber: 1,
+    },
+    update: {
+      publishedAt: new Date(),
+      publishedById: owner.id,
+      status: CourseStatus.PUBLISHED,
+    },
+    where: {
+      courseId_versionNumber: {
+        courseId: course.id,
+        versionNumber: 1,
+      },
+    },
+  });
+
+  await prisma.module.upsert({
+    create: {
+      id: PM_EXTERNAL_COURSE_MODULE_ID,
+      courseVersionId: PM_EXTERNAL_COURSE_VERSION_ID,
+      description: "Embedded Project Management course app containing 32 canonical screens.",
+      estimatedDurationMinutes: 90,
+      order: 1,
+      title: "Interactive Project Management course",
+    },
+    update: {
+      description: "Embedded Project Management course app containing 32 canonical screens.",
+      estimatedDurationMinutes: 90,
+      title: "Interactive Project Management course",
+    },
+    where: {
+      courseVersionId_order: {
+        courseVersionId: PM_EXTERNAL_COURSE_VERSION_ID,
+        order: 1,
+      },
+    },
+  });
+
+  await prisma.lesson.upsert({
+    create: {
+      id: PM_EXTERNAL_COURSE_LESSON_ID,
+      completionRequired: true,
+      completionRule: "Complete the required course learning and final assessment.",
+      description: "Launch the embedded course and continue from the last canonical screen.",
+      estimatedDurationMinutes: 90,
+      moduleId: PM_EXTERNAL_COURSE_MODULE_ID,
+      order: 1,
+      title: "Complete the embedded Project Management course",
+    },
+    update: {
+      completionRequired: true,
+      completionRule: "Complete the required course learning and final assessment.",
+      description: "Launch the embedded course and continue from the last canonical screen.",
+      estimatedDurationMinutes: 90,
+      title: "Complete the embedded Project Management course",
+    },
+    where: {
+      moduleId_order: {
+        moduleId: PM_EXTERNAL_COURSE_MODULE_ID,
+        order: 1,
+      },
+    },
+  });
+
+  await prisma.contentBlock.upsert({
+    create: {
+      id: PM_EXTERNAL_COURSE_BLOCK_ID,
+      configJson: toJson({
+        launchPath: `/learn/courses/${PM_EXTERNAL_COURSE_SLUG}/external`,
+        source: metadata.launchUrl,
+      }),
+      estimatedDurationMinutes: 90,
+      isRequired: true,
+      lessonId: PM_EXTERNAL_COURSE_LESSON_ID,
+      order: 1,
+      title: "Embedded Project Management course app",
+      type: ContentBlockType.EXTERNAL_LINK,
+    },
+    update: {
+      configJson: toJson({
+        launchPath: `/learn/courses/${PM_EXTERNAL_COURSE_SLUG}/external`,
+        source: metadata.launchUrl,
+      }),
+      estimatedDurationMinutes: 90,
+      title: "Embedded Project Management course app",
+      type: ContentBlockType.EXTERNAL_LINK,
+    },
+    where: {
+      lessonId_order: {
+        lessonId: PM_EXTERNAL_COURSE_LESSON_ID,
+        order: 1,
+      },
+    },
+  });
+
+  const outcomes = [
+    "Define community needs, analyze problems and causes, and map stakeholders using participatory evidence.",
+    "Establish project governance, roles, tolerances, and an accountable Project Charter.",
+    "Develop a Work Breakdown Structure, RACI matrix, schedule, and bottom-up budget.",
+    "Manage issues, changes, monitoring, burn rate, and active project risks.",
+    "Verify deliverables, complete administrative closeout, hand over sustainably, and document learning.",
+  ];
+
+  for (const [index, statement] of outcomes.entries()) {
+    await prisma.learningOutcome.upsert({
+      create: {
+        courseId: course.id,
+        order: index + 1,
+        statement,
+      },
+      update: { statement },
+      where: {
+        courseId_order: {
+          courseId: course.id,
+          order: index + 1,
+        },
+      },
+    });
+  }
+
+  return course;
+}
+
+export function resolveExternalCourseResumeScreenId(
+  courseSlug: string,
+  value: unknown,
+) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const currentScreenId = (value as Record<string, unknown>).currentScreenId;
+  const trackedConfig = getTrackedExternalCourseConfig(courseSlug);
+  return trackedConfig &&
+    isCanonicalExternalCourseScreenId(trackedConfig, currentScreenId)
+    ? currentScreenId
+    : null;
+}
+
+export function resolveExternalCourseProgressPercent(
+  courseSlug: string,
+  persistedProgress: number,
+  incomingProgress: number,
+) {
+  const boundedIncoming = Math.max(
+    0,
+    Math.min(100, Math.round(incomingProgress)),
+  );
+  const trackedConfig = getTrackedExternalCourseConfig(courseSlug);
+  return trackedConfig?.enforceMonotonicProgress
+    ? Math.max(persistedProgress, boundedIncoming)
+    : boundedIncoming;
+}
+
 export async function getExternalCourseLaunchData(
   courseSlug: string,
   session: AuthSession | null,
 ): Promise<ExternalCourseLaunchData | null> {
   try {
     if (!session?.userId) {
+      return null;
+    }
+
+    const trackedConfig = getTrackedExternalCourseConfig(courseSlug);
+    if (!trackedConfig) {
       return null;
     }
 
@@ -702,7 +1002,16 @@ export async function getExternalCourseLaunchData(
     const version = course?.versions[0];
     const metadata = getExternalCourseMetadata(course?.analysisMetadataJson);
 
-    if (!course || !version || !metadata) {
+    if (
+      !course ||
+      !version ||
+      !metadata ||
+      course.id !== trackedConfig.courseId ||
+      version.id !== trackedConfig.courseVersionId ||
+      metadata.provider !== trackedConfig.provider ||
+      (trackedConfig.internalCourseId !== undefined &&
+        metadata.internalCourseId !== trackedConfig.internalCourseId)
+    ) {
       return null;
     }
 
@@ -763,10 +1072,10 @@ export async function getExternalCourseLaunchData(
       return null;
     }
 
-    await prisma.lessonProgress.upsert({
+    const lessonProgress = await prisma.lessonProgress.upsert({
       create: {
         enrollmentId: enrollment.id,
-        lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+        lessonId: trackedConfig.lessonId,
         progressJson: toJson({ source: "external-course-launch" }),
         startedAt: new Date(),
         status: LessonProgressStatus.IN_PROGRESS,
@@ -782,10 +1091,15 @@ export async function getExternalCourseLaunchData(
       where: {
         enrollmentId_lessonId: {
           enrollmentId: enrollment.id,
-          lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+          lessonId: trackedConfig.lessonId,
         },
       },
     });
+
+    const resumeScreenId = resolveExternalCourseResumeScreenId(
+      courseSlug,
+      lessonProgress.progressJson,
+    );
 
     const iframeUrl = new URL(metadata.launchUrl);
     const allowedOrigin = iframeUrl.origin;
@@ -832,6 +1146,13 @@ export async function getExternalCourseLaunchData(
       iframeSrc: iframeUrl.toString(),
       launchToken,
       learnerStateKey,
+      ...(trackedConfig.canonicalScreenIds
+        ? {
+            initialProgressPercent: enrollment.progressPercent,
+            resumeScreenId,
+          }
+        : {}),
+      supportsSecureNewTab: trackedConfig.supportsSecureNewTab,
     };
   } catch (error) {
     console.warn("getExternalCourseLaunchData database error, attempting fallback:", error);
@@ -850,6 +1171,21 @@ export async function getExternalCourseLaunchData(
       iframeSrc: "https://pilot-hrba-e-learn-v1-wajj.vercel.app?embed=portal&courseSlug=" + HRBA_EXTERNAL_COURSE_SLUG + "&launchToken=mock_launch_token",
       launchToken: "mock_launch_token",
       learnerStateKey: "mock_learner_state_key",
+      supportsSecureNewTab: true,
+    };
+  }
+
+  if (allowFixtures && courseSlug === PM_EXTERNAL_COURSE_SLUG) {
+    return {
+      allowedOrigin: "http://localhost:5173",
+      courseSlug: PM_EXTERNAL_COURSE_SLUG,
+      courseTitle: PM_EXTERNAL_COURSE_TITLE,
+      iframeSrc: `http://localhost:5173?embed=portal&portalOrigin=${encodeURIComponent(getPortalOrigin())}&courseSlug=${PM_EXTERNAL_COURSE_SLUG}&launchToken=mock_launch_token`,
+      initialProgressPercent: 0,
+      launchToken: "mock_launch_token",
+      learnerStateKey: "SkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSko",
+      resumeScreenId: null,
+      supportsSecureNewTab: false,
     };
   }
 
@@ -885,6 +1221,18 @@ export async function recordExternalCourseProgress({
 }) {
   if (!session?.userId) {
     return { success: false, error: "Unauthorized" };
+  }
+
+  const trackedConfig = getTrackedExternalCourseConfig(courseSlug);
+  if (!trackedConfig) {
+    return { success: false, error: "Invalid launch context" };
+  }
+
+  if (
+    trackedConfig.canonicalScreenIds &&
+    !isCanonicalExternalCourseScreenId(trackedConfig, currentScreenId)
+  ) {
+    return { success: false, error: "Invalid canonical screen" };
   }
 
   const user = await prisma.user.findUnique({
@@ -953,7 +1301,16 @@ export async function recordExternalCourseProgress({
   const version = course?.versions[0];
   const metadata = getExternalCourseMetadata(course?.analysisMetadataJson);
 
-  if (!course || !version || !metadata) {
+  if (
+    !course ||
+    !version ||
+    !metadata ||
+    course.id !== trackedConfig.courseId ||
+    version.id !== trackedConfig.courseVersionId ||
+    metadata.provider !== trackedConfig.provider ||
+    (trackedConfig.internalCourseId !== undefined &&
+      metadata.internalCourseId !== trackedConfig.internalCourseId)
+  ) {
     return { success: false, error: "External course not found" };
   }
 
@@ -972,7 +1329,6 @@ export async function recordExternalCourseProgress({
     return { success: false, error: "Invalid course origin" };
   }
 
-  const boundedProgress = Math.max(0, Math.min(100, Math.round(progressPercent)));
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: tokenRecord.enrollmentId },
   });
@@ -988,6 +1344,12 @@ export async function recordExternalCourseProgress({
   ) {
     return { success: false, error: "Enrollment not found" };
   }
+
+  const boundedProgress = resolveExternalCourseProgressPercent(
+    courseSlug,
+    enrollment.progressPercent,
+    progressPercent,
+  );
 
   const validContextFrom = Math.max(
     enrollment.enrolledAt.getTime(),
@@ -1128,7 +1490,7 @@ export async function recordExternalCourseProgress({
           completedAt: shouldComplete ? persistedAt : null,
           enrollmentId: enrollment.id,
           lastAccessedAt: persistedAt,
-          lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+          lessonId: trackedConfig.lessonId,
           progressJson: toJson({
             completedModuleIds,
             currentModuleId,
@@ -1162,7 +1524,7 @@ export async function recordExternalCourseProgress({
         where: {
           enrollmentId_lessonId: {
             enrollmentId: enrollment.id,
-            lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
+            lessonId: trackedConfig.lessonId,
           },
         },
       });

@@ -78,7 +78,9 @@ export function ExternalCourseFrame({
 }: {
   launchData: ExternalCourseLaunchData;
 }) {
-  const [progressPercent, setProgressPercent] = useState(0);
+  const [progressPercent, setProgressPercent] = useState(
+    launchData.initialProgressPercent ?? 0,
+  );
   const [status, setStatus] = useState<"ready" | "saving" | "completed" | "error">("ready");
   const [message, setMessage] = useState("Waiting for course progress...");
   const [frameKey, setFrameKey] = useState(0);
@@ -170,6 +172,9 @@ export function ExternalCourseFrame({
             {
               courseSlug: launchData.courseSlug,
               learnerStateKey: launchData.learnerStateKey,
+              ...(Object.hasOwn(launchData, "resumeScreenId")
+                ? { resumeScreenId: launchData.resumeScreenId ?? null }
+                : {}),
               type: EXTERNAL_COURSE_LAUNCH_CONTEXT_MESSAGE,
               version: 1,
             },
@@ -257,6 +262,7 @@ export function ExternalCourseFrame({
   const completed = status === "completed";
   const error = status === "error";
   const frameReady = frameStatus === "ready";
+  const isResumeOnlyTrackedCourse = launchData.supportsSecureNewTab === false;
 
   function handleFrameLoad() {
     if (!hasStabilizedFrame.current) {
@@ -296,8 +302,9 @@ export function ExternalCourseFrame({
               {launchData.courseTitle}
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-white/75">
-              Complete the interactive course below. Your portal progress and certificate
-              will update automatically when the course completion signal is received.
+              {isResumeOnlyTrackedCourse
+                ? "Complete the interactive course below. Your portal progress updates automatically as you move through the course."
+                : "Complete the interactive course below. Your portal progress and certificate will update automatically when the course completion signal is received."}
             </p>
           </div>
           <div className="rounded-[22px] border border-white/15 bg-white/10 p-5 lg:w-[320px]">
@@ -329,22 +336,28 @@ export function ExternalCourseFrame({
         <div className="border-b border-design-border p-5">
           <SectionHeader
             eyebrow="Course app"
-            title="Interactive HRBA learning experience"
-            description="The course opens in a secure embedded frame and reports completion back to the portal."
+            title={isResumeOnlyTrackedCourse
+              ? `Interactive ${launchData.courseTitle} learning experience`
+              : "Interactive HRBA learning experience"}
+            description={isResumeOnlyTrackedCourse
+              ? "The course opens in a secure embedded frame and reports progress back to the portal."
+              : "The course opens in a secure embedded frame and reports completion back to the portal."}
             action={
               <div className="flex flex-wrap items-center justify-end gap-3">
                 <ActionButton type="button" variant="secondary" onClick={handleReloadCourse}>
                   Reload course
                 </ActionButton>
-                <ActionButton
-                  forceDocumentNavigation
-                  href={launchData.iframeSrc}
-                  rel="noreferrer"
-                  target="_blank"
-                  variant="outline"
-                >
-                  Open course in new tab
-                </ActionButton>
+                {launchData.supportsSecureNewTab !== false ? (
+                  <ActionButton
+                    forceDocumentNavigation
+                    href={launchData.iframeSrc}
+                    rel="noreferrer"
+                    target="_blank"
+                    variant="outline"
+                  >
+                    Open course in new tab
+                  </ActionButton>
+                ) : null}
                 <ActionButton href="/learn/my-courses" variant="secondary">
                   Back to My Courses
                 </ActionButton>

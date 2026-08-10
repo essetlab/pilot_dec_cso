@@ -174,8 +174,11 @@ export type ExternalCourseLaunchData = {
   courseSlug: string;
   courseTitle: string;
   iframeSrc: string;
+  initialProgressPercent?: number;
   launchToken: string;
   learnerStateKey: string;
+  resumeScreenId?: string | null;
+  supportsSecureNewTab?: boolean;
 };
 
 export type ExternalCourseLaunchContextMessage = {
@@ -183,4 +186,5 @@ export type ExternalCourseLaunchContextMessage = {
   version: 1;
   courseSlug: string;
   learnerStateKey: string;
+  resumeScreenId?: string | null;
 };
