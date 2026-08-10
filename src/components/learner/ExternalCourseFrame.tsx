@@ -84,12 +84,9 @@ export function ExternalCourseFrame({
   const [progressPercent, setProgressPercent] = useState(0);
   const [status, setStatus] = useState<"ready" | "saving" | "completed" | "error">("ready");
   const [message, setMessage] = useState("Progress saves automatically.");
-  const [frameKey, setFrameKey] = useState(0);
-  const [frameStatus, setFrameStatus] = useState<"loading" | "stabilizing" | "ready">("loading");
+  const [frameStatus, setFrameStatus] = useState<"loading" | "ready">("loading");
   const hasSubmittedCompletion = useRef(false);
-  const hasStabilizedFrame = useRef(false);
   const courseFrame = useRef<HTMLIFrameElement | null>(null);
-  const frameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
@@ -293,15 +290,6 @@ export function ExternalCourseFrame({
   }, [launchData]);
 
   useEffect(() => {
-    return () => {
-      if (frameTimer.current) {
-        clearTimeout(frameTimer.current);
-        frameTimer.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     if (frameStatus === "ready") {
       return;
     }
@@ -313,26 +301,13 @@ export function ExternalCourseFrame({
     return () => {
       clearTimeout(fallbackTimer);
     };
-  }, [frameKey, frameStatus]);
+  }, [frameStatus]);
 
   const completed = status === "completed";
   const error = status === "error";
   const frameReady = frameStatus === "ready";
 
   function handleFrameLoad() {
-    if (!hasStabilizedFrame.current) {
-      hasStabilizedFrame.current = true;
-      setFrameStatus("stabilizing");
-
-      frameTimer.current = setTimeout(() => {
-        frameTimer.current = null;
-        setFrameStatus("loading");
-        setFrameKey((currentKey) => currentKey + 1);
-      }, 500);
-
-      return;
-    }
-
     setFrameStatus("ready");
   }
 
@@ -409,7 +384,6 @@ export function ExternalCourseFrame({
           </div>
         ) : null}
         <iframe
-          key={`${launchData.iframeSrc}:${frameKey}`}
           allow="clipboard-read; clipboard-write"
           aria-hidden={!frameReady}
           className={`block h-full min-h-0 w-full border-0 bg-white transition-opacity duration-200 ${

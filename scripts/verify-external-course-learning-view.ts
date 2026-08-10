@@ -73,8 +73,14 @@ assert.match(frame, /learnerStateKey: launchData\.learnerStateKey/);
 assert.match(frame, /launchToken: launchData\.launchToken/);
 assert.match(frame, /fetch\("\/api\/external-course-progress"/);
 assert.match(frame, /credentials: "same-origin"/);
+assert.match(frame, /function handleFrameLoad\(\) \{\s*setFrameStatus\("ready"\);\s*\}/);
+assert.doesNotMatch(frame, /hasStabilizedFrame/);
+assert.doesNotMatch(frame, /frameTimer/);
+assert.doesNotMatch(frame, /setFrameKey/);
+assert.doesNotMatch(frame, /key=\{`\$\{launchData\.iframeSrc\}/);
 
 console.log("PASS: learner-facing technical language and redundant controls are absent.");
 console.log("PASS: the responsive shell uses the full remaining dynamic viewport.");
 console.log("PASS: iframe, bridge, launch-context, and persistence safeguards remain present.");
+console.log("PASS: the first iframe load becomes ready without replacing the iframe node.");
 console.log("ALL FOCUSED EXTERNAL-COURSE VIEW VERIFICATIONS PASSED.");
