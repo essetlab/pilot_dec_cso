@@ -2,7 +2,6 @@ import type {
   HrbaResumeState,
   HrbaTrustedAssessmentState,
 } from "./hrba-resume-contract";
-import { isResumeDiagnosticCorrelationId } from "./external-course-diagnostics";
 
 export const EXTERNAL_COURSE_PROGRESS_MESSAGE = "cso-learning-hub:external-course-progress";
 export const EXTERNAL_COURSE_EVENT_MESSAGE = "cso-learning-hub:external-course-event";
@@ -88,7 +87,6 @@ export type ExternalCourseProgressMessage = {
   baseRevision?: string | null;
   legacyBootstrap?: boolean;
   resumeState?: HrbaResumeState;
-  diagnosticCorrelationId?: string;
 };
 
 export type ExternalCourseEventMessage = {
@@ -110,7 +108,6 @@ export type ExternalCourseEventMessage = {
   baseRevision?: string | null;
   legacyBootstrap?: boolean;
   resumeState?: HrbaResumeState;
-  diagnosticCorrelationId?: string;
 };
 
 const externalCourseEvents = new Set<ExternalCourseEventName>([
@@ -153,9 +150,7 @@ export function isExternalCourseEventMessage(value: unknown): value is ExternalC
       (message.progressPercent < 0 || message.progressPercent > 100)) ||
     (message.completedModuleIds !== undefined &&
       (!Array.isArray(message.completedModuleIds) ||
-        !message.completedModuleIds.every((id) => typeof id === "string"))) ||
-    (message.diagnosticCorrelationId !== undefined &&
-      !isResumeDiagnosticCorrelationId(message.diagnosticCorrelationId))
+        !message.completedModuleIds.every((id) => typeof id === "string")))
   ) {
     return false;
   }
@@ -207,7 +202,6 @@ export type ExternalCourseLaunchContextMessage = {
   resumeRevision: string;
   resumeState: HrbaResumeState | null;
   trustedAssessmentState: HrbaTrustedAssessmentState;
-  diagnosticCorrelationId: string;
 };
 
 export type ExternalCourseResumeResultMessage = {
@@ -218,8 +212,6 @@ export type ExternalCourseResumeResultMessage = {
   resumeRevision: string;
   resumeState: HrbaResumeState | null;
   error?: string;
-  diagnosticCorrelationId?: string;
-  httpStatus?: number;
 };
 
 export function isTrustedExternalCourseMessageEvent(
