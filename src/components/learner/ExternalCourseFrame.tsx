@@ -419,7 +419,7 @@ export function ExternalCourseFrame({
           ) : null}
           <iframe
             key={`${launchData.iframeSrc}:${frameKey}`}
-            allow="clipboard-read; clipboard-write"
+            allow="clipboard-read; clipboard-write; fullscreen"
             aria-hidden={!frameReady}
             className={`h-[78vh] min-h-[720px] w-full bg-white transition-opacity duration-200 ${
               frameReady ? "opacity-100" : "opacity-0"

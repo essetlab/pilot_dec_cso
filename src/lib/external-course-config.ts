@@ -66,7 +66,7 @@ const DEFAULT_HRBA_EXTERNAL_COURSE_ORIGINS = [
   "https://pilot-hrba-e-learn-v1-wajj.vercel.app",
   "http://localhost:5173",
 ];
-const DEFAULT_PM_EXTERNAL_COURSE_ORIGINS = [
+const LOCAL_PM_EXTERNAL_COURSE_ORIGINS = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ];
@@ -110,6 +110,41 @@ function distinctOrigins(origins: string[]) {
   return Array.from(new Set(origins));
 }
 
+function isProductionEnvironment() {
+  return process.env.NODE_ENV === "production";
+}
+
+function isLoopbackOrigin(origin: string) {
+  const hostname = new URL(origin).hostname.toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+}
+
+function parseExactOrigin(value: string) {
+  try {
+    const parsed = new URL(value);
+    return !value.includes("*") &&
+      parsed.origin === value &&
+      ["http:", "https:"].includes(parsed.protocol)
+      ? parsed.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function isValidProductionPmUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return (
+      !value.includes("*") &&
+      parsed.protocol === "https:" &&
+      !isLoopbackOrigin(parsed.origin)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function getHrbaExternalCourseUrl() {
   return (
     process.env.HRBA_EXTERNAL_COURSE_URL?.trim() ||
@@ -126,16 +161,44 @@ export function getHrbaExternalCourseAllowedOrigins() {
 }
 
 export function getPmExternalCourseUrl() {
-  return (
-    process.env.PM_EXTERNAL_COURSE_URL?.trim() ||
-    DEFAULT_PM_EXTERNAL_COURSE_URL
-  );
+  const configured = process.env.PM_EXTERNAL_COURSE_URL?.trim();
+
+  if (isProductionEnvironment()) {
+    return configured && isValidProductionPmUrl(configured) ? configured : "";
+  }
+
+  return configured || DEFAULT_PM_EXTERNAL_COURSE_URL;
 }
 
 export function getPmExternalCourseAllowedOrigins() {
+  const configured = splitOrigins(
+    process.env.PM_EXTERNAL_COURSE_ALLOWED_ORIGINS,
+  );
+
+  if (isProductionEnvironment()) {
+    const launchUrl = getPmExternalCourseUrl();
+    const launchOrigin = launchUrl ? new URL(launchUrl).origin : null;
+    const parsedOrigins = configured.map(parseExactOrigin);
+
+    if (
+      !launchOrigin ||
+      parsedOrigins.some((origin) => origin === null) ||
+      parsedOrigins.some(
+        (origin) =>
+          origin !== null &&
+          (!origin.startsWith("https://") || isLoopbackOrigin(origin)),
+      ) ||
+      !parsedOrigins.includes(launchOrigin)
+    ) {
+      return [];
+    }
+
+    return distinctOrigins(parsedOrigins as string[]);
+  }
+
   return distinctOrigins([
-    ...DEFAULT_PM_EXTERNAL_COURSE_ORIGINS,
-    ...splitOrigins(process.env.PM_EXTERNAL_COURSE_ALLOWED_ORIGINS),
+    ...LOCAL_PM_EXTERNAL_COURSE_ORIGINS,
+    ...configured.map(parseExactOrigin).filter((origin): origin is string => origin !== null),
     new URL(getPmExternalCourseUrl()).origin,
   ]);
 }
@@ -149,10 +212,19 @@ export function buildHrbaExternalCourseMetadata(): ExternalCourseMetadata {
 }
 
 export function buildPmExternalCourseMetadata(): ExternalCourseMetadata {
+  const launchUrl = getPmExternalCourseUrl();
+  const allowedOrigins = getPmExternalCourseAllowedOrigins();
+
+  if (isProductionEnvironment() && (!launchUrl || allowedOrigins.length === 0)) {
+    throw new Error(
+      "PM external-course Production configuration requires an explicit HTTPS URL and matching approved origins.",
+    );
+  }
+
   return {
     provider: "project-management-vite",
-    launchUrl: getPmExternalCourseUrl(),
-    allowedOrigins: getPmExternalCourseAllowedOrigins(),
+    launchUrl,
+    allowedOrigins,
     internalCourseId: PM_EXTERNAL_COURSE_INTERNAL_ID,
   };
 }

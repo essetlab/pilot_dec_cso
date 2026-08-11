@@ -98,11 +98,15 @@ function runVerify() {
     console.error("FAIL: External iframe sandbox rules have changed!");
     process.exit(1);
   }
+  if (!externalContent.includes("allow=\"clipboard-read; clipboard-write; fullscreen\"")) {
+    console.error("FAIL: External iframe does not delegate fullscreen permission!");
+    process.exit(1);
+  }
   if (!externalContent.includes("src={launchData.iframeSrc}")) {
     console.error("FAIL: External iframe src has been changed!");
     process.exit(1);
   }
-  console.log("PASS: External course iframe source and sandboxing are untouched.");
+  console.log("PASS: External course iframe source, fullscreen delegation, and sandboxing are correct.");
 
   // 5. Verify local QA visual completed course page checks and guards
   console.log("Verifying isolated QA completed course page rules...");

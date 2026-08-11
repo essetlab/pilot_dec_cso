@@ -563,6 +563,41 @@ async function ensureIntegrationOwner() {
   return user;
 }
 
+export async function requirePmIntegrationOwner() {
+  const registrationTime = new Date();
+  const existingAdmin = await prisma.user.findFirst({
+    where: {
+      status: UserStatus.ACTIVE,
+      roleAssignments: {
+        some: {
+          isActive: true,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: registrationTime } }],
+          role: {
+            key: {
+              in: [RoleKey.SUPER_ADMIN, RoleKey.PLATFORM_ADMIN],
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!existingAdmin) {
+    throw new Error(
+      "PM external-course registration requires an existing active Platform Admin or Super Admin. Create or activate an authorized administrator before retrying.",
+    );
+  }
+
+  return existingAdmin;
+}
+
+export function resolvePmCourseVersionPublishedAt(
+  existingPublishedAt: Date | null | undefined,
+  registrationTime: Date,
+) {
+  return existingPublishedAt ?? registrationTime;
+}
+
 async function ensureHrbaCapacityAreas() {
   const definitions = [
     {
@@ -904,7 +939,7 @@ async function ensurePmCapacityAreas() {
 }
 
 export async function registerPmExternalCourse() {
-  const owner = await ensureIntegrationOwner();
+  const owner = await requirePmIntegrationOwner();
   const capacityAreas = await ensurePmCapacityAreas();
   const metadata = buildPmExternalCourseMetadata();
   const shortDescription =
@@ -977,18 +1012,32 @@ export async function registerPmExternalCourse() {
     });
   }
 
+  const existingCourseVersion = await prisma.courseVersion.findUnique({
+    select: { publishedAt: true },
+    where: {
+      courseId_versionNumber: {
+        courseId: course.id,
+        versionNumber: 1,
+      },
+    },
+  });
+  const publishedAt = resolvePmCourseVersionPublishedAt(
+    existingCourseVersion?.publishedAt,
+    new Date(),
+  );
+
   await prisma.courseVersion.upsert({
     create: {
       id: PM_EXTERNAL_COURSE_VERSION_ID,
       courseId: course.id,
       createdById: owner.id,
-      publishedAt: new Date(),
+      publishedAt,
       publishedById: owner.id,
       status: CourseStatus.PUBLISHED,
       versionNumber: 1,
     },
     update: {
-      publishedAt: new Date(),
+      publishedAt,
       publishedById: owner.id,
       status: CourseStatus.PUBLISHED,
     },

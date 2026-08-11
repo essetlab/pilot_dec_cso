@@ -110,6 +110,49 @@ function splitCsv(value: string) {
     .filter(Boolean);
 }
 
+function exactOrigin(value: string) {
+  try {
+    const parsed = new URL(value);
+    return !value.includes("*") &&
+      ["http:", "https:"].includes(parsed.protocol) &&
+      parsed.origin === value
+      ? parsed.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function checkEnvironmentUrl(name: string, required: boolean) {
+  const value = valueOf(name);
+
+  if (!value && !required) {
+    add(name, "ok", "not set; local development defaults remain available");
+    return "";
+  }
+
+  return checkRequiredUrl(name);
+}
+
+function checkEnvironmentValue(name: string, required: boolean) {
+  const value = valueOf(name);
+
+  if (!value && !required) {
+    add(name, "ok", "not set; local development defaults remain available");
+    return "";
+  }
+
+  return checkRequiredValue(name);
+}
+
+const deploymentEnvironment = (
+  valueOf("VERCEL_ENV") ||
+  valueOf("APP_ENVIRONMENT") ||
+  valueOf("APP_ENV") ||
+  valueOf("NODE_ENV")
+).toLowerCase();
+const isProductionDeployment = deploymentEnvironment === "production";
+
 const databaseUrl = checkRequiredPostgresUrl("DATABASE_URL");
 const directUrl = checkRequiredPostgresUrl("DIRECT_URL");
 checkRequiredValue("SESSION_SECRET");
@@ -127,13 +170,40 @@ if (!supabasePublicKey) {
 }
 const hrbaUrl = checkRequiredUrl("HRBA_EXTERNAL_COURSE_URL");
 const hrbaOrigins = checkRequiredValue("HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS");
+const pmUrl = checkEnvironmentUrl(
+  "PM_EXTERNAL_COURSE_URL",
+  isProductionDeployment,
+);
+const pmOrigins = checkEnvironmentValue(
+  "PM_EXTERNAL_COURSE_ALLOWED_ORIGINS",
+  isProductionDeployment,
+);
 
 if (databaseUrl && directUrl && databaseUrl === directUrl && !isPlaceholder(databaseUrl)) {
   add("DATABASE_URL/DIRECT_URL", "warning", "runtime and direct migration URLs are identical");
 }
 
-if (appUrl && isHttpUrl(appUrl) && hasLocalhost(appUrl)) {
-  add("NEXT_PUBLIC_APP_URL", "warning", "production readiness should not use localhost");
+if (appUrl && isHttpUrl(appUrl)) {
+  const appOrigin = exactOrigin(appUrl);
+
+  if (!appOrigin) {
+    add(
+      "NEXT_PUBLIC_APP_URL",
+      "invalid",
+      "must be the exact Hub origin used by the external-course handshake, without a path",
+    );
+  } else if (
+    isProductionDeployment &&
+    (!appOrigin.startsWith("https://") || hasLocalhost(appOrigin))
+  ) {
+    add(
+      "NEXT_PUBLIC_APP_URL",
+      "invalid",
+      "Production Hub origin must use HTTPS and must not be localhost or loopback",
+    );
+  } else if (hasLocalhost(appOrigin)) {
+    add("NEXT_PUBLIC_APP_URL", "warning", "local Hub origin is suitable only outside Production");
+  }
 }
 
 if (hrbaUrl && isHttpUrl(hrbaUrl) && hrbaUrl !== expectedHrbaOrigin) {
@@ -150,6 +220,83 @@ if (hrbaOrigins && !isPlaceholder(hrbaOrigins)) {
     if (!isHttpUrl(origin)) {
       add("HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS", "invalid", "allowed origins must contain valid http(s) URLs");
       break;
+    }
+  }
+}
+
+if (pmUrl && !isPlaceholder(pmUrl) && isHttpUrl(pmUrl)) {
+  const parsedPmUrl = new URL(pmUrl);
+
+  if (pmUrl.includes("*")) {
+    add("PM_EXTERNAL_COURSE_URL", "invalid", "course URL must not contain a wildcard");
+  }
+
+  if (
+    isProductionDeployment &&
+    (parsedPmUrl.protocol !== "https:" || hasLocalhost(parsedPmUrl.origin))
+  ) {
+    add(
+      "PM_EXTERNAL_COURSE_URL",
+      "invalid",
+      "Production course URL must use HTTPS and must not be localhost or loopback",
+    );
+  }
+}
+
+if (pmOrigins && !isPlaceholder(pmOrigins)) {
+  const origins = splitCsv(pmOrigins);
+  const parsedOrigins: string[] = [];
+
+  if (origins.length === 0) {
+    add(
+      "PM_EXTERNAL_COURSE_ALLOWED_ORIGINS",
+      "invalid",
+      "at least one explicit approved origin is required",
+    );
+  }
+
+  for (const origin of origins) {
+    const parsedOrigin = exactOrigin(origin);
+
+    if (!parsedOrigin || origin.includes("*")) {
+      add(
+        "PM_EXTERNAL_COURSE_ALLOWED_ORIGINS",
+        "invalid",
+        "each value must be an exact http(s) origin without a path or wildcard",
+      );
+      break;
+    }
+
+    if (
+      isProductionDeployment &&
+      (!parsedOrigin.startsWith("https://") || hasLocalhost(parsedOrigin))
+    ) {
+      add(
+        "PM_EXTERNAL_COURSE_ALLOWED_ORIGINS",
+        "invalid",
+        "Production origins must use HTTPS and must not be localhost or loopback",
+      );
+      break;
+    }
+
+    parsedOrigins.push(parsedOrigin);
+  }
+
+  if (pmUrl && isHttpUrl(pmUrl)) {
+    const pmUrlOrigin = new URL(pmUrl).origin;
+
+    if (!parsedOrigins.includes(pmUrlOrigin)) {
+      add(
+        "PM external-course origin correspondence",
+        "invalid",
+        "PM course URL origin must be present in the approved origins list",
+      );
+    } else {
+      add(
+        "PM external-course origin correspondence",
+        "ok",
+        "course URL and approved origins correspond",
+      );
     }
   }
 }

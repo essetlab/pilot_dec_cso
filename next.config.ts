@@ -12,21 +12,55 @@ function originFromUrl(value: string | undefined) {
   }
 }
 
+function splitOrigins(value: string | undefined) {
+  return (value ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function productionSafeExactOrigin(value: string) {
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+    const isLoopback =
+      hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+
+    return !value.includes("*") &&
+      parsed.origin === value &&
+      parsed.protocol === "https:" &&
+      !isLoopback
+      ? parsed.origin
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+const isProduction = process.env.NODE_ENV === "production";
+const localExternalCourseOrigins = isProduction
+  ? []
+  : ["http://localhost:5173", "http://127.0.0.1:5173"];
+const configuredPmOrigins = splitOrigins(
+  process.env.PM_EXTERNAL_COURSE_ALLOWED_ORIGINS,
+);
+const pmExternalCourseOrigins = isProduction
+  ? [
+      ...configuredPmOrigins.map(productionSafeExactOrigin),
+      productionSafeExactOrigin(originFromUrl(process.env.PM_EXTERNAL_COURSE_URL)),
+    ]
+  : [
+      ...configuredPmOrigins,
+      originFromUrl(process.env.PM_EXTERNAL_COURSE_URL),
+    ];
+
 const externalCourseOrigins = Array.from(
   new Set([
     "https://pilot-hrba-e-learn-v1-wajj.vercel.app",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    ...(process.env.HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS ?? "")
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter(Boolean),
+    ...localExternalCourseOrigins,
+    ...splitOrigins(process.env.HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS),
     originFromUrl(process.env.HRBA_EXTERNAL_COURSE_URL),
-    ...(process.env.PM_EXTERNAL_COURSE_ALLOWED_ORIGINS ?? "")
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter(Boolean),
-    originFromUrl(process.env.PM_EXTERNAL_COURSE_URL),
+    ...pmExternalCourseOrigins,
   ].filter(Boolean)),
 );
 
