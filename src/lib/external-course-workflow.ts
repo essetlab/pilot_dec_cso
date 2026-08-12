@@ -1037,6 +1037,7 @@ export async function registerPmExternalCourse() {
       versionNumber: 1,
     },
     update: {
+      archivedAt: null,
       publishedAt,
       publishedById: owner.id,
       status: CourseStatus.PUBLISHED,

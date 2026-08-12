@@ -210,7 +210,7 @@ export function CourseInvitationCreateForm({
         </AlertMessage>
       ) : (
         <section className="rounded-[20px] border border-dec-blue/25 bg-dec-blue/10 p-5 text-sm leading-6 text-[#26536c]">
-          <h2 className="font-semibold text-deep-navy">Invite one learner to HRBA</h2>
+          <h2 className="font-semibold text-deep-navy">Invite one learner to a course</h2>
           <p className="mt-2">
             Enter the learner details, confirm the organization and course, then create a secure link for private manual delivery.
           </p>
