@@ -689,6 +689,21 @@ export function markManagedCourseInvitationSent(input: {
   });
 }
 
+export function markManagedCourseInvitationEmailSent(input: {
+  invitationId: string;
+  session: AuthSession | null;
+}) {
+  return updateInvitationStatus({
+    actionType: AuditActionType.COURSE_INVITATION_SENT,
+    description: "Recorded successful email delivery of an individual course invitation.",
+    invitationId: input.invitationId,
+    session: input.session,
+    targetStatus: CourseInvitationStatus.SENT,
+    timestampField: "sentAt",
+    validateManagementScope: true,
+  });
+}
+
 async function prepareInvitationResend(input: {
   expiresAt?: Date;
   invitationId: string;

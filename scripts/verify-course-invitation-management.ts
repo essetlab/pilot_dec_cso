@@ -242,8 +242,44 @@ try {
     session: adminSession,
   });
 
+  let automaticEmail:
+    | {
+        courseTitle: string;
+        email: string;
+        expiresAt: Date;
+        invitationUrl: string;
+        invitedName: string;
+      }
+    | undefined;
+  const automaticallySent = await createAdminCourseInvitation({
+    ...baseInput(email("automatic-email")),
+    sendEmail: async (input) => {
+      automaticEmail = input;
+      return { delivered: true };
+    },
+  });
+  assert(automaticallySent.success);
+  assert.equal(automaticallySent.delivered, true);
+  assert.equal(automaticallySent.invitation.status, CourseInvitationStatus.SENT);
+  assert.equal(automaticEmail?.courseTitle, courses.eligible.title);
+  assert.equal(automaticEmail?.email, email("automatic-email"));
+  assert.equal(automaticEmail?.invitedName, "B3 Fictional Invited Learner");
+  assert.equal(new URL(automaticEmail!.invitationUrl).origin, "https://preview.example.test");
+  assert.equal(automaticEmail?.expiresAt.toISOString(), automaticallySent.invitation.expiresAt.toISOString());
+  const automaticAudit = await prisma.auditLog.findFirstOrThrow({
+    where: {
+      actionType: AuditActionType.COURSE_INVITATION_SENT,
+      entityId: automaticallySent.invitation.id,
+    },
+  });
+  assert.equal(
+    automaticAudit.description,
+    "Recorded successful email delivery of an individual course invitation.",
+  );
+
   const prepared = await createAdminCourseInvitation(baseInput(email("activate")));
   assert(prepared.success, prepared.success ? undefined : prepared.code);
+  assert.equal(prepared.delivered, false);
   assert.equal(prepared.invitation.status, CourseInvitationStatus.DRAFT);
   assert.equal(prepared.summary?.courseTitle, courses.eligible.title);
   assert.equal(prepared.summary?.invitedEmail, email("activate"));
@@ -386,13 +422,18 @@ try {
   const oldToken = new URL(resendPrepared.deliveryUrl).searchParams.get("token");
   assert(oldToken);
   assert((await markManagedCourseInvitationSent({ invitationId: resendPrepared.invitation.id, session: adminSession })).success);
-  const resent = await prepareAdminCourseInvitationLink({ expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), invitationId: resendPrepared.invitation.id, session: adminSession });
+  const resent = await prepareAdminCourseInvitationLink({
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    invitationId: resendPrepared.invitation.id,
+    sendEmail: async () => ({ delivered: true }),
+    session: adminSession,
+  });
   assert(resent.success);
+  assert.equal(resent.delivered, true);
+  assert.equal(resent.invitation.status, CourseInvitationStatus.SENT);
   const newToken = new URL(resent.deliveryUrl).searchParams.get("token");
   assert(newToken && newToken !== oldToken);
   assert.deepEqual(await resolveCourseInvitationToken(oldToken), { code: "invalid-token", success: false });
-  assert.deepEqual(await resolveCourseInvitationToken(newToken), { code: "not-sent", success: false });
-  assert((await markManagedCourseInvitationSent({ invitationId: resent.invitation.id, session: adminSession })).success);
   assert((await resolveCourseInvitationToken(newToken)).success);
   assert.equal(await prisma.courseInvitation.count({ where: { id: resent.invitation.id } }), 1);
 
@@ -494,7 +535,8 @@ try {
   assert(invitationForm.includes("All active pilot organizations are shown."));
   assert(invitationForm.includes("The latest published version is selected automatically."));
   assert(invitationForm.includes("/admin/organizations/new?returnTo="));
-  assert(invitationForm.includes("Create invitation"));
+  assert(invitationForm.includes("Send invitation"));
+  assert(invitationForm.includes("If automatic delivery is unavailable"));
   assert(!invitationForm.includes("Search organizations"));
   assert(!invitationForm.includes('name="region"'));
   assert(!invitationForm.includes('name="cohortId"'));

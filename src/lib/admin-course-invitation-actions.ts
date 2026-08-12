@@ -28,6 +28,15 @@ export type ManualCourseInvitationActionState = {
     status: string;
     url: string;
   };
+  receipt?: {
+    courseTitle?: string;
+    expiresAt: string;
+    invitationId: string;
+    invitedEmail?: string;
+    invitedName?: string;
+    organizationName?: string;
+    status: string;
+  };
   field?: "courseId" | "expiryDays" | "invitedEmail" | "invitedName" | "invitedRoleOrPosition" | "organizationId";
   message: string;
   success: boolean;
@@ -154,6 +163,23 @@ export async function createCourseInvitationAction(
   }
 
   revalidateInvitationPaths(result.invitation.id);
+  if (result.delivered) {
+    return {
+      code: "invitation-sent",
+      message: "The invitation email was sent successfully.",
+      receipt: {
+        courseTitle: result.summary?.courseTitle,
+        expiresAt: result.invitation.expiresAt.toISOString(),
+        invitationId: result.invitation.id,
+        invitedEmail: result.summary?.invitedEmail,
+        invitedName: result.summary?.invitedName,
+        organizationName: result.summary?.organizationName,
+        status: result.invitation.status,
+      },
+      success: true,
+    };
+  }
+
   return {
     code: "manual-delivery-ready",
     delivery: {
@@ -167,7 +193,7 @@ export async function createCourseInvitationAction(
       url: result.deliveryUrl,
     },
     message:
-      "A one-time link is ready for immediate secure delivery. The invitation is not marked sent.",
+      "Automatic email delivery was unavailable. A one-time link is ready for secure manual delivery and the invitation is not marked sent yet.",
     success: true,
   };
 }
@@ -195,6 +221,24 @@ export async function prepareCourseInvitationLinkAction(
     return failure(result.code);
   }
 
+  revalidateInvitationPaths(result.invitation.id);
+  if (result.delivered) {
+    return {
+      code: "invitation-resent",
+      message: "A replacement invitation email was sent successfully. The earlier link is no longer valid.",
+      receipt: {
+        courseTitle: result.summary?.courseTitle,
+        expiresAt: result.invitation.expiresAt.toISOString(),
+        invitationId: result.invitation.id,
+        invitedEmail: result.summary?.invitedEmail,
+        invitedName: result.summary?.invitedName,
+        organizationName: result.summary?.organizationName,
+        status: result.invitation.status,
+      },
+      success: true,
+    };
+  }
+
   return {
     code: "manual-delivery-ready",
     delivery: {
@@ -204,7 +248,7 @@ export async function prepareCourseInvitationLinkAction(
       url: result.deliveryUrl,
     },
     message:
-      "The earlier unused link is now invalid. Share this replacement link only with the intended learner.",
+      "Automatic email delivery was unavailable. The earlier unused link is now invalid; share this replacement link only with the intended learner.",
     success: true,
   };
 }

@@ -143,6 +143,58 @@ function ManualDeliveryPanel({
   );
 }
 
+function EmailDeliveryPanel({
+  message,
+  receipt,
+}: {
+  message: string;
+  receipt: NonNullable<ManualCourseInvitationActionState["receipt"]>;
+}) {
+  const expiresAt = new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(receipt.expiresAt));
+  const summaryFields = receipt.invitedEmail && receipt.organizationName && receipt.courseTitle
+    ? [
+        ["Learner", receipt.invitedName ? `${receipt.invitedName} (${receipt.invitedEmail})` : receipt.invitedEmail],
+        ["Organization", receipt.organizationName],
+        ["Course", receipt.courseTitle],
+        ["Status", receipt.status === "SENT" ? "Invitation sent" : receipt.status],
+        ["Expires", expiresAt],
+      ]
+    : [];
+
+  return (
+    <section
+      aria-labelledby="email-delivery-heading"
+      className="rounded-[24px] border border-emerald-300 bg-emerald-50 p-5 shadow-soft sm:p-6"
+    >
+      <StatusBadge label="Invitation email sent" tone="green" />
+      <h2 className="mt-4 text-xl font-semibold text-deep-navy" id="email-delivery-heading" tabIndex={-1}>
+        Invitation sent
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-emerald-950">{message}</p>
+
+      {summaryFields.length > 0 ? (
+        <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+          {summaryFields.map(([label, value]) => (
+            <div className="rounded-[16px] border border-emerald-200 bg-white/75 p-4" key={label}>
+              <dt className="text-xs font-semibold uppercase tracking-[0.1em] text-emerald-900">{label}</dt>
+              <dd className="mt-1 text-sm font-semibold leading-6 text-dark-ink">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      <div className="mt-5">
+        <ActionButton href={`/admin/course-invitations/${receipt.invitationId}`} variant="secondary">
+          View invitation status
+        </ActionButton>
+      </div>
+    </section>
+  );
+}
+
 export function CourseInvitationCreateForm({
   options,
   preferredOrganizationId,
@@ -181,12 +233,16 @@ export function CourseInvitationCreateForm({
   }, [state.code, state.field]);
 
   useEffect(() => {
-    if (!state.success || !state.delivery) {
+    if (!state.success || (!state.delivery && !state.receipt)) {
       return;
     }
 
-    document.getElementById("manual-delivery-heading")?.focus();
-  }, [state.delivery, state.success]);
+    document.getElementById(state.receipt ? "email-delivery-heading" : "manual-delivery-heading")?.focus();
+  }, [state.delivery, state.receipt, state.success]);
+
+  if (state.success && state.receipt) {
+    return <EmailDeliveryPanel message={state.message} receipt={state.receipt} />;
+  }
 
   if (state.success && state.delivery) {
     return <ManualDeliveryPanel delivery={state.delivery} message={state.message} />;
@@ -212,7 +268,7 @@ export function CourseInvitationCreateForm({
         <section className="rounded-[20px] border border-dec-blue/25 bg-dec-blue/10 p-5 text-sm leading-6 text-[#26536c]">
           <h2 className="font-semibold text-deep-navy">Invite one learner to a course</h2>
           <p className="mt-2">
-            Enter the learner details, confirm the organization and course, then create a secure link for private manual delivery.
+            Enter the learner details, confirm the organization and course, then send the secure invitation email.
           </p>
         </section>
       )}
@@ -311,13 +367,14 @@ export function CourseInvitationCreateForm({
       </label>
 
       <div className="rounded-[18px] border border-dec-blue/20 bg-dec-blue/10 p-4 text-sm leading-6 text-[#26536c]">
-        A secure one-time link will appear after creation. Copy it for private manual delivery.
-        Course access is created only after the invited email signs in and accepts.
+        The Hub emails a secure one-time link to the learner. If automatic delivery is unavailable,
+        a manual delivery link is shown as a fallback. Course access is created only after the invited
+        email signs in and accepts.
       </div>
 
       <div>
         <SubmitButton disabled={blockingMessages.length > 0 || !organizationId || !courseId || !courseVersionId}>
-          Create invitation
+          Send invitation
         </SubmitButton>
         {blockingMessages.length === 0 && (!organizationId || !courseId) ? (
           <p className="mt-2 text-sm font-medium text-red-700">
@@ -335,6 +392,10 @@ export function CourseInvitationPrepareLinkForm({ invitationId }: { invitationId
     initialManualCourseInvitationState,
   );
 
+  if (state.success && state.receipt) {
+    return <EmailDeliveryPanel message={state.message} receipt={state.receipt} />;
+  }
+
   if (state.success && state.delivery) {
     return <ManualDeliveryPanel delivery={state.delivery} message={state.message} />;
   }
@@ -344,8 +405,8 @@ export function CourseInvitationPrepareLinkForm({ invitationId }: { invitationId
       <input name="invitationId" type="hidden" value={invitationId} />
       <h2 className="text-lg font-semibold text-deep-navy">Prepare a replacement link</h2>
       <p className="mt-2 text-sm leading-6 text-muted-text">
-        This invalidates the previous unused link. The replacement appears once and is
-        not marked sent until you confirm delivery.
+        This invalidates the previous unused link and emails the replacement to the learner.
+        If automatic email delivery is unavailable, the replacement appears once for secure manual delivery.
       </p>
       {state.code !== "idle" && !state.success ? (
         <div className="mt-4" aria-live="assertive">
@@ -365,7 +426,7 @@ export function CourseInvitationPrepareLinkForm({ invitationId }: { invitationId
         </select>
       </label>
       <div className="mt-4">
-        <SubmitButton>Prepare replacement link</SubmitButton>
+        <SubmitButton>Send replacement invitation</SubmitButton>
       </div>
     </form>
   );

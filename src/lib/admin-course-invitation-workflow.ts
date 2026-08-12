@@ -11,8 +11,10 @@ import type { AuthSession } from "./auth/session-codec";
 import { isControlledRegion } from "./controlled-options";
 import {
   createManagedCourseInvitation,
+  markManagedCourseInvitationEmailSent,
   prepareManagedCourseInvitationResend,
 } from "./course-invitation-workflow";
+import { sendCourseInvitationEmail } from "./email";
 import { prisma } from "./prisma";
 
 const LIST_LIMIT = 100;
@@ -33,6 +35,7 @@ export type CourseInvitationDeliveryResult =
       success: false;
     }
   | {
+      delivered: boolean;
       deliveryUrl: string;
       invitation: {
         expiresAt: Date;
@@ -323,6 +326,7 @@ export async function createAdminCourseInvitation(input: {
   invitedRoleOrPosition?: string | null;
   organizationId: string;
   region?: string;
+  sendEmail?: typeof sendCourseInvitationEmail;
   session: AuthSession | null;
 }): Promise<CourseInvitationDeliveryResult> {
   const origin = getTrustedCourseInvitationOrigin();
@@ -367,9 +371,28 @@ export async function createAdminCourseInvitation(input: {
     return { code: "unavailable", success: false };
   }
 
+  const invitationUrl = deliveryUrl(origin, result.plaintextToken);
+  const email = await (input.sendEmail ?? sendCourseInvitationEmail)({
+    courseTitle: course.title,
+    email: input.invitedEmail.trim().toLowerCase(),
+    expiresAt: result.invitation.expiresAt,
+    invitationUrl,
+    invitedName: input.invitedName.trim(),
+  });
+  const deliveryStatus = email.delivered
+    ? await markManagedCourseInvitationEmailSent({
+        invitationId: result.invitation.id,
+        session: input.session,
+      })
+    : result;
+  if (!deliveryStatus.success) {
+    return deliveryStatus;
+  }
+
   return {
-    deliveryUrl: deliveryUrl(origin, result.plaintextToken),
-    invitation: result.invitation,
+    delivered: email.delivered,
+    deliveryUrl: invitationUrl,
+    invitation: deliveryStatus.invitation,
     summary: {
       courseTitle: course.title,
       invitedEmail: input.invitedEmail.trim().toLowerCase(),
@@ -383,11 +406,23 @@ export async function createAdminCourseInvitation(input: {
 export async function prepareAdminCourseInvitationLink(input: {
   expiresAt: Date;
   invitationId: string;
+  sendEmail?: typeof sendCourseInvitationEmail;
   session: AuthSession | null;
 }): Promise<CourseInvitationDeliveryResult> {
   const origin = getTrustedCourseInvitationOrigin();
   if (!origin) {
     return { code: "missing-app-origin", success: false };
+  }
+
+  const current = await prisma.courseInvitation.findUnique({
+    include: {
+      course: { select: { title: true } },
+      organization: { select: { name: true } },
+    },
+    where: { id: input.invitationId },
+  });
+  if (!current) {
+    return { code: "not-found", success: false };
   }
 
   const result = await prepareManagedCourseInvitationResend(input);
@@ -398,9 +433,34 @@ export async function prepareAdminCourseInvitationLink(input: {
     return { code: "unavailable", success: false };
   }
 
+  const invitationUrl = deliveryUrl(origin, result.plaintextToken);
+  const email = await (input.sendEmail ?? sendCourseInvitationEmail)({
+    courseTitle: current.course.title,
+    email: current.invitedEmail,
+    expiresAt: result.invitation.expiresAt,
+    invitationUrl,
+    invitedName: current.invitedName,
+  });
+  const deliveryStatus = email.delivered
+    ? await markManagedCourseInvitationEmailSent({
+        invitationId: result.invitation.id,
+        session: input.session,
+      })
+    : result;
+  if (!deliveryStatus.success) {
+    return deliveryStatus;
+  }
+
   return {
-    deliveryUrl: deliveryUrl(origin, result.plaintextToken),
-    invitation: result.invitation,
+    delivered: email.delivered,
+    deliveryUrl: invitationUrl,
+    invitation: deliveryStatus.invitation,
+    summary: {
+      courseTitle: current.course.title,
+      invitedEmail: current.invitedEmail,
+      invitedName: current.invitedName,
+      organizationName: current.organization.name,
+    },
     success: true,
   };
 }
