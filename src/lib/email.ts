@@ -19,6 +19,7 @@ export type StaffInvitationEmailResult =
     };
 
 export type CourseInvitationEmailResult = StaffInvitationEmailResult;
+export type AccountEmailResult = StaffInvitationEmailResult;
 
 function readEnv(name: string) {
   return process.env[name]?.trim() ?? "";
@@ -120,6 +121,101 @@ function buildCourseInvitationEmailContent(input: {
       "If you already activated your account, open the link and sign in.",
     ].join("\n"),
   };
+}
+
+function buildAccountConfirmationEmailContent(confirmationUrl: string) {
+  const safeUrl = escapeHtml(confirmationUrl);
+  return {
+    html: `
+      <p>Hello,</p>
+      <p>Confirm your email address to finish activating your CSO Learning Hub account.</p>
+      <p><a href="${safeUrl}">Confirm email and continue</a></p>
+      <p>If you did not request this account, you can ignore this email.</p>
+    `,
+    subject: "Confirm your CSO Learning Hub account",
+    text: [
+      "Hello,",
+      "",
+      "Confirm your email address to finish activating your CSO Learning Hub account:",
+      confirmationUrl,
+      "",
+      "If you did not request this account, you can ignore this email.",
+    ].join("\n"),
+  };
+}
+
+function buildPasswordRecoveryEmailContent(recoveryUrl: string) {
+  const safeUrl = escapeHtml(recoveryUrl);
+  return {
+    html: `
+      <p>Hello,</p>
+      <p>We received a request to reset your CSO Learning Hub password.</p>
+      <p><a href="${safeUrl}">Choose a new password</a></p>
+      <p>If you did not request this change, you can ignore this email.</p>
+    `,
+    subject: "Reset your CSO Learning Hub password",
+    text: [
+      "Hello,",
+      "",
+      "Use this secure link to choose a new CSO Learning Hub password:",
+      recoveryUrl,
+      "",
+      "If you did not request this change, you can ignore this email.",
+    ].join("\n"),
+  };
+}
+
+async function sendAccountEmail(input: {
+  email: string;
+  content: { html: string; subject: string; text: string };
+}): Promise<AccountEmailResult> {
+  if (!isStaffInvitationEmailConfigured()) {
+    return {
+      delivered: false,
+      message: "Account email could not be sent because SMTP settings are missing.",
+      reason: "missing-config",
+    };
+  }
+
+  try {
+    await getSmtpTransporter().sendMail({
+      from: getRequiredEnv("EMAIL_FROM"),
+      html: input.content.html,
+      subject: input.content.subject,
+      text: input.content.text,
+      to: input.email,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error("Account email delivery failed.", {
+      errorType: error instanceof Error ? error.name : "UnknownError",
+    });
+    return {
+      delivered: false,
+      message: "The account email could not be delivered.",
+      reason: "send-failed",
+    };
+  }
+}
+
+export function sendAccountConfirmationEmail(input: {
+  confirmationUrl: string;
+  email: string;
+}) {
+  return sendAccountEmail({
+    content: buildAccountConfirmationEmailContent(input.confirmationUrl),
+    email: input.email,
+  });
+}
+
+export function sendPasswordRecoveryEmail(input: {
+  email: string;
+  recoveryUrl: string;
+}) {
+  return sendAccountEmail({
+    content: buildPasswordRecoveryEmailContent(input.recoveryUrl),
+    email: input.email,
+  });
 }
 
 export async function sendStaffInvitationEmail({

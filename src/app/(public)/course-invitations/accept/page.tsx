@@ -86,6 +86,7 @@ export default async function CourseInvitationAcceptPage({ searchParams }: PageP
 
             <div className="mt-6">
               <CourseInvitationAcceptance
+                accountStatus={resolution.success && resolution.state === "available" ? resolution.accountStatus : undefined}
                 authentication={resolution.success && resolution.state === "available" ? resolution.authentication : undefined}
                 context={showContext && resolution.success ? {
                   courseSlug: resolution.context.courseSlug,

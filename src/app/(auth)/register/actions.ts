@@ -105,7 +105,7 @@ export async function registerOpenLearnerAction(formData: FormData) {
       preferredLanguage: formText(formData, "preferredLanguage"),
       region,
       roleOther,
-    }, supabaseClient, authOrigin);
+    }, supabaseClient, authOrigin, next || undefined);
   } catch (error) {
     const errorCode = safeErrorCode(error);
     console.error("Open learner registration action failed.", {
@@ -147,6 +147,14 @@ export async function registerOpenLearnerAction(formData: FormData) {
 
   if (next) {
     params.set("next", next);
+  }
+
+  if (
+    next &&
+    result.authProvider === "supabase" &&
+    !result.emailConfirmationRequired
+  ) {
+    redirect(next);
   }
 
   redirect(`/sign-in?${params.toString()}`);

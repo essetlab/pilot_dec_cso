@@ -129,16 +129,18 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           <StatusBadge label="Individual Account" tone="green" />
         </div>
         <h1 className="mt-2 text-2xl font-bold text-deep-navy">
-          Create your account
+          {invitation ? "Activate your account" : "Create your account"}
         </h1>
         <p className="mt-2 text-xs leading-5 text-muted-text">
           {invitation
             ? "Create your account with the invited email, then return to accept the exact course invitation."
             : "Register with your email address, confirm your account, and explore available learning opportunities."}
         </p>
-        <p className="mt-2 text-2xs leading-normal text-muted-text">
-          Registration includes access to available courses. Please note that some courses may require invitation or assignment from DEC.
-        </p>
+        {!invitation ? (
+          <p className="mt-2 text-2xs leading-normal text-muted-text">
+            Registration includes access to available courses. Please note that some courses may require invitation or assignment from DEC.
+          </p>
+        ) : null}
       </div>
 
       {error && (

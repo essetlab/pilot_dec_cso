@@ -162,6 +162,7 @@ export type CourseInvitationAcceptanceResolution =
       success: false;
     }
   | {
+      accountStatus: "existing" | "new";
       authentication: "matching" | "mismatch" | "required";
       context: {
         courseSlug: string;
@@ -964,6 +965,10 @@ export async function resolveCourseInvitationAcceptance(input: {
       input.session.email &&
       normalizeCourseInvitationEmail(input.session.email) === invitation.invitedEmail,
   );
+  const existingInvitee = await prisma.user.findUnique({
+    select: { id: true },
+    where: { email: invitation.invitedEmail },
+  });
   if (invitation.status === CourseInvitationStatus.ACTIVATED) {
     if (!sessionMatches || invitation.activatedUserId !== input.session?.userId) {
       return { state: "unavailable", success: false };
@@ -983,6 +988,7 @@ export async function resolveCourseInvitationAcceptance(input: {
   }
 
   return {
+    accountStatus: existingInvitee ? "existing" : "new",
     authentication: !input.session
       ? "required"
       : sessionMatches

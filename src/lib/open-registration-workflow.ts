@@ -5,6 +5,7 @@ import {
   UserStatus,
 } from "../generated/prisma/enums";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { sendAccountConfirmationEmail } from "./email";
 import { hashPassword, validatePasswordPolicy } from "./auth/passwords";
 import {
   isControlledRegion,
@@ -89,6 +90,21 @@ function getPublicAppUrl() {
   }
 }
 
+export function buildRegistrationConfirmationUrl(
+  authOrigin: string,
+  tokenHash: string,
+  nextPath?: string,
+) {
+  const callback = new URL("/auth/confirm", authOrigin);
+  const safeNextPath = nextPath?.startsWith("/") && !nextPath.startsWith("//")
+    ? nextPath
+    : "/sign-in?notice=email-confirmed";
+  callback.searchParams.set("token_hash", tokenHash);
+  callback.searchParams.set("type", "signup");
+  callback.searchParams.set("next", safeNextPath);
+  return callback.toString();
+}
+
 function isDuplicateAccountError(message: string) {
   const normalized = message.toLowerCase();
   return (
@@ -99,11 +115,101 @@ function isDuplicateAccountError(message: string) {
   );
 }
 
+type SupabaseSignupLinkResult = {
+  data: {
+    properties: { hashed_token?: string | null } | null;
+    user: { id: string } | null;
+  } | null;
+  error: { message: string; name?: string } | null;
+};
+
+export type SupabaseSignupDependencies = {
+  deleteUser: (userId: string) => Promise<{ error: { name?: string } | null }>;
+  generateSignupLink: (input: {
+    email: string;
+    password: string;
+    redirectTo: string;
+  }) => Promise<SupabaseSignupLinkResult>;
+  sendConfirmationEmail: (input: {
+    confirmationUrl: string;
+    email: string;
+  }) => Promise<{ delivered: boolean }>;
+};
+
+export async function createSupabaseSignupIdentity(
+  input: {
+    authOrigin: string;
+    confirmationNextPath?: string;
+    email: string;
+    password: string;
+  },
+  dependencies: SupabaseSignupDependencies,
+): Promise<AuthRegistrationResult> {
+  const { data, error } = await dependencies.generateSignupLink({
+    email: input.email,
+    password: input.password,
+    redirectTo: new URL("/auth/confirm", input.authOrigin).toString(),
+  });
+
+  if (error) {
+    console.error("Supabase signup link generation failed.", {
+      errorType: error.name ?? "AuthError",
+    });
+    return {
+      code: isDuplicateAccountError(error.message)
+        ? "registration-not-completed"
+        : "supabase-registration-failed",
+      provider: "supabase",
+      success: false,
+    };
+  }
+
+  const userId = data?.user?.id;
+  const tokenHash = data?.properties?.hashed_token;
+  if (!userId || !tokenHash) {
+    return {
+      code: "registration-not-completed",
+      provider: "supabase",
+      success: false,
+    };
+  }
+
+  const delivery = await dependencies.sendConfirmationEmail({
+    confirmationUrl: buildRegistrationConfirmationUrl(
+      input.authOrigin,
+      tokenHash,
+      input.confirmationNextPath,
+    ),
+    email: input.email,
+  });
+  if (!delivery.delivered) {
+    const { error: cleanupError } = await dependencies.deleteUser(userId);
+    if (cleanupError) {
+      console.error("Supabase signup cleanup failed after confirmation email delivery failure.", {
+        errorType: cleanupError.name ?? "AuthError",
+      });
+    }
+    return {
+      code: "supabase-registration-failed",
+      provider: "supabase",
+      success: false,
+    };
+  }
+
+  return {
+    emailConfirmationRequired: true,
+    provider: "supabase",
+    success: true,
+    userId,
+  };
+}
+
 async function registerAuthIdentity(
   email: string,
   password: string,
   supabaseClient?: SupabaseClient,
   authOrigin = getPublicAppUrl(),
+  confirmationNextPath?: string,
 ): Promise<AuthRegistrationResult> {
   if (!readSupabasePublicConfig()) {
     return { provider: "local" };
@@ -117,41 +223,40 @@ async function registerAuthIdentity(
     };
   }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${authOrigin}/auth/callback?next=/sign-in?notice=email-confirmed`,
-    },
-  });
-
-  if (error) {
+  try {
+    const { createSupabaseAdminClient } = await import("./supabase/admin");
+    const admin = createSupabaseAdminClient();
+    return await createSupabaseSignupIdentity(
+      {
+        authOrigin,
+        confirmationNextPath,
+        email,
+        password,
+      },
+      {
+        deleteUser: async (userId) => admin.auth.admin.deleteUser(userId),
+        generateSignupLink: async (input) => {
+          const { data, error } = await admin.auth.admin.generateLink({
+            email: input.email,
+            options: { redirectTo: input.redirectTo },
+            password: input.password,
+            type: "signup",
+          });
+          return { data, error };
+        },
+        sendConfirmationEmail: sendAccountConfirmationEmail,
+      },
+    );
+  } catch (error) {
+    console.error("Supabase signup service failed before account creation completed.", {
+      errorType: error instanceof Error ? error.name : "UnknownError",
+    });
     return {
-      code: isDuplicateAccountError(error.message)
-        ? "registration-not-completed"
-        : "supabase-registration-failed",
+      code: "supabase-registration-failed",
       provider: "supabase",
       success: false,
     };
   }
-
-  if (
-    !data.user?.id ||
-    (Array.isArray(data.user.identities) && data.user.identities.length === 0)
-  ) {
-    return {
-      code: "registration-not-completed",
-      provider: "supabase",
-      success: false,
-    };
-  }
-
-  return {
-    emailConfirmationRequired: !data.session,
-    provider: "supabase",
-    success: true,
-    userId: data.user.id,
-  };
 }
 
 export function buildOpenRegistrationUserCreateData(input: {
@@ -299,6 +404,7 @@ export async function registerOpenLearner(
   input: OpenRegistrationInput,
   supabaseClient?: SupabaseClient,
   authOrigin?: string,
+  confirmationNextPath?: string,
 ): Promise<OpenRegistrationResult> {
   const email = normalizeOpenRegistrationEmail(input.email);
   const fullName = normalizeText(input.fullName);
@@ -360,6 +466,7 @@ export async function registerOpenLearner(
     input.password,
     supabaseClient,
     authOrigin,
+    confirmationNextPath,
   );
   if ("success" in authRegistration && !authRegistration.success) {
     return { code: authRegistration.code, success: false };
@@ -394,6 +501,17 @@ export async function registerOpenLearner(
   } catch (error) {
     if (error instanceof Error && error.message === "ACCOUNT_ALREADY_EXISTS") {
       return { code: "registration-not-completed", success: false };
+    }
+
+    if (isSupabaseRegistration && "userId" in authRegistration) {
+      try {
+        const { createSupabaseAdminClient } = await import("./supabase/admin");
+        await createSupabaseAdminClient().auth.admin.deleteUser(authRegistration.userId);
+      } catch (cleanupError) {
+        console.error("Supabase signup cleanup failed after Hub profile creation failure.", {
+          errorType: cleanupError instanceof Error ? cleanupError.name : "UnknownError",
+        });
+      }
     }
 
     console.error("Open learner profile creation failed after registration validation.", {

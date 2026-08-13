@@ -1,10 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { resolvePublicAuthOrigin } from "@/lib/auth/public-auth-origin";
 import { isRateLimited } from "@/lib/auth/rate-limit";
+import { sendPasswordRecoveryEmail } from "@/lib/email";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function requestPasswordResetAction(formData: FormData) {
   const rawEmail = formData.get("email");
@@ -17,24 +18,25 @@ export async function requestPasswordResetAction(formData: FormData) {
   }
 
   if (email && !isRateLimited(`password-reset:${email}`, 4, 15 * 60 * 1000)) {
-    // Recovery links must remain usable when a learner opens their email in a
-    // different browser or after the active Preview deployment changes. PKCE
-    // binds the link to a verifier cookie on the requesting host, so recovery
-    // intentionally uses Supabase's stateless fragment flow. The reset page
-    // establishes the session client-side and removes the credentials from the
-    // address bar before the learner submits a new password.
-    const supabase = createClient(config.url, config.publishableKey, {
-      auth: {
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        flowType: "implicit",
-        persistSession: false,
-      },
-    });
     const authOrigin = await resolvePublicAuthOrigin();
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${authOrigin}/reset-password?recovery=fragment`,
-    });
+    try {
+      const admin = createSupabaseAdminClient();
+      const { data, error } = await admin.auth.admin.generateLink({
+        email,
+        options: { redirectTo: `${authOrigin}/reset-password?recovery=fragment` },
+        type: "recovery",
+      });
+      if (!error && data.properties?.action_link) {
+        await sendPasswordRecoveryEmail({
+          email,
+          recoveryUrl: data.properties.action_link,
+        });
+      }
+    } catch (error) {
+      console.error("Password recovery email generation failed.", {
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
+    }
   }
 
   // The same response is used for known, unknown, invalid, and rate-limited

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ActionButton, AlertMessage } from "@/components/ui";
 
 type AcceptanceProps = {
+  accountStatus?: "existing" | "new";
   authentication?: "matching" | "mismatch" | "required";
   context?: {
     courseSlug: string;
@@ -48,6 +49,7 @@ function Summary({ context }: { context: NonNullable<AcceptanceProps["context"]>
 }
 
 export function CourseInvitationAcceptance({
+  accountStatus,
   authentication,
   context,
   returnPath,
@@ -142,16 +144,23 @@ export function CourseInvitationAcceptance({
   }
 
   if (authentication === "required" && context) {
+    const isNewLearner = accountStatus === "new";
     return (
       <div className="space-y-5">
         <Summary context={context} />
-        <AlertMessage title="Use the invited email address" tone="info">
-          Sign in with the email address that received this invitation. If you do not yet have an account, register with that same address and return here after confirmation.
+        <AlertMessage title={isNewLearner ? "Activate your learner account" : "Sign in with your existing account"} tone="info">
+          {isNewLearner
+            ? "Create your password using the invited email address. After any required email confirmation, you will return to this invitation to receive course access."
+            : "Use the existing learner account for the invited email address. You will return here to accept this course invitation."}
         </AlertMessage>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <ActionButton href={`/sign-in?next=${encodeURIComponent(returnPath)}`} size="lg">Sign in to accept</ActionButton>
-          <ActionButton href={`/register?next=${encodeURIComponent(returnPath)}`} size="lg" variant="secondary">Create account using the invited email</ActionButton>
-        </div>
+        <ActionButton
+          href={isNewLearner
+            ? `/register?next=${encodeURIComponent(returnPath)}`
+            : `/sign-in?next=${encodeURIComponent(returnPath)}`}
+          size="lg"
+        >
+          {isNewLearner ? "Activate account" : "Sign in to accept invitation"}
+        </ActionButton>
       </div>
     );
   }

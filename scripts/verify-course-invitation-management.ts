@@ -378,7 +378,8 @@ try {
   assert(
     unauthenticatedResolution.success &&
       unauthenticatedResolution.state === "available" &&
-      unauthenticatedResolution.authentication === "required",
+      unauthenticatedResolution.authentication === "required" &&
+      unauthenticatedResolution.accountStatus === "new",
   );
 
   const activationLearner = await prisma.user.create({ data: { email: email("activate"), fullName: "B3 Fictional Activation Learner" } });
@@ -387,6 +388,13 @@ try {
     { assignedById: users.admin.id, roleId: roles.get(RoleKey.PARTICIPANT)!.id, userId: activationLearner.id },
     { assignedById: users.admin.id, roleId: roles.get(RoleKey.PARTICIPANT)!.id, userId: mismatchLearner.id },
   ] });
+  const existingLearnerResolution = await resolveCourseInvitationAcceptance({ plaintextToken: activationToken, session: null });
+  assert(
+    existingLearnerResolution.success &&
+      existingLearnerResolution.state === "available" &&
+      existingLearnerResolution.authentication === "required" &&
+      existingLearnerResolution.accountStatus === "existing",
+  );
   const matchingSession = sessionFor(activationLearner);
   const matchingResolution = await resolveCourseInvitationAcceptance({ plaintextToken: activationToken, session: matchingSession });
   assert(
@@ -523,6 +531,9 @@ try {
   assert(acceptClient.includes('fetch("/api/course-invitations/activate"'));
   assert(acceptClient.includes("/sign-in?next="));
   assert(acceptClient.includes("/register?next="));
+  assert(acceptClient.includes('accountStatus === "new"'));
+  assert(acceptClient.includes('"Activate account"'));
+  assert(!acceptClient.includes("Create account using the invited email"));
   assert(acceptClient.includes("href={activation.learnerPath}"));
   assert(acceptClient.includes("href={context.learnerPath}"));
   assert(acceptPage.includes("getTrackedExternalCourseLearnerPath"));
