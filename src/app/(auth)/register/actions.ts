@@ -48,6 +48,7 @@ function safeErrorType(error: unknown) {
 export async function registerOpenLearnerAction(formData: FormData) {
   let email = formText(formData, "email").toLowerCase();
   const next = safeNextPath(formData.get("next"));
+  let registrationChannel: "course-invitation" | "open-registration" = "open-registration";
   let organizationName = formText(formData, "organization");
   let region = formText(formData, "region");
   let jobTitle = formText(formData, "jobTitle");
@@ -66,6 +67,7 @@ export async function registerOpenLearnerAction(formData: FormData) {
       }
 
       email = invitation.context.invitedEmail;
+      registrationChannel = "course-invitation";
       organizationName = invitation.context.organization.name;
       region = invitation.context.organization.region && isControlledRegion(invitation.context.organization.region)
         ? invitation.context.organization.region
@@ -105,7 +107,7 @@ export async function registerOpenLearnerAction(formData: FormData) {
       preferredLanguage: formText(formData, "preferredLanguage"),
       region,
       roleOther,
-    }, supabaseClient, authOrigin, next || undefined);
+    }, supabaseClient, authOrigin, next || undefined, registrationChannel);
   } catch (error) {
     const errorCode = safeErrorCode(error);
     console.error("Open learner registration action failed.", {

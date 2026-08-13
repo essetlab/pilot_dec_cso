@@ -1,6 +1,5 @@
 import {
   AuditActionType,
-  CourseStatus,
   RoleKey,
   UserStatus,
 } from "../generated/prisma/enums";
@@ -14,10 +13,6 @@ import {
 } from "./controlled-options";
 import { prisma } from "./prisma";
 import { readSupabasePublicConfig } from "./supabase/config";
-import {
-  HRBA_EXTERNAL_COURSE_ID,
-  HRBA_EXTERNAL_COURSE_VERSION_ID,
-} from "./external-course-config";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -294,6 +289,7 @@ async function createOpenRegistrationProfile(input: {
   jobTitle: string;
   passwordHash?: string | null;
   preferredLanguage: string;
+  registrationChannel: "course-invitation" | "open-registration";
   region: string;
   selfReportedOrganizationName: string;
 }) {
@@ -333,65 +329,19 @@ async function createOpenRegistrationProfile(input: {
       },
     });
 
-    const hrbaCourse = await tx.course.findFirst({
-      select: {
-        createdById: true,
-        id: true,
-        versions: {
-          select: { id: true },
-          where: {
-            id: HRBA_EXTERNAL_COURSE_VERSION_ID,
-            status: CourseStatus.PUBLISHED,
-          },
-        },
-      },
-      where: {
-        archivedAt: null,
-        id: HRBA_EXTERNAL_COURSE_ID,
-        status: CourseStatus.PUBLISHED,
-      },
-    });
-
-    const hrbaVersion = hrbaCourse?.versions[0];
-    if (!hrbaCourse || !hrbaVersion) {
-      throw new Error("HRBA_COURSE_UNAVAILABLE");
-    }
-
-    const hrbaAssignment = await tx.courseAssignment.upsert({
-      create: {
-        assignedById: hrbaCourse.createdById,
-        assignmentType: "USER",
-        courseId: hrbaCourse.id,
-        courseVersionId: hrbaVersion.id,
-        targetUserId: user.id,
-      },
-      update: {
-        assignedAt: new Date(),
-        assignedById: hrbaCourse.createdById,
-        courseVersionId: hrbaVersion.id,
-        isActive: true,
-      },
-      where: {
-        courseId_targetUserId: {
-          courseId: hrbaCourse.id,
-          targetUserId: user.id,
-        },
-      },
-    });
-
     await tx.auditLog.create({
       data: {
         actionType: AuditActionType.USER_CREATED,
         actorUserId: user.id,
-        description: "Created an individual Hub learner account through open registration.",
+        description: input.registrationChannel === "course-invitation"
+          ? "Created an individual Hub learner account through a DEC course invitation."
+          : "Created an individual Hub learner account through open registration.",
         entityId: user.id,
         entityType: "User",
         metadataJson: {
           consentAcknowledged: true,
-          hrbaAssignmentId: hrbaAssignment.id,
-          hrbaCourseVersionId: hrbaVersion.id,
           organizationLinkCreated: false,
-          registrationChannel: "open-registration",
+          registrationChannel: input.registrationChannel,
         },
       },
     });
@@ -405,6 +355,7 @@ export async function registerOpenLearner(
   supabaseClient?: SupabaseClient,
   authOrigin?: string,
   confirmationNextPath?: string,
+  registrationChannel: "course-invitation" | "open-registration" = "open-registration",
 ): Promise<OpenRegistrationResult> {
   const email = normalizeOpenRegistrationEmail(input.email);
   const fullName = normalizeText(input.fullName);
@@ -484,6 +435,7 @@ export async function registerOpenLearner(
       jobTitle,
       passwordHash: isSupabaseRegistration ? null : hashPassword(input.password),
       preferredLanguage,
+      registrationChannel,
       region,
       selfReportedOrganizationName: organizationName,
     });

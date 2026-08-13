@@ -47,6 +47,7 @@
     "verify:open-registration": "node --import jiti/register scripts/verify-open-registration.ts",
     "verify:stage-a-session": "node --import jiti/register scripts/verify-stage-a-session.ts",
     "verify:hrba-assignment-boundary": "node --import jiti/register scripts/verify-hrba-assignment-boundary.ts",
+    "verify:course-entitlement-routing": "node --import jiti/register scripts/verify-course-entitlement-routing.ts",
     "verify:course-invitation-lifecycle": "node --import jiti/register scripts/verify-course-invitation-lifecycle.ts",
     "verify:course-invitation-activation": "node --import jiti/register scripts/verify-course-invitation-activation.ts",
     "verify:course-invitation-management": "node --import jiti/register scripts/verify-course-invitation-management.ts",

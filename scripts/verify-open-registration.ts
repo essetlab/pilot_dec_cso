@@ -156,6 +156,8 @@ assert.equal(data.passwordHash, null);
 
 const action = source("src/app/(auth)/register/actions.ts");
 const confirmationRoute = source("src/app/(auth)/auth/confirm/route.ts");
+const signInAction = source("src/app/(auth)/sign-in/actions.ts");
+const signOutRoute = source("src/app/(auth)/sign-out/route.ts");
 const adminPeopleWorkflow = source("src/lib/admin-people-workflow.ts");
 const page = source("src/app/(auth)/register/page.tsx");
 const workflow = source("src/lib/open-registration-workflow.ts");
@@ -175,16 +177,20 @@ assert.match(workflow, /selfReportedOrganizationName/);
 assert.match(workflow, /organizationId: null/);
 assert.doesNotMatch(workflow, /organization\.(create|upsert|findFirst|findUnique)/);
 assert.match(workflow, /registration-not-completed/);
+assert.doesNotMatch(workflow, /HRBA_EXTERNAL_COURSE_ID|HRBA_EXTERNAL_COURSE_VERSION_ID/);
+assert.doesNotMatch(workflow, /tx\.courseAssignment\.(create|upsert)/);
+assert.match(workflow, /registrationChannel: input\.registrationChannel/);
+assert.match(action, /registrationChannel = "course-invitation"/);
 assert.doesNotMatch(action, /activateCourseInvitation|course-invitations\/activate/);
 assert.doesNotMatch(workflow, /activateCourseInvitation|course-invitations\/activate/);
 assert.match(confirmationRoute, /auth\.verifyOtp/);
 assert.match(confirmationRoute, /type: "signup"/);
 assert.match(confirmationRoute, /safeNextPath/);
+assert.match(signInAction, /auth\.signInWithPassword/);
+assert.match(signInAction, /resolveSupabaseHubSession/);
+assert.match(signOutRoute, /auth\.signOut/);
+assert.match(signOutRoute, /clearCurrentSession/);
 assert.match(workflow, /consentAcknowledged: true/);
-assert.match(workflow, /HRBA_EXTERNAL_COURSE_VERSION_ID/);
-assert.match(workflow, /courseId_targetUserId/);
-assert.match(workflow, /assignmentType: "USER"/);
-assert.match(workflow, /hrbaAssignmentId/);
 assert.match(adminPeopleWorkflow, /selfReportedOrganizationName: true/);
 assert.match(
   adminPeopleWorkflow,

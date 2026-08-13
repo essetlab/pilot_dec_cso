@@ -15,6 +15,24 @@ export function isHrbaCourseSlug(slug: string) {
   return slug === HRBA_EXTERNAL_COURSE_SLUG;
 }
 
+export function resolveCourseAccessRequirement(input: {
+  courseSlug: string;
+  visibility: CourseVisibility;
+}) {
+  if (input.visibility === CourseVisibility.PRIVATE) {
+    return "blocked" as const;
+  }
+
+  if (
+    isHrbaCourseSlug(input.courseSlug) ||
+    input.visibility === CourseVisibility.ASSIGNED_ONLY
+  ) {
+    return "assignment" as const;
+  }
+
+  return "open" as const;
+}
+
 export async function hasActiveIndividualCourseAssignment(
   userId: string,
   courseId: string,
@@ -33,7 +51,8 @@ export async function hasActiveIndividualCourseAssignment(
 }
 
 export async function hasLearnerCourseEntitlement(input: CourseEntitlementInput) {
-  if (input.visibility === CourseVisibility.PRIVATE) {
+  const requirement = resolveCourseAccessRequirement(input);
+  if (requirement === "blocked") {
     return false;
   }
 
@@ -43,7 +62,7 @@ export async function hasLearnerCourseEntitlement(input: CourseEntitlementInput)
     return hasActiveIndividualCourseAssignment(input.userId, input.courseId);
   }
 
-  if (input.visibility === CourseVisibility.PUBLIC) {
+  if (requirement === "open") {
     return true;
   }
 
