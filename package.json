@@ -47,6 +47,7 @@
     "verify:course-invitation-lifecycle": "node --import jiti/register scripts/verify-course-invitation-lifecycle.ts",
     "verify:course-invitation-activation": "node --import jiti/register scripts/verify-course-invitation-activation.ts",
     "verify:course-invitation-management": "node --import jiti/register scripts/verify-course-invitation-management.ts",
+    "verify:course-invitation-launch-routing": "node --import jiti/register scripts/verify-course-invitation-launch-routing.ts",
     "verify:pm-admin-invitation": "node --import jiti/register scripts/verify-pm-admin-invitation.ts",
     "verify:auth-recovery": "node --import jiti/register scripts/verify-auth-recovery.ts",
     "configure:pilot-readiness": "node --import jiti/register scripts/configure-pilot-readiness-reference-data.ts",

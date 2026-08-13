@@ -9,6 +9,7 @@ type AcceptanceProps = {
     courseSlug: string;
     courseTitle: string;
     expiresAt?: string;
+    learnerPath: string;
     organizationName: string;
   };
   returnPath: string;
@@ -19,7 +20,7 @@ type ActivationState =
   | { kind: "idle" }
   | { kind: "loading" }
   | { kind: "error" }
-  | { courseSlug: string; kind: "success"; replay: boolean };
+  | { courseSlug: string; kind: "success"; learnerPath: string; replay: boolean };
 
 function Summary({ context }: { context: NonNullable<AcceptanceProps["context"]> }) {
   return (
@@ -78,6 +79,7 @@ export function CourseInvitationAcceptance({
       setActivation({
         courseSlug: result.access.courseSlug,
         kind: "success",
+        learnerPath: context?.learnerPath ?? `/learn/courses/${result.access.courseSlug}`,
         replay: result.code === "already-activated",
       });
     } catch {
@@ -92,7 +94,7 @@ export function CourseInvitationAcceptance({
           Your individual access to the invited course is ready.
         </AlertMessage>
         {context ? <Summary context={context} /> : null}
-        <ActionButton href={`/learn/courses/${activation.courseSlug}`} size="lg">
+        <ActionButton href={activation.learnerPath} size="lg">
           Start course
         </ActionButton>
       </div>
@@ -121,7 +123,7 @@ export function CourseInvitationAcceptance({
           This invitation has already created your individual course access.
         </AlertMessage>
         <Summary context={context} />
-        <ActionButton href={`/learn/courses/${context.courseSlug}`} size="lg">Start course</ActionButton>
+        <ActionButton href={context.learnerPath} size="lg">Start course</ActionButton>
       </div>
     );
   }

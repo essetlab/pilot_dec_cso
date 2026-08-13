@@ -269,6 +269,12 @@ export function getTrackedExternalCourseConfig(courseSlug: string) {
   return trackedExternalCourses.find((course) => course.courseSlug === courseSlug) ?? null;
 }
 
+export function getTrackedExternalCourseLearnerPath(courseSlug: string) {
+  return getTrackedExternalCourseConfig(courseSlug)
+    ? `/learn/courses/${courseSlug}/external`
+    : `/learn/courses/${courseSlug}`;
+}
+
 export function isCanonicalExternalCourseScreenId(
   config: TrackedExternalCourseConfig,
   value: unknown,

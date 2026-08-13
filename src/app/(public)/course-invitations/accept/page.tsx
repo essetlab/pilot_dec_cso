@@ -3,6 +3,7 @@ import { CourseInvitationAcceptance } from "@/components/public/CourseInvitation
 import { StatusBadge } from "@/components/ui";
 import { getCurrentSession } from "@/lib/auth/server";
 import { resolveCourseInvitationAcceptance } from "@/lib/course-invitation-workflow";
+import { getTrackedExternalCourseLearnerPath } from "@/lib/external-course-config";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -90,6 +91,7 @@ export default async function CourseInvitationAcceptPage({ searchParams }: PageP
                   courseSlug: resolution.context.courseSlug,
                   courseTitle: resolution.context.courseTitle,
                   expiresAt: "expiresAt" in resolution.context ? resolution.context.expiresAt.toISOString() : undefined,
+                  learnerPath: getTrackedExternalCourseLearnerPath(resolution.context.courseSlug),
                   organizationName: resolution.context.organizationName,
                 } : undefined}
                 returnPath={returnPath}

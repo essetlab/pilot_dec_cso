@@ -523,6 +523,9 @@ try {
   assert(acceptClient.includes('fetch("/api/course-invitations/activate"'));
   assert(acceptClient.includes("/sign-in?next="));
   assert(acceptClient.includes("/register?next="));
+  assert(acceptClient.includes("href={activation.learnerPath}"));
+  assert(acceptClient.includes("href={context.learnerPath}"));
+  assert(acceptPage.includes("getTrackedExternalCourseLearnerPath"));
   assert(acceptClient.includes('state === "cancelled"'));
   assert(acceptClient.includes('state === "expired"'));
   assert(acceptClient.includes('state === "already-activated"'));
