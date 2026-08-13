@@ -109,8 +109,11 @@ export type ExternalCoursePersistenceResult = {
     | "issued"
     | "already-issued";
   completed?: boolean;
+  conflict?: boolean;
   error?: string;
   progressPercent?: number;
+  resumeRevision?: string;
+  resumeState?: HrbaResumeState | null;
   success: boolean;
 };
 
@@ -265,3 +268,15 @@ export type ExternalCourseResumeResultMessage = {
   resumeState: HrbaResumeState | null;
   error?: string;
 };
+
+export function isTrustedExternalCourseMessageEvent(
+  event: Pick<MessageEvent, "origin" | "source">,
+  expectedOrigin: string,
+  expectedSource: MessageEventSource | null | undefined,
+) {
+  return Boolean(
+    expectedSource &&
+    event.origin === expectedOrigin &&
+    event.source === expectedSource
+  );
+}

@@ -36,7 +36,8 @@ assert(hrba?.courseId === HRBA_EXTERNAL_COURSE_ID, "HRBA course ID changed.");
 assert(
   hrba.courseVersionId === HRBA_EXTERNAL_COURSE_VERSION_ID &&
     hrba.provider === "hrba-vite" &&
-    hrba.supportsSecureNewTab,
+    hrba.enforceMonotonicProgress &&
+    !hrba.supportsSecureNewTab,
   "HRBA tracked-course behavior changed.",
 );
 
@@ -74,8 +75,8 @@ assert(
   "PM review navigation regressed Hub progress.",
 );
 assert(
-  resolveExternalCourseProgressPercent(HRBA_EXTERNAL_COURSE_SLUG, 72, 18) === 18,
-  "The pre-existing HRBA progress rule changed.",
+  resolveExternalCourseProgressPercent(HRBA_EXTERNAL_COURSE_SLUG, 72, 18) === 72,
+  "HRBA review navigation regressed Hub progress.",
 );
 
 const pmMetadata = buildPmExternalCourseMetadata();
@@ -112,7 +113,7 @@ assert(!openRegistration.includes("PM_EXTERNAL_COURSE"), "PM was added to open r
 
 const frame = source("src/components/learner/ExternalCourseFrame.tsx");
 assert(
-  frame.includes("launchData.supportsSecureNewTab !== false"),
+  !frame.includes("Open course in new tab"),
   "PM new-tab launch is not suppressed.",
 );
 assert(frame.includes("resumeScreenId"), "The trusted launch context lacks resume state.");

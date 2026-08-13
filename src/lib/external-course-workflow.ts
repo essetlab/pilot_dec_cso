@@ -1760,27 +1760,33 @@ export async function recordExternalCourseProgress({
     progressPercent,
   );
   const isHrbaResumeCourse = courseSlug === HRBA_EXTERNAL_COURSE_SLUG;
-  const lessonProgress = await prisma.lessonProgress.findUnique({
-    where: {
-      enrollmentId_lessonId: {
-        enrollmentId: enrollment.id,
-        lessonId: trackedConfig.lessonId,
-      },
-    },
-  });
-  if (!lessonProgress) {
+  const lessonProgress = isHrbaResumeCourse
+    ? await prisma.lessonProgress.findUnique({
+        where: {
+          enrollmentId_lessonId: {
+            enrollmentId: enrollment.id,
+            lessonId: trackedConfig.lessonId,
+          },
+        },
+      })
+    : null;
+  if (isHrbaResumeCourse && !lessonProgress) {
     return { success: false, error: "Learning progress not initialized" };
   }
-  const progressRecord = asJsonRecord(lessonProgress.progressJson);
+  const progressRecord = isHrbaResumeCourse
+    ? asJsonRecord(lessonProgress!.progressJson)
+    : {};
   const hasStoredResumeState = Object.hasOwn(progressRecord, "resumeState");
-  const storedResumeState = extractStoredHrbaResumeState(lessonProgress.progressJson);
+  const storedResumeState = isHrbaResumeCourse
+    ? extractStoredHrbaResumeState(lessonProgress!.progressJson)
+    : null;
   if (isHrbaResumeCourse && hasStoredResumeState && !storedResumeState) {
     return { success: false, error: "Stored resume state is invalid" };
   }
   const authoritativeConflictState = () => ({
-    resumeRevision: lessonProgress.updatedAt.toISOString(),
+    resumeRevision: lessonProgress!.updatedAt.toISOString(),
     resumeState: storedResumeState
-      ? withHrbaResumeRevision(storedResumeState, lessonProgress.updatedAt.toISOString())
+      ? withHrbaResumeRevision(storedResumeState, lessonProgress!.updatedAt.toISOString())
       : null,
   });
   const rejectResume = (error: string) => ({
@@ -1809,14 +1815,14 @@ export async function recordExternalCourseProgress({
       }
       acceptedResumeState = validatedResume.state;
       if (baseRevision !== acceptedResumeState.baseRevision
-        || baseRevision !== lessonProgress.updatedAt.toISOString()) {
+        || baseRevision !== lessonProgress!.updatedAt.toISOString()) {
         return {
           success: false,
           conflict: true,
           error: "Resume state conflict",
-          resumeRevision: lessonProgress.updatedAt.toISOString(),
+          resumeRevision: lessonProgress!.updatedAt.toISOString(),
           resumeState: storedResumeState
-            ? withHrbaResumeRevision(storedResumeState, lessonProgress.updatedAt.toISOString())
+            ? withHrbaResumeRevision(storedResumeState, lessonProgress!.updatedAt.toISOString())
             : null,
         };
       }
@@ -1825,8 +1831,8 @@ export async function recordExternalCourseProgress({
           success: false,
           conflict: true,
           error: "Legacy bootstrap is closed",
-          resumeRevision: lessonProgress.updatedAt.toISOString(),
-          resumeState: withHrbaResumeRevision(storedResumeState, lessonProgress.updatedAt.toISOString()),
+          resumeRevision: lessonProgress!.updatedAt.toISOString(),
+          resumeState: withHrbaResumeRevision(storedResumeState, lessonProgress!.updatedAt.toISOString()),
         };
       }
       if (storedResumeState) {
@@ -2109,7 +2115,7 @@ export async function recordExternalCourseProgress({
           source: "external-course-postmessage",
         });
         const lessonUpdate = {
-          completedAt: shouldComplete ? (lessonProgress.completedAt ?? persistedAt) : null,
+          completedAt: shouldComplete ? (lessonProgress!.completedAt ?? persistedAt) : null,
           lastAccessedAt: persistedAt,
           progressJson: nextProgressJson,
           status: shouldComplete
@@ -2122,7 +2128,7 @@ export async function recordExternalCourseProgress({
           const conditionalUpdate = await tx.lessonProgress.updateMany({
             data: lessonUpdate,
             where: {
-              id: lessonProgress.id,
+              id: lessonProgress!.id,
               updatedAt: new Date(baseRevision as string),
             },
           });
@@ -2132,7 +2138,7 @@ export async function recordExternalCourseProgress({
         } else {
           await tx.lessonProgress.update({
             data: lessonUpdate,
-            where: { id: lessonProgress.id },
+            where: { id: lessonProgress!.id },
           });
         }
       } else {
@@ -2279,7 +2285,7 @@ export async function recordExternalCourseProgress({
     } catch (error) {
       if (error instanceof ExternalCourseResumeConflictError) {
         const authoritative = await prisma.lessonProgress.findUnique({
-          where: { id: lessonProgress.id },
+          where: { id: lessonProgress!.id },
         });
         const authoritativeState = authoritative
           ? extractStoredHrbaResumeState(authoritative.progressJson)
@@ -2288,7 +2294,7 @@ export async function recordExternalCourseProgress({
           success: false,
           conflict: true,
           error: error.message,
-          resumeRevision: authoritative?.updatedAt.toISOString() ?? lessonProgress.updatedAt.toISOString(),
+          resumeRevision: authoritative?.updatedAt.toISOString() ?? lessonProgress!.updatedAt.toISOString(),
           resumeState: authoritativeState && authoritative
             ? withHrbaResumeRevision(authoritativeState, authoritative.updatedAt.toISOString())
             : null,
