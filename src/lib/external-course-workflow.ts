@@ -1554,10 +1554,10 @@ export async function getExternalCourseLaunchData(
   const allowFixtures = await isLocalQaFixtureAllowed();
   if (allowFixtures && courseSlug === HRBA_EXTERNAL_COURSE_SLUG) {
     return {
-      allowedOrigin: "https://pilot-hrba-e-learn-v1-wajj.vercel.app",
+      allowedOrigin: "https://pilot-hrba-cso-learning-hub.vercel.app",
       courseSlug: HRBA_EXTERNAL_COURSE_SLUG,
       courseTitle: "Applying the Human Rights-Based Approach in CSO Practice",
-      iframeSrc: "https://pilot-hrba-e-learn-v1-wajj.vercel.app?embed=portal&courseSlug=" + HRBA_EXTERNAL_COURSE_SLUG + "&launchToken=mock_launch_token",
+      iframeSrc: "https://pilot-hrba-cso-learning-hub.vercel.app?embed=portal&courseSlug=" + HRBA_EXTERNAL_COURSE_SLUG + "&launchToken=mock_launch_token",
       launchToken: "mock_launch_token",
       learnerStateKey: "mock_learner_state_key",
       resumeRevision: new Date(0).toISOString(),

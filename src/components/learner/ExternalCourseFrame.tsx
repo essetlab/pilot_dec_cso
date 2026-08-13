@@ -353,7 +353,6 @@ export function ExternalCourseFrame({
   const completed = status === "completed";
   const error = status === "error";
   const frameReady = frameStatus === "ready";
-  const isResumeOnlyTrackedCourse = launchData.supportsSecureNewTab === false;
 
   function handleFrameLoad() {
     setFrameStatus("ready");

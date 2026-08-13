@@ -59,12 +59,15 @@ export const PM_CANONICAL_SCREEN_IDS = [
 ] as const;
 
 export const DEFAULT_HRBA_EXTERNAL_COURSE_URL =
-  "https://pilot-hrba-e-learn-v1-wajj.vercel.app";
+  "https://pilot-hrba-cso-learning-hub.vercel.app";
 export const DEFAULT_PM_EXTERNAL_COURSE_URL = "http://localhost:5173";
 
 const DEFAULT_HRBA_EXTERNAL_COURSE_ORIGINS = [
-  "https://pilot-hrba-e-learn-v1-wajj.vercel.app",
+  "https://pilot-hrba-cso-learning-hub.vercel.app",
+];
+const LOCAL_HRBA_EXTERNAL_COURSE_ORIGINS = [
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
 ];
 const LOCAL_PM_EXTERNAL_COURSE_ORIGINS = [
   "http://localhost:5173",
@@ -153,10 +156,36 @@ export function getHrbaExternalCourseUrl() {
 }
 
 export function getHrbaExternalCourseAllowedOrigins() {
+  const configured = splitOrigins(
+    process.env.HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS,
+  );
+  const launchOrigin = new URL(getHrbaExternalCourseUrl()).origin;
+
+  if (isProductionEnvironment()) {
+    const parsedOrigins = configured.map(parseExactOrigin);
+    if (
+      parsedOrigins.some((origin) => origin === null) ||
+      parsedOrigins.some(
+        (origin) =>
+          origin !== null &&
+          (!origin.startsWith("https://") || isLoopbackOrigin(origin)),
+      )
+    ) {
+      return [];
+    }
+
+    return distinctOrigins([
+      ...DEFAULT_HRBA_EXTERNAL_COURSE_ORIGINS,
+      ...(parsedOrigins as string[]),
+      launchOrigin,
+    ]);
+  }
+
   return distinctOrigins([
     ...DEFAULT_HRBA_EXTERNAL_COURSE_ORIGINS,
-    ...splitOrigins(process.env.HRBA_EXTERNAL_COURSE_ALLOWED_ORIGINS),
-    new URL(getHrbaExternalCourseUrl()).origin,
+    ...LOCAL_HRBA_EXTERNAL_COURSE_ORIGINS,
+    ...configured.map(parseExactOrigin).filter((origin): origin is string => origin !== null),
+    launchOrigin,
   ]);
 }
 
@@ -239,11 +268,11 @@ const trackedExternalCourses: readonly TrackedExternalCourseConfig[] = [
     lessonId: HRBA_EXTERNAL_COURSE_LESSON_ID,
     moduleId: HRBA_EXTERNAL_COURSE_MODULE_ID,
     provider: "hrba-vite",
-    enforceMonotonicProgress: false,
+    enforceMonotonicProgress: true,
     failedAttemptCooldownMs: 0,
     passThreshold: 80,
     requiresPriorPassingAssessmentForCompletion: false,
-    supportsSecureNewTab: true,
+    supportsSecureNewTab: false,
   },
   {
     assessmentQuizId: PM_EXTERNAL_COURSE_QUIZ_ID,
